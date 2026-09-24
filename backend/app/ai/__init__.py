@@ -1,1 +1,6 @@
-# ai package
+"""
+AI package exports for ReLoop AI.
+"""
+from app.ai.gemini_client import gemini_client, GeminiClient
+
+__all__ = ["gemini_client", "GeminiClient"]

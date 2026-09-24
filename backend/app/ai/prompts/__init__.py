@@ -1,1 +1,18 @@
-# ai/prompts package
+"""
+Export versioned prompts for ReLoop AI.
+"""
+from app.ai.prompts.identification import IDENTIFICATION_SYSTEM_PROMPT, IDENTIFICATION_USER_PROMPT
+from app.ai.prompts.visible_damage import VISIBLE_DAMAGE_SYSTEM_PROMPT, VISIBLE_DAMAGE_USER_PROMPT
+from app.ai.prompts.symptom_parser import SYMPTOM_PARSER_SYSTEM_PROMPT, SYMPTOM_PARSER_USER_PROMPT
+from app.ai.prompts.explanation import EXPLANATION_SYSTEM_PROMPT, EXPLANATION_USER_PROMPT
+
+__all__ = [
+    "IDENTIFICATION_SYSTEM_PROMPT",
+    "IDENTIFICATION_USER_PROMPT",
+    "VISIBLE_DAMAGE_SYSTEM_PROMPT",
+    "VISIBLE_DAMAGE_USER_PROMPT",
+    "SYMPTOM_PARSER_SYSTEM_PROMPT",
+    "SYMPTOM_PARSER_USER_PROMPT",
+    "EXPLANATION_SYSTEM_PROMPT",
+    "EXPLANATION_USER_PROMPT",
+]
