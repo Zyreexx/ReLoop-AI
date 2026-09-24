@@ -2,6 +2,8 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { AuthModal } from "@/components/auth/AuthModal";
@@ -9,12 +11,25 @@ import { HeroSection } from "@/components/landing/HeroSection";
 import { ArrowRight, Wrench, ShieldCheck, Cpu, RefreshCw } from "lucide-react";
 
 export default function Home() {
+  const { user } = useAuth();
+  const router = useRouter();
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
 
   const handleOpenAuth = (mode: "login" | "register") => {
     setAuthMode(mode);
     setAuthModalOpen(true);
+  };
+
+  const handleAssessClick = () => {
+    if (user) {
+      router.push("/assess-device");
+    } else {
+      try {
+        localStorage.setItem("reloop_redirect", "/assess-device");
+      } catch {}
+      handleOpenAuth("register");
+    }
   };
 
   const featurePortals = [
@@ -146,7 +161,7 @@ export default function Home() {
               </p>
               <button
                 type="button"
-                onClick={() => handleOpenAuth("register")}
+                onClick={handleAssessClick}
                 className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-[#0071E3] hover:bg-[#0077ED] text-white text-sm font-semibold transition-all duration-200 shadow-md cursor-pointer"
               >
                 <span>Assess Your Laptop</span>

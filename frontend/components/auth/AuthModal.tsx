@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Eye, EyeOff, X, Sparkles, CheckCircle2, AlertCircle, ShieldCheck } from "lucide-react";
 import { GoogleLogin, useGoogleLogin } from "@react-oauth/google";
 import { useAuth, UserProfile } from "@/context/AuthContext";
@@ -128,6 +129,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   if (!isOpen) return null;
 
+  const router = useRouter();
+
   // Handle Official Google Sign-In Success (JWT ID Token)
   const handleGoogleSuccess = (credentialResponse: any) => {
     setAuthError(null);
@@ -146,7 +149,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         setTimeout(() => {
           setSubmitted(false);
           onClose();
-        }, 1200);
+          const redirectTarget = localStorage.getItem("reloop_redirect") || "/assess-device";
+          localStorage.removeItem("reloop_redirect");
+          router.push(redirectTarget);
+        }, 1000);
         return;
       }
     }
@@ -167,7 +173,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setTimeout(() => {
       setSubmitted(false);
       onClose();
-    }, 1200);
+      const redirectTarget = localStorage.getItem("reloop_redirect") || "/assess-device";
+      localStorage.removeItem("reloop_redirect");
+      router.push(redirectTarget);
+    }, 1000);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -183,7 +192,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setTimeout(() => {
       setSubmitted(false);
       onClose();
-    }, 1200);
+      const redirectTarget = localStorage.getItem("reloop_redirect") || "/assess-device";
+      localStorage.removeItem("reloop_redirect");
+      router.push(redirectTarget);
+    }, 1000);
   };
 
   return (

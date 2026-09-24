@@ -1,6 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/context/AuthContext";
 import {
   ArrowRight,
   BatteryCharging,
@@ -33,7 +35,20 @@ interface MarqueeLaptop {
 }
 
 export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenAuth }) => {
+  const { user } = useAuth();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<"dell" | "mac" | "thinkpad">("dell");
+
+  const handleAssessClick = () => {
+    if (user) {
+      router.push("/assess-device");
+    } else {
+      try {
+        localStorage.setItem("reloop_redirect", "/assess-device");
+      } catch {}
+      onOpenAuth("register");
+    }
+  };
 
   // Line 1 Laptops (Moving Left in background)
   const line1Laptops: MarqueeLaptop[] = [
@@ -363,7 +378,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenAuth }) => {
           <div className="flex flex-wrap items-center justify-center gap-4">
             <button
               type="button"
-              onClick={() => onOpenAuth("register")}
+              onClick={handleAssessClick}
               className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-[#0071E3] hover:bg-[#0077ED] text-white text-[15px] font-semibold transition-all duration-200 shadow-md hover:shadow-lg cursor-pointer"
             >
               <span>Assess Your Laptop</span>

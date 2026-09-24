@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { RefreshCw, ArrowRight, Menu, X } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
@@ -11,8 +12,20 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth }) => {
   const { user, logout } = useAuth();
+  const router = useRouter();
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const handleAssessDeviceClick = () => {
+    if (user) {
+      router.push("/assess-device");
+    } else {
+      try {
+        localStorage.setItem("reloop_redirect", "/assess-device");
+      } catch {}
+      onOpenAuth("login");
+    }
+  };
 
   useEffect(() => {
     const handleScroll = () => {
@@ -104,7 +117,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth }) => {
 
             <button
               type="button"
-              onClick={() => onOpenAuth("register")}
+              onClick={handleAssessDeviceClick}
               className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-white bg-[#0071E3] hover:bg-[#0077ED] px-4 py-2 rounded-full transition-all duration-200 cursor-pointer shadow-xs hover:shadow-sm"
             >
               <span>Assess Device</span>
@@ -207,7 +220,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth }) => {
                 type="button"
                 onClick={() => {
                   setMobileMenuOpen(false);
-                  onOpenAuth("register");
+                  handleAssessDeviceClick();
                 }}
                 className="w-full text-center py-2.5 rounded-xl bg-[#0071E3] font-semibold text-sm text-white"
               >
