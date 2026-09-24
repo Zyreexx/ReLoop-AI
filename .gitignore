@@ -12,9 +12,26 @@ frontend/out/
 build/
 frontend/build/
 
-# Environment files
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv/
+ENV/
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Environment Variables & Secrets
 .env
 .env*.local
+*.local
 
 # Logs
 npm-debug.log*
@@ -22,10 +39,20 @@ yarn-debug.log*
 yarn-error.log*
 *.log
 
-# OS files
-.DS_Store
-Thumbs.db
+# Uploads
+uploads/
+backend/uploads/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
 
 # IDE and Editor
 .vscode/
 .idea/
+*.swp
+
+# OS files
+.DS_Store
+Thumbs.db
