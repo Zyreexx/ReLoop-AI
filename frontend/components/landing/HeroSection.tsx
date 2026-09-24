@@ -14,8 +14,6 @@ import {
   Wrench,
   ShieldCheck,
   Laptop,
-  Repeat,
-  PackageOpen,
 } from "lucide-react";
 
 interface HeroSectionProps {
@@ -37,7 +35,7 @@ interface MarqueeLaptop {
 export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenAuth }) => {
   const [activeTab, setActiveTab] = useState<"dell" | "mac" | "thinkpad">("dell");
 
-  // Line 1 Laptops (Moving Left)
+  // Line 1 Laptops (Moving Left in background)
   const line1Laptops: MarqueeLaptop[] = [
     {
       id: "mbp16",
@@ -107,7 +105,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenAuth }) => {
     },
   ];
 
-  // Line 2 Laptops (Moving Right - OPPOSITE DIRECTION!)
+  // Line 2 Laptops (Moving Right in background - OPPOSITE DIRECTION!)
   const line2Laptops: MarqueeLaptop[] = [
     {
       id: "mba_m2",
@@ -237,13 +235,13 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenAuth }) => {
 
   const current = devices[activeTab];
 
-  // Helper card renderer for marquee ticker
-  const renderLaptopTickerCard = (laptop: MarqueeLaptop, keyPrefix: string, index: number) => (
+  // Helper card renderer for background floating laptop ticker
+  const renderBackgroundLaptopCard = (laptop: MarqueeLaptop, keyPrefix: string, index: number) => (
     <div
       key={`${keyPrefix}-${laptop.id}-${index}`}
-      className="w-[280px] sm:w-[320px] bg-white rounded-2xl p-4 sm:p-5 border border-[#E5E5E7] shadow-sm hover:shadow-md transition-all duration-300 shrink-0 mx-2.5 sm:mx-3 text-left"
+      className="w-[270px] sm:w-[310px] bg-white/90 backdrop-blur-md rounded-2xl p-4 sm:p-5 border border-[#E5E5E7]/80 shadow-md transition-all duration-300 shrink-0 mx-2.5 sm:mx-3 text-left floating-item"
     >
-      <div className="flex items-center justify-between mb-2.5">
+      <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-lg bg-[#F5F5F7] border border-[#E5E5E7] flex items-center justify-center text-[#1D1D1F]">
             <Laptop className="w-3.5 h-3.5" />
@@ -252,7 +250,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenAuth }) => {
             <span className="text-[10px] uppercase font-bold tracking-wider text-[#86868B] block leading-none">
               {laptop.brand}
             </span>
-            <span className="text-xs font-bold text-[#1D1D1F] block truncate max-w-[170px]">
+            <span className="text-xs font-bold text-[#1D1D1F] block truncate max-w-[160px]">
               {laptop.model}
             </span>
           </div>
@@ -282,7 +280,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenAuth }) => {
           {laptop.conditionType === "good" && <CheckCircle className="w-3 h-3 shrink-0" />}
           {laptop.conditionType === "warning" && <AlertTriangle className="w-3 h-3 shrink-0" />}
           {laptop.conditionType === "bad" && <AlertTriangle className="w-3 h-3 shrink-0" />}
-          <span className="truncate max-w-[130px]">{laptop.condition}</span>
+          <span className="truncate max-w-[120px]">{laptop.condition}</span>
         </span>
 
         <span className="text-[#0071E3] font-semibold text-[10px] shrink-0">
@@ -293,105 +291,126 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenAuth }) => {
   );
 
   return (
-    <section id="overview" className="pt-16 pb-24 md:pt-24 md:pb-32 overflow-hidden bg-[#F5F5F7]">
-      <div className="max-w-6xl mx-auto px-6">
-        {/* Eyebrow badge */}
-        <div className="flex justify-center mb-6">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#E8E8ED] text-[#1D1D1F] text-[12px] font-medium tracking-wide shadow-2xs">
-            <span className="w-2 h-2 rounded-full bg-[#34C759] animate-pulse" />
-            <span>PCCoE International Grand Challenge 2026</span>
-            <span className="text-[#86868B]">•</span>
-            <span className="text-[#0071E3] font-semibold">Circular Economy</span>
+    <section id="overview" className="relative overflow-hidden bg-[#F5F5F7] border-b border-[#E5E5E7]">
+      {/* ─────────────────────────────────────────────────────────────
+          HERO BANNER WITH FLOATING LAPTOPS IN THE BACKGROUND
+          ───────────────────────────────────────────────────────────── */}
+      <div className="relative min-h-[85vh] sm:min-h-[88vh] flex items-center justify-center pt-14 pb-20 overflow-hidden">
+        {/* BACKGROUND LAYER: Dual Inclined Floating Laptop Lines */}
+        <div className="absolute inset-0 z-0 overflow-hidden flex flex-col justify-center pointer-events-none select-none opacity-75">
+          {/* Subtle edge fade masks */}
+          <div className="pointer-events-none absolute inset-y-0 left-0 w-32 sm:w-64 bg-gradient-to-r from-[#F5F5F7] via-[#F5F5F7]/80 to-transparent z-10" />
+          <div className="pointer-events-none absolute inset-y-0 right-0 w-32 sm:w-64 bg-gradient-to-l from-[#F5F5F7] via-[#F5F5F7]/80 to-transparent z-10" />
+
+          {/* Central radial soft vignette so the text stays 100% crisp & readable */}
+          <div
+            className="absolute inset-0 z-5 pointer-events-none"
+            style={{
+              background:
+                "radial-gradient(circle at center, rgba(245, 245, 247, 0.94) 0%, rgba(245, 245, 247, 0.78) 45%, rgba(245, 245, 247, 0.25) 100%)",
+            }}
+          />
+
+          {/* Tilted / Inclined Container (tilted -3.5 degrees) */}
+          <div className="transform -rotate-3 scale-110 origin-center space-y-6">
+            {/* Top Line: Moving LEFT continuously */}
+            <div className="flex overflow-hidden">
+              <div className="animate-marquee-left">
+                {[...line1Laptops, ...line1Laptops, ...line1Laptops].map((laptop, idx) =>
+                  renderBackgroundLaptopCard(laptop, "bg-line1", idx)
+                )}
+              </div>
+            </div>
+
+            {/* Bottom Line: Moving RIGHT in the OPPOSITE DIRECTION! */}
+            <div className="flex overflow-hidden">
+              <div className="animate-marquee-right">
+                {[...line2Laptops, ...line2Laptops, ...line2Laptops].map((laptop, idx) =>
+                  renderBackgroundLaptopCard(laptop, "bg-line2", idx)
+                )}
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Hero Headline */}
-        <div className="text-center max-w-4xl mx-auto mb-8">
-          <h1 className="text-[40px] sm:text-[54px] md:text-[68px] font-bold text-[#1D1D1F] tracking-tight leading-[1.06] mb-6">
+        {/* FOREGROUND LAYER: The exact text, headline, subtitle & CTA buttons */}
+        <div className="relative z-10 text-center max-w-4xl mx-auto px-6">
+          {/* Eyebrow badge */}
+          <div className="flex justify-center mb-6">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#E8E8ED]/90 backdrop-blur-md text-[#1D1D1F] text-[12px] font-medium tracking-wide shadow-xs border border-white/60">
+              <span className="w-2 h-2 rounded-full bg-[#34C759] animate-pulse" />
+              <span>PCCoE International Grand Challenge 2026</span>
+              <span className="text-[#86868B]">•</span>
+              <span className="text-[#0071E3] font-semibold">Circular Economy</span>
+            </div>
+          </div>
+
+          {/* Hero Headline */}
+          <h1 className="text-[42px] sm:text-[56px] md:text-[68px] font-bold text-[#1D1D1F] tracking-tight leading-[1.06] mb-6 drop-shadow-2xs">
             Don&apos;t replace the whole machine.
             <br />
             <span className="text-[#0071E3]">Give it a next life.</span>
           </h1>
-          <p className="text-[18px] sm:text-[21px] text-[#6E6E73] font-normal max-w-2xl mx-auto leading-relaxed">
+
+          {/* Hero Subtitle */}
+          <p className="text-[18px] sm:text-[21px] text-[#6E6E73] font-normal max-w-2xl mx-auto leading-relaxed mb-10">
             Laptops are routinely discarded when just one component slows down.
             ReLoop AI blends photos, hardware diagnostics, and reported symptoms
             to calculate the highest-value circular pathway.
           </p>
-        </div>
 
-        {/* CTAs */}
-        <div className="flex flex-wrap items-center justify-center gap-4 mb-16">
-          <button
-            type="button"
-            onClick={() => onOpenAuth("register")}
-            className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-[#0071E3] hover:bg-[#0077ED] text-white text-[15px] font-semibold transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer"
-          >
-            <span>Assess Your Laptop</span>
-            <ArrowRight className="w-4 h-4" />
-          </button>
+          {/* CTAs */}
+          <div className="flex flex-wrap items-center justify-center gap-4">
+            <button
+              type="button"
+              onClick={() => onOpenAuth("register")}
+              className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-[#0071E3] hover:bg-[#0077ED] text-white text-[15px] font-semibold transition-all duration-200 shadow-md hover:shadow-lg cursor-pointer"
+            >
+              <span>Assess Your Laptop</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
 
-          <a
-            href="#live-engine"
-            className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-white hover:bg-[#FBFBFD] text-[#1D1D1F] border border-[#D2D2D7] text-[15px] font-medium transition-all duration-200 cursor-pointer shadow-2xs"
-          >
-            <span>Test Decision Engine</span>
-          </a>
+            <a
+              href="#live-engine"
+              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-white hover:bg-[#FBFBFD] text-[#1D1D1F] border border-[#D2D2D7] text-[15px] font-medium transition-all duration-200 cursor-pointer shadow-xs hover:border-[#1D1D1F]"
+            >
+              <span>Test Decision Engine</span>
+            </a>
 
-          <a
-            href="#pathways"
-            className="inline-flex items-center gap-1.5 text-[14px] font-medium text-[#0071E3] hover:underline px-3 py-2"
-          >
-            <span>See the 6 pathways</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </a>
-        </div>
-      </div>
-
-      {/* ─────────────────────────────────────────────────────────────
-          DUAL INCLINED LINES OF PASSING LAPTOPS (OPPOSITE DIRECTIONS)
-          ───────────────────────────────────────────────────────────── */}
-      <div className="relative w-full my-12 py-10 overflow-hidden">
-        {/* Subtle gradient fades on left and right for seamless edge appearance */}
-        <div className="pointer-events-none absolute inset-y-0 left-0 w-24 sm:w-48 bg-gradient-to-r from-[#F5F5F7] via-[#F5F5F7]/80 to-transparent z-20" />
-        <div className="pointer-events-none absolute inset-y-0 right-0 w-24 sm:w-48 bg-gradient-to-l from-[#F5F5F7] via-[#F5F5F7]/80 to-transparent z-20" />
-
-        {/* Inclined Tilted Container (tilted -2.5 degrees) */}
-        <div className="transform -rotate-2 scale-105 origin-center">
-          {/* Top Line: Moving LEFT continuously */}
-          <div className="flex mb-5 overflow-hidden select-none">
-            <div className="animate-marquee-left">
-              {/* Duplicate array for seamless infinite looping */}
-              {[...line1Laptops, ...line1Laptops].map((laptop, idx) =>
-                renderLaptopTickerCard(laptop, "line1", idx)
-              )}
-            </div>
+            <a
+              href="#pathways"
+              className="inline-flex items-center gap-1.5 text-[14px] font-medium text-[#0071E3] hover:underline px-3 py-2"
+            >
+              <span>See the 6 pathways</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </a>
           </div>
-
-          {/* Bottom Line: Moving RIGHT in the OPPOSITE DIRECTION! */}
-          <div className="flex overflow-hidden select-none">
-            <div className="animate-marquee-right">
-              {/* Duplicate array for seamless infinite looping */}
-              {[...line2Laptops, ...line2Laptops].map((laptop, idx) =>
-                renderLaptopTickerCard(laptop, "line2", idx)
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Small Ticker Subtext */}
-        <div className="text-center mt-6 text-xs text-[#86868B] font-medium">
-          Passing models actively evaluated: Dell • Apple • Lenovo • Framework • HP • ASUS • Microsoft
         </div>
       </div>
 
       {/* ─────────────────────────────────────────────────────────────
           DETAILED DEVICE CONDITION BENCHMARK (INTERACTIVE DASHBOARD)
           ───────────────────────────────────────────────────────────── */}
-      <div className="max-w-6xl mx-auto px-6 mt-12">
+      <div className="max-w-6xl mx-auto px-6 py-20 border-t border-[#E5E5E7] bg-white/40">
+        {/* Section title */}
+        <div className="text-center max-w-xl mx-auto mb-8">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#E8E8ED] text-[11px] font-mono font-bold text-[#6E6E73] mb-3">
+            <span>LIVE BENCHMARK</span>
+            <span>•</span>
+            <span className="text-[#0071E3]">CONDITION PROFILE</span>
+          </div>
+          <h3 className="text-2xl sm:text-3xl font-bold text-[#1D1D1F] tracking-tight">
+            Component-Level Evidence Inspection
+          </h3>
+          <p className="text-xs sm:text-sm text-[#6E6E73] mt-2">
+            Switch between real-world laptop conditions to inspect evidence provenance before calculating circular pathways.
+          </p>
+        </div>
+
         {/* Device Switcher Pills */}
         <div className="flex items-center justify-center gap-2 mb-6">
           <span className="text-xs font-semibold text-[#86868B] uppercase tracking-wider mr-2">
-            Detailed Inspection Demo:
+            Inspect Hardware:
           </span>
           {(["dell", "mac", "thinkpad"] as const).map((key) => (
             <button
@@ -410,14 +429,14 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenAuth }) => {
         </div>
 
         {/* Live Condition Profile Preview Showcase */}
-        <div className="apple-card p-6 sm:p-8 md:p-10 max-w-5xl mx-auto bg-white">
+        <div className="apple-card p-6 sm:p-8 md:p-10 max-w-5xl mx-auto bg-white shadow-lg">
           {/* Header of the Card */}
           <div className="flex flex-col md:flex-row md:items-center justify-between pb-6 border-b border-[#E5E5E7] gap-4">
             <div>
               <div className="flex items-center gap-3">
-                <h3 className="text-2xl font-bold text-[#1D1D1F] tracking-tight">
+                <h4 className="text-2xl font-bold text-[#1D1D1F] tracking-tight">
                   {current.name}
-                </h3>
+                </h4>
                 <span className="text-xs px-2.5 py-0.5 rounded-full bg-[#F5F5F7] text-[#6E6E73] font-medium">
                   {current.age}
                 </span>

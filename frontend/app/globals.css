@@ -120,3 +120,22 @@ body {
   animation-play-state: paused;
 }
 
+/* Gentle Floating Animation */
+@keyframes float-subtle {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.floating-item {
+  animation: float-subtle 6s ease-in-out infinite;
+}
+
+.floating-item-delay {
+  animation: float-subtle 8s ease-in-out 2s infinite;
+}
+
+
