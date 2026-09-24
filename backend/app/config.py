@@ -15,6 +15,9 @@ class Settings:
     PORT: int = int(os.getenv("PORT", "8000"))
     HOST: str = os.getenv("HOST", "0.0.0.0")
     MAX_UPLOAD_MB: int = 10
+    DATABASE_URL: str = os.getenv(
+        "DATABASE_URL", "postgresql+psycopg://postgres:postgres@localhost:5432/reloop"
+    )
 
     # CORS
     CORS_ORIGINS: List[str] = [

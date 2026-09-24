@@ -2,7 +2,9 @@
 Product identification, registration, and catalog routes.
 """
 from typing import List
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
+from sqlalchemy.orm import Session
+from app.db.session import get_db
 from app.knowledge.models_catalog import get_all_models
 from app.schemas.product import (
     ProductCandidate,
@@ -22,8 +24,8 @@ def identify_product(req: ProductIdentificationRequest):
 
 
 @router.post("", response_model=ProductRecord)
-def create_or_confirm_product(data: ProductCreate):
-    return product_service.create_or_confirm(data)
+def create_or_confirm_product(data: ProductCreate, db: Session = Depends(get_db)):
+    return product_service.create_or_confirm(data, db=db)
 
 
 @router.get("/catalog", response_model=List[ProductCandidate])
@@ -32,5 +34,5 @@ def get_supported_catalog():
 
 
 @router.get("/{product_id}", response_model=ProductRecord)
-def get_product(product_id: str):
-    return product_service.get_by_id(product_id)
+def get_product(product_id: str, db: Session = Depends(get_db)):
+    return product_service.get_by_id(product_id, db=db)
