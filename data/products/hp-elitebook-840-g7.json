@@ -1,0 +1,112 @@
+{
+  "slug": "hp-elitebook-840-g7",
+  "manufacturer": "HP",
+  "model": "EliteBook 840 G7",
+  "model_year": 2020,
+  "aliases": ["hp elitebook 840 g7", "elitebook 840 g7", "hp-elitebook-840-g7"],
+  "specs": {
+    "category": "LAPTOP",
+    "ram_modular": true,
+    "ssd_modular": true,
+    "battery_replaceable": true,
+    "display_size_inches": 14.0,
+    "weight_kg": 1.35,
+    "baseline_embodied_co2_kg": 290.0,
+    "estimated_original_msrp_usd": 1250.0
+  },
+  "component_configuration": {
+    "ram_slots": 2,
+    "storage_slots": "1x M.2 PCIe NVMe",
+    "battery_screws": "Modular internal screws"
+  },
+  "repairability_score": {
+    "score": 8.2,
+    "basis": "assumption",
+    "note": "Dual SO-DIMM slots, easily removable bottom cover, non-glued internal battery."
+  },
+  "typical_repair_cost_inr": {
+    "battery": {
+      "min": 3500,
+      "max": 5200,
+      "basis": "assumption",
+      "note": "Standard 3-cell 53Wh OEM battery replacement."
+    },
+    "ssd": {
+      "min": 3000,
+      "max": 7000,
+      "basis": "assumption",
+      "note": "M.2 PCIe NVMe solid state drive replacement."
+    },
+    "ram": {
+      "min": 2000,
+      "max": 4500,
+      "basis": "assumption",
+      "note": "DDR4 SO-DIMM memory replacement or expansion."
+    },
+    "keyboard": {
+      "min": 2600,
+      "max": 4100,
+      "basis": "assumption",
+      "note": "HP Premium spill-resistant keyboard replacement."
+    },
+    "thermals": {
+      "min": 1100,
+      "max": 2300,
+      "basis": "assumption",
+      "note": "Thermal module service and cooling fan replacement."
+    },
+    "display": {
+      "min": 5800,
+      "max": 9600,
+      "basis": "assumption",
+      "note": "14-inch diagonal FHD anti-glare panel."
+    },
+    "motherboard": {
+      "min": 13000,
+      "max": 23000,
+      "basis": "assumption",
+      "note": "System logic board replacement."
+    }
+  },
+  "expected_useful_life": {
+    "baseline_years": 5.0,
+    "extended_years_post_repair": 2.5,
+    "basis": "assumption",
+    "note": "Corporate fleet life expectation of 5 to 7 years with periodic servicing."
+  },
+  "resale_recovery_values_inr": {
+    "whole_working": {
+      "min": 19000,
+      "max": 27000,
+      "basis": "assumption",
+      "note": "Enterprise resale market average."
+    },
+    "components": {
+      "screen": {
+        "min": 3200,
+        "max": 5800,
+        "basis": "assumption",
+        "note": "Operational screen salvage."
+      },
+      "motherboard": {
+        "min": 8000,
+        "max": 14000,
+        "basis": "assumption",
+        "note": "Operational motherboard salvage."
+      },
+      "ram": {
+        "min": 1500,
+        "max": 3000,
+        "basis": "assumption",
+        "note": "Salvaged DDR4 RAM module."
+      },
+      "ssd": {
+        "min": 2000,
+        "max": 4000,
+        "basis": "assumption",
+        "note": "Salvaged NVMe drive."
+      }
+    }
+  },
+  "disclaimer": "Modeled assumptions for hackathon demo purposes."
+}

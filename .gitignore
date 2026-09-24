@@ -27,3 +27,12 @@ htmlcov/
 # OS
 Thumbs.db
 .DS_Store
+
+# Uploads
+uploads/
+backend/uploads/
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
