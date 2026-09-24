@@ -1,0 +1,85 @@
+@import "tailwindcss";
+
+:root {
+  --background: #F5F5F7;
+  --surface: #FFFFFF;
+  --surface-secondary: #FBFBFD;
+
+  --text-primary: #1D1D1F;
+  --text-secondary: #6E6E73;
+  --text-tertiary: #86868B;
+
+  --border: #D2D2D7;
+  --border-light: #E5E5E7;
+
+  --accent-blue: #0071E3;
+  --accent-blue-hover: #0077ED;
+
+  --success: #34C759;
+  --warning: #FF9F0A;
+  --danger: #FF3B30;
+
+  --overlay: rgba(0, 0, 0, 0.04);
+}
+
+html {
+  scroll-behavior: smooth;
+  background-color: var(--background);
+  color: var(--text-primary);
+}
+
+body {
+  background-color: var(--background);
+  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Inter", "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Apple typography helpers */
+.apple-headline {
+  letter-spacing: -0.025em;
+  line-height: 1.08;
+}
+
+.apple-subheadline {
+  letter-spacing: -0.015em;
+  line-height: 1.35;
+}
+
+/* Apple Store Card Surface */
+.apple-card {
+  background: var(--surface);
+  border: 1px solid var(--border-light);
+  border-radius: 22px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.03);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.apple-card:hover {
+  box-shadow: 0 10px 36px rgba(0, 0, 0, 0.06);
+}
+
+/* Frosted Glass Navigation */
+.apple-nav-blur {
+  background-color: rgba(245, 245, 247, 0.82);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 1px solid var(--border-light);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #f5f5f7;
+}
+::-webkit-scrollbar-thumb {
+  background: #d2d2d7;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #86868b;
+}
