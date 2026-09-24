@@ -22,7 +22,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth }) => {
     } else {
       try {
         localStorage.setItem("reloop_redirect", "/assess-device");
-      } catch {}
+      } catch { }
       onOpenAuth("login");
     }
   };
@@ -38,9 +38,8 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth }) => {
   return (
     <>
       <header
-        className={`sticky top-0 z-50 transition-all duration-300 ${
-          scrolled ? "apple-nav-blur py-3 shadow-xs" : "bg-[#F5F5F7]/90 backdrop-blur-md py-4"
-        }`}
+        className={`sticky top-0 z-50 transition-all duration-300 ${scrolled ? "apple-nav-blur py-3 shadow-xs" : "bg-[#F5F5F7]/90 backdrop-blur-md py-4"
+          }`}
       >
         <div className="max-w-6xl mx-auto px-6 flex items-center justify-between">
           {/* Brand Logo */}
@@ -61,7 +60,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth }) => {
           {/* Desktop Navigation Links */}
           <nav className="hidden md:flex items-center gap-7 text-[13px] font-medium text-[#6E6E73]">
             <Link href="/" className="hover:text-[#1D1D1F] transition-colors">
-              Overview
+              Home
             </Link>
             <Link href="/pathways" className="hover:text-[#1D1D1F] transition-colors">
               6 Pathways

@@ -84,10 +84,13 @@ body {
   background: #86868b;
 }
 
-/* Dual Inclined Infinite Marquee Animations */
+/* Dual Inclined Infinite Marquee Animations
+   Pattern: ONE wrapper div contains 2 identical copies of content.
+   Animation shifts wrapper by -50% = exactly 1 copy width.
+   When copy 1 slides out left, copy 2 (identical) seamlessly replaces it. */
 @keyframes marquee-left {
   0% {
-    transform: translateX(0%);
+    transform: translateX(0);
   }
   100% {
     transform: translateX(-50%);
@@ -99,20 +102,22 @@ body {
     transform: translateX(-50%);
   }
   100% {
-    transform: translateX(0%);
+    transform: translateX(0);
   }
 }
 
 .animate-marquee-left {
   display: flex;
   width: max-content;
-  animation: marquee-left 36s linear infinite;
+  animation: marquee-left 40s linear infinite;
+  will-change: transform;
 }
 
 .animate-marquee-right {
   display: flex;
   width: max-content;
-  animation: marquee-right 36s linear infinite;
+  animation: marquee-right 40s linear infinite;
+  will-change: transform;
 }
 
 .animate-marquee-left:hover,

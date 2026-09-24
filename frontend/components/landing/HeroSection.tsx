@@ -45,7 +45,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenAuth }) => {
     } else {
       try {
         localStorage.setItem("reloop_redirect", "/assess-device");
-      } catch {}
+      } catch { }
       onOpenAuth("register");
     }
   };
@@ -254,7 +254,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenAuth }) => {
   const renderBackgroundLaptopCard = (laptop: MarqueeLaptop, keyPrefix: string, index: number) => (
     <div
       key={`${keyPrefix}-${laptop.id}-${index}`}
-      className="w-[270px] sm:w-[310px] bg-white/90 backdrop-blur-md rounded-2xl p-4 sm:p-5 border border-[#E5E5E7]/80 shadow-md transition-all duration-300 shrink-0 mx-2.5 sm:mx-3 text-left floating-item"
+      className="w-[270px] sm:w-[310px] bg-white/95 backdrop-blur-md rounded-2xl p-4 sm:p-5 border border-[#E5E5E7] shadow-md transition-all duration-300 shrink-0 mx-2.5 sm:mx-3 text-left floating-item"
     >
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
@@ -284,13 +284,12 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenAuth }) => {
 
       <div className="pt-2 border-t border-[#F0F0F2] flex items-center justify-between text-[11px]">
         <span
-          className={`font-medium flex items-center gap-1 ${
-            laptop.conditionType === "good"
+          className={`font-medium flex items-center gap-1 ${laptop.conditionType === "good"
               ? "text-[#34C759]"
               : laptop.conditionType === "warning"
-              ? "text-[#FF9F0A]"
-              : "text-[#FF3B30]"
-          }`}
+                ? "text-[#FF9F0A]"
+                : "text-[#FF3B30]"
+            }`}
         >
           {laptop.conditionType === "good" && <CheckCircle className="w-3 h-3 shrink-0" />}
           {laptop.conditionType === "warning" && <AlertTriangle className="w-3 h-3 shrink-0" />}
@@ -311,37 +310,46 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenAuth }) => {
           HERO BANNER WITH FLOATING LAPTOPS IN THE BACKGROUND
           ───────────────────────────────────────────────────────────── */}
       <div className="relative min-h-[85vh] sm:min-h-[88vh] flex items-center justify-center pt-14 pb-20 overflow-hidden">
-        {/* BACKGROUND LAYER: Dual Inclined Floating Laptop Lines */}
-        <div className="absolute inset-0 z-0 overflow-hidden flex flex-col justify-center pointer-events-none select-none opacity-75">
-          {/* Subtle edge fade masks */}
-          <div className="pointer-events-none absolute inset-y-0 left-0 w-32 sm:w-64 bg-gradient-to-r from-[#F5F5F7] via-[#F5F5F7]/80 to-transparent z-10" />
-          <div className="pointer-events-none absolute inset-y-0 right-0 w-32 sm:w-64 bg-gradient-to-l from-[#F5F5F7] via-[#F5F5F7]/80 to-transparent z-10" />
+        {/* BACKGROUND LAYER: Dual Inclined Floating Laptop Lines
+            👉 OPACITY CONTROL: You can change 'opacity-95' below (e.g. opacity-90, opacity-100) to adjust overall laptop visibility */}
+        <div className="absolute inset-0 z-0 overflow-hidden flex flex-col justify-center pointer-events-none select-none opacity-50 transition-opacity duration-300">
+          {/* Subtle edge fade masks - only at the browser edges */}
+          <div className="pointer-events-none absolute inset-y-0 left-0 w-16 sm:w-28 bg-gradient-to-r from-[#F5F5F7] to-transparent z-10" />
+          <div className="pointer-events-none absolute inset-y-0 right-0 w-16 sm:w-28 bg-gradient-to-l from-[#F5F5F7] to-transparent z-10" />
 
-          {/* Central radial soft vignette so the text stays 100% crisp & readable */}
+          {/* Very gentle central text contrast mask:
+              Kept soft & semi-transparent so laptops remain 100% visible continuously across the center without any white gap */}
           <div
-            className="absolute inset-0 z-5 pointer-events-none"
+            className="absolute inset-0 pointer-events-none"
             style={{
               background:
-                "radial-gradient(circle at center, rgba(245, 245, 247, 0.94) 0%, rgba(245, 245, 247, 0.78) 45%, rgba(245, 245, 247, 0.25) 100%)",
+                "radial-gradient(ellipse 70% 60% at 50% 50%, rgba(245, 245, 247, 0.40) 0%, rgba(245, 245, 247, 0.15) 50%, transparent 100%)",
             }}
           />
 
-          {/* Tilted / Inclined Container (tilted -3.5 degrees) */}
-          <div className="transform -rotate-3 scale-110 origin-center space-y-6">
-            {/* Top Line: Moving LEFT continuously */}
-            <div className="flex overflow-hidden">
+          {/* Tilted / Inclined Container — scale-[1.3] ensures cards are NOT cut off at the screen edges after rotation */}
+          <div className="transform -rotate-3 scale-[1.3] origin-center space-y-6">
+            {/* Top Line: Moving LEFT — ONE wrapper with 2 identical copies inside.
+                The CSS shifts by -50% = exactly 1 copy width, so copy 2 seamlessly replaces copy 1. */}
+            <div className="overflow-hidden w-full">
               <div className="animate-marquee-left">
-                {[...line1Laptops, ...line1Laptops, ...line1Laptops].map((laptop, idx) =>
-                  renderBackgroundLaptopCard(laptop, "bg-line1", idx)
+                {line1Laptops.map((laptop, idx) =>
+                  renderBackgroundLaptopCard(laptop, "line1-a", idx)
+                )}
+                {line1Laptops.map((laptop, idx) =>
+                  renderBackgroundLaptopCard(laptop, "line1-b", idx)
                 )}
               </div>
             </div>
 
-            {/* Bottom Line: Moving RIGHT in the OPPOSITE DIRECTION! */}
-            <div className="flex overflow-hidden">
+            {/* Bottom Line: Moving RIGHT — same pattern, opposite direction */}
+            <div className="overflow-hidden w-full">
               <div className="animate-marquee-right">
-                {[...line2Laptops, ...line2Laptops, ...line2Laptops].map((laptop, idx) =>
-                  renderBackgroundLaptopCard(laptop, "bg-line2", idx)
+                {line2Laptops.map((laptop, idx) =>
+                  renderBackgroundLaptopCard(laptop, "line2-a", idx)
+                )}
+                {line2Laptops.map((laptop, idx) =>
+                  renderBackgroundLaptopCard(laptop, "line2-b", idx)
                 )}
               </div>
             </div>
@@ -368,7 +376,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenAuth }) => {
           </h1>
 
           {/* Hero Subtitle */}
-          <p className="text-[18px] sm:text-[21px] text-[#6E6E73] font-normal max-w-2xl mx-auto leading-relaxed mb-10">
+          <p className="text-[18px] sm:text-[21px] text-[#1D1D1F] font-semibold max-w-2xl mx-auto leading-relaxed mb-10">
             Laptops are routinely discarded when just one component slows down.
             ReLoop AI blends photos, hardware diagnostics, and reported symptoms
             to calculate the highest-value circular pathway.
@@ -432,11 +440,10 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenAuth }) => {
               key={key}
               type="button"
               onClick={() => setActiveTab(key)}
-              className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
-                activeTab === key
+              className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${activeTab === key
                   ? "bg-[#1D1D1F] text-white shadow-xs"
                   : "bg-white text-[#6E6E73] border border-[#E5E5E7] hover:border-[#D2D2D7]"
-              }`}
+                }`}
             >
               {devices[key].name}
             </button>
@@ -493,13 +500,12 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenAuth }) => {
                     </div>
                     {/* Provenance Pill */}
                     <span
-                      className={`text-[10px] font-mono uppercase px-2 py-0.5 rounded-md ${
-                        comp.source === "DIAGNOSTIC"
+                      className={`text-[10px] font-mono uppercase px-2 py-0.5 rounded-md ${comp.source === "DIAGNOSTIC"
                           ? "bg-blue-50 text-blue-700 border border-blue-200"
                           : comp.source === "VISUAL"
-                          ? "bg-purple-50 text-purple-700 border border-purple-200"
-                          : "bg-amber-50 text-amber-700 border border-amber-200"
-                      }`}
+                            ? "bg-purple-50 text-purple-700 border border-purple-200"
+                            : "bg-amber-50 text-amber-700 border border-amber-200"
+                        }`}
                     >
                       {comp.source}
                     </span>
@@ -510,13 +516,12 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenAuth }) => {
                       {comp.value}
                     </span>
                     <span
-                      className={`text-xs font-medium flex items-center gap-1 ${
-                        comp.state === "good"
+                      className={`text-xs font-medium flex items-center gap-1 ${comp.state === "good"
                           ? "text-[#34C759]"
                           : comp.state === "warning"
-                          ? "text-[#FF9F0A]"
-                          : "text-[#FF3B30]"
-                      }`}
+                            ? "text-[#FF9F0A]"
+                            : "text-[#FF3B30]"
+                        }`}
                     >
                       {comp.state === "good" && <CheckCircle className="w-3 h-3" />}
                       {comp.state === "warning" && <AlertTriangle className="w-3 h-3" />}
