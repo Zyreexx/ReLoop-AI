@@ -3,12 +3,14 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { RefreshCw, ArrowRight, Menu, X } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 interface NavbarProps {
   onOpenAuth: (mode: "login" | "register") => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth }) => {
+  const { user, logout } = useAuth();
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -64,13 +66,42 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth }) => {
 
           {/* Actions */}
           <div className="hidden md:flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => onOpenAuth("login")}
-              className="text-[13px] font-medium text-[#1D1D1F] hover:text-[#0071E3] px-3.5 py-1.5 transition-colors cursor-pointer"
-            >
-              Sign In
-            </button>
+            {user ? (
+              <div className="flex items-center gap-3 pl-2">
+                <div className="flex items-center gap-2">
+                  {user.picture ? (
+                    <img
+                      src={user.picture}
+                      alt={user.name}
+                      className="w-7 h-7 rounded-full border border-[#D2D2D7] object-cover"
+                    />
+                  ) : (
+                    <div className="w-7 h-7 rounded-full bg-[#0071E3] text-white flex items-center justify-center text-xs font-bold">
+                      {user.name.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <span className="text-[13px] font-medium text-[#1D1D1F]">
+                    {user.name.split(" ")[0]}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={logout}
+                  className="text-[12px] text-[#6E6E73] hover:text-[#FF3B30] px-2 py-1 transition-colors cursor-pointer"
+                >
+                  Sign Out
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => onOpenAuth("login")}
+                className="text-[13px] font-medium text-[#1D1D1F] hover:text-[#0071E3] px-3.5 py-1.5 transition-colors cursor-pointer"
+              >
+                Sign In
+              </button>
+            )}
+
             <button
               type="button"
               onClick={() => onOpenAuth("register")}
@@ -131,16 +162,47 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth }) => {
               Philosophy
             </Link>
             <div className="pt-3 border-t border-[#E5E5E7] flex flex-col gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  onOpenAuth("login");
-                }}
-                className="w-full text-center py-2.5 rounded-xl border border-[#D2D2D7] font-semibold text-sm text-[#1D1D1F]"
-              >
-                Sign In
-              </button>
+              {user ? (
+                <div className="flex items-center justify-between py-2">
+                  <div className="flex items-center gap-2">
+                    {user.picture ? (
+                      <img
+                        src={user.picture}
+                        alt={user.name}
+                        className="w-7 h-7 rounded-full"
+                      />
+                    ) : (
+                      <div className="w-7 h-7 rounded-full bg-[#0071E3] text-white flex items-center justify-center text-xs font-bold">
+                        {user.name.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <span className="text-sm font-semibold text-[#1D1D1F]">
+                      {user.name}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      logout();
+                      setMobileMenuOpen(false);
+                    }}
+                    className="text-xs text-[#FF3B30] font-medium"
+                  >
+                    Sign Out
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    onOpenAuth("login");
+                  }}
+                  className="w-full text-center py-2.5 rounded-xl border border-[#D2D2D7] font-semibold text-sm text-[#1D1D1F]"
+                >
+                  Sign In
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => {

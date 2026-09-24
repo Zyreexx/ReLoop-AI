@@ -1,7 +1,9 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Eye, EyeOff, X, Sparkles, CheckCircle2 } from "lucide-react";
+import { Eye, EyeOff, X, Sparkles, CheckCircle2, AlertCircle } from "lucide-react";
+import { useGoogleLogin } from "@react-oauth/google";
+import { useAuth, UserProfile } from "@/context/AuthContext";
 import styles from "./AuthModal.module.css";
 
 interface PasswordFieldProps {
@@ -40,16 +42,20 @@ const PasswordField: React.FC<PasswordFieldProps> = ({
   );
 };
 
-const Socials: React.FC = () => (
+interface SocialsProps {
+  onGoogleClick: () => void;
+  isLoading?: boolean;
+}
+
+const Socials: React.FC<SocialsProps> = ({ onGoogleClick, isLoading }) => (
   <div className={styles.socials}>
-    <button type="button" className={styles.socialBtn}>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.56-1.701z" />
-      </svg>
-      Apple
-    </button>
-    <button type="button" className={styles.socialBtn}>
-      <svg width="16" height="16" viewBox="0 0 24 24">
+    <button
+      type="button"
+      onClick={onGoogleClick}
+      disabled={isLoading}
+      className={`${styles.socialBtn} w-full flex items-center justify-center gap-2.5 py-2.5 bg-white border border-[#D2D2D7] rounded-xl hover:bg-[#F5F5F7] transition-all cursor-pointer shadow-2xs`}
+    >
+      <svg width="18" height="18" viewBox="0 0 24 24">
         <path
           fill="#4285F4"
           d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.65v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.14z"
@@ -67,7 +73,9 @@ const Socials: React.FC = () => (
           d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.34 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
         />
       </svg>
-      Google
+      <span className="text-xs font-semibold text-[#1D1D1F]">
+        {isLoading ? "Signing in..." : "Continue with Google"}
+      </span>
     </button>
   </div>
 );
@@ -104,8 +112,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onClose,
   initialMode = "login",
 }) => {
+  const { loginWithGoogleSuccess } = useAuth();
   const [isRegister, setIsRegister] = useState(initialMode === "register");
   const [submitted, setSubmitted] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [activeUserProfile, setActiveUserProfile] = useState<UserProfile | null>(null);
 
   // Login form state
   const [loginEmail, setLoginEmail] = useState("");
@@ -118,7 +130,47 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   useEffect(() => {
     setIsRegister(initialMode === "register");
+    setAuthError(null);
   }, [initialMode, isOpen]);
+
+  // Google OAuth Login Hook
+  const handleGoogleAuth = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      setGoogleLoading(true);
+      setAuthError(null);
+      try {
+        const res = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+          headers: {
+            Authorization: `Bearer ${tokenResponse.access_token}`,
+          },
+        });
+        const profile = await res.json();
+        const userObj: UserProfile = {
+          name: profile.name || profile.email.split("@")[0],
+          email: profile.email,
+          picture: profile.picture,
+          provider: "google",
+        };
+        setActiveUserProfile(userObj);
+        loginWithGoogleSuccess(userObj);
+        setSubmitted(true);
+        setTimeout(() => {
+          setSubmitted(false);
+          setGoogleLoading(false);
+          onClose();
+        }, 1200);
+      } catch (err) {
+        console.error("Failed to fetch Google profile:", err);
+        setAuthError("Failed to retrieve Google profile info.");
+        setGoogleLoading(false);
+      }
+    },
+    onError: (err) => {
+      console.error("Google Auth error:", err);
+      setAuthError("Google Sign-In was cancelled or not authorized.");
+      setGoogleLoading(false);
+    },
+  });
 
   // Handle ESC key to close
   useEffect(() => {
@@ -139,6 +191,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const userObj: UserProfile = {
+      name: isRegister ? regName : loginEmail.split("@")[0],
+      email: isRegister ? regEmail : loginEmail,
+      provider: "email",
+    };
+    setActiveUserProfile(userObj);
+    loginWithGoogleSuccess(userObj);
     setSubmitted(true);
     setTimeout(() => {
       setSubmitted(false);
@@ -170,7 +229,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           title="Welcome back"
           text="Access your saved product condition reports and optimization history."
           buttonLabel="Sign In"
-          onSwitch={() => setIsRegister(false)}
+          onSwitch={() => {
+            setIsRegister(false);
+            setAuthError(null);
+          }}
         />
 
         <Hero
@@ -178,7 +240,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           title="Hello there"
           text="Join ReLoop to assess hardware health, recover value, and extend product lifecycles."
           buttonLabel="Sign Up"
-          onSwitch={() => setIsRegister(true)}
+          onSwitch={() => {
+            setIsRegister(true);
+            setAuthError(null);
+          }}
         />
 
         {/* Forms */}
@@ -186,59 +251,71 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         <div className={`${styles.form} ${styles.formRegister}`}>
           <div className={styles.formHeader}>
             <h3 className={styles.formTitle}>Create account</h3>
-            <p className={styles.formSubtitle}>Start managing product lifecycles today</p>
+            <p className={styles.formSubtitle}>Sign up with Google or Email</p>
           </div>
+
+          {authError && (
+            <div className="mb-3 p-2 rounded-lg bg-red-50 border border-red-200 text-xs text-red-700 flex items-center gap-1.5">
+              <AlertCircle size={14} className="shrink-0" />
+              <span>{authError}</span>
+            </div>
+          )}
 
           {submitted ? (
             <div className="flex flex-col items-center justify-center py-10 text-center">
               <CheckCircle2 className="w-12 h-12 text-[#34C759] mb-3 animate-bounce" />
-              <p className="text-sm font-semibold text-[#1D1D1F]">Welcome to ReLoop!</p>
+              <p className="text-sm font-semibold text-[#1D1D1F]">
+                Welcome, {activeUserProfile?.name}!
+              </p>
               <p className="text-xs text-[#6E6E73] mt-1">Preparing your workspace...</p>
             </div>
           ) : (
-            <form onSubmit={handleSubmit}>
-              <div className={styles.inputGroup}>
-                <label className={styles.label}>Full Name</label>
-                <input
-                  type="text"
-                  className={styles.input}
-                  placeholder="Alex Morgan"
-                  value={regName}
-                  onChange={(e) => setRegName(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className={styles.inputGroup}>
-                <label className={styles.label}>Work or Personal Email</label>
-                <input
-                  type="email"
-                  className={styles.input}
-                  placeholder="alex@reloop.ai"
-                  value={regEmail}
-                  onChange={(e) => setRegEmail(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className={styles.inputGroup}>
-                <label className={styles.label}>Password</label>
-                <PasswordField
-                  value={regPassword}
-                  onChange={(e) => setRegPassword(e.target.value)}
-                />
-              </div>
-
-              <button type="submit" className={styles.submitBtn}>
-                Create Account
-              </button>
+            <div>
+              {/* Google One-Click Button */}
+              <Socials onGoogleClick={() => handleGoogleAuth()} isLoading={googleLoading} />
 
               <div className={styles.divider}>
-                <span>or sign up with</span>
+                <span>or sign up with email</span>
               </div>
 
-              <Socials />
-            </form>
+              <form onSubmit={handleSubmit}>
+                <div className={styles.inputGroup}>
+                  <label className={styles.label}>Full Name</label>
+                  <input
+                    type="text"
+                    className={styles.input}
+                    placeholder="Alex Morgan"
+                    value={regName}
+                    onChange={(e) => setRegName(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className={styles.inputGroup}>
+                  <label className={styles.label}>Work or Personal Email</label>
+                  <input
+                    type="email"
+                    className={styles.input}
+                    placeholder="alex@reloop.ai"
+                    value={regEmail}
+                    onChange={(e) => setRegEmail(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className={styles.inputGroup}>
+                  <label className={styles.label}>Password</label>
+                  <PasswordField
+                    value={regPassword}
+                    onChange={(e) => setRegPassword(e.target.value)}
+                  />
+                </div>
+
+                <button type="submit" className={styles.submitBtn}>
+                  Create Account
+                </button>
+              </form>
+            </div>
           )}
         </div>
 
@@ -246,52 +323,64 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         <div className={`${styles.form} ${styles.formLogin}`}>
           <div className={styles.formHeader}>
             <h3 className={styles.formTitle}>Sign in to ReLoop</h3>
-            <p className={styles.formSubtitle}>Next-Life Engine decision dashboard</p>
+            <p className={styles.formSubtitle}>Access your device decision dashboard</p>
           </div>
+
+          {authError && (
+            <div className="mb-3 p-2 rounded-lg bg-red-50 border border-red-200 text-xs text-red-700 flex items-center gap-1.5">
+              <AlertCircle size={14} className="shrink-0" />
+              <span>{authError}</span>
+            </div>
+          )}
 
           {submitted ? (
             <div className="flex flex-col items-center justify-center py-10 text-center">
               <CheckCircle2 className="w-12 h-12 text-[#34C759] mb-3 animate-bounce" />
-              <p className="text-sm font-semibold text-[#1D1D1F]">Signed in successfully</p>
+              <p className="text-sm font-semibold text-[#1D1D1F]">
+                Welcome back, {activeUserProfile?.name}!
+              </p>
               <p className="text-xs text-[#6E6E73] mt-1">Opening your assessment profile...</p>
             </div>
           ) : (
-            <form onSubmit={handleSubmit}>
-              <div className={styles.inputGroup}>
-                <label className={styles.label}>Email Address</label>
-                <input
-                  type="email"
-                  className={styles.input}
-                  placeholder="name@organization.com"
-                  value={loginEmail}
-                  onChange={(e) => setLoginEmail(e.target.value)}
-                  required
-                />
-              </div>
-
-              <div className={styles.inputGroup}>
-                <div className="flex justify-between items-center mb-1">
-                  <label className={styles.label}>Password</label>
-                  <a href="#forgot" className="text-xs text-[#0071E3] hover:underline">
-                    Forgot?
-                  </a>
-                </div>
-                <PasswordField
-                  value={loginPassword}
-                  onChange={(e) => setLoginPassword(e.target.value)}
-                />
-              </div>
-
-              <button type="submit" className={styles.submitBtn}>
-                Sign In
-              </button>
+            <div>
+              {/* Google One-Click Button */}
+              <Socials onGoogleClick={() => handleGoogleAuth()} isLoading={googleLoading} />
 
               <div className={styles.divider}>
-                <span>or continue with</span>
+                <span>or continue with email</span>
               </div>
 
-              <Socials />
-            </form>
+              <form onSubmit={handleSubmit}>
+                <div className={styles.inputGroup}>
+                  <label className={styles.label}>Email Address</label>
+                  <input
+                    type="email"
+                    className={styles.input}
+                    placeholder="name@organization.com"
+                    value={loginEmail}
+                    onChange={(e) => setLoginEmail(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className={styles.inputGroup}>
+                  <div className="flex justify-between items-center mb-1">
+                    <label className={styles.label}>Password</label>
+                    <a href="#forgot" className="text-xs text-[#0071E3] hover:underline">
+                      Forgot?
+                    </a>
+                  </div>
+                  <PasswordField
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                  />
+                </div>
+
+                <button type="submit" className={styles.submitBtn}>
+                  Sign In
+                </button>
+              </form>
+            </div>
           )}
         </div>
       </div>
