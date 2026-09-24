@@ -14,6 +14,7 @@ class Settings:
     ENVIRONMENT: str = os.getenv("ENVIRONMENT", "development")
     PORT: int = int(os.getenv("PORT", "8000"))
     HOST: str = os.getenv("HOST", "0.0.0.0")
+    MAX_UPLOAD_MB: int = 10
 
     # CORS
     CORS_ORIGINS: List[str] = [

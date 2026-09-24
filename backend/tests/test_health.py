@@ -14,5 +14,5 @@ def test_health_endpoint():
 def test_config_defaults():
     assert "http://localhost:3000" in settings.CORS_ORIGINS
     assert settings.MAX_UPLOAD_MB == 10
-    assert settings.ENV == "development"
+    assert settings.ENVIRONMENT == "development"
     assert settings.GEMINI_MODEL == "gemini-2.5-flash"
