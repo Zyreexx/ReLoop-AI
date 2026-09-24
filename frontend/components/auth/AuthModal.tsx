@@ -92,6 +92,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onClose,
   initialMode = "login",
 }) => {
+  const router = useRouter();
   const { loginWithGoogleSuccess } = useAuth();
   const [isRegister, setIsRegister] = useState(initialMode === "register");
   const [submitted, setSubmitted] = useState(false);
@@ -128,8 +129,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
-
-  const router = useRouter();
 
   // Handle Official Google Sign-In Success (JWT ID Token)
   const handleGoogleSuccess = (credentialResponse: any) => {
