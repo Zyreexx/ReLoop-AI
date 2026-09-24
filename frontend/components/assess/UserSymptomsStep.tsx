@@ -2,11 +2,12 @@
 
 import React, { useState } from "react";
 import { UserObjective, UserSymptomItem, UserSymptomsData } from "@/types/assessment";
-import { Check, DollarSign, Clock, Leaf, Zap } from "lucide-react";
+import { Check, DollarSign, Clock, Leaf, Zap, ArrowLeft } from "lucide-react";
 
 interface UserSymptomsStepProps {
   initialData: UserSymptomsData;
   onComplete: (data: UserSymptomsData) => void;
+  onBack?: () => void;
 }
 
 const AVAILABLE_SYMPTOMS = [
@@ -29,6 +30,7 @@ const AVAILABLE_SYMPTOMS = [
 export const UserSymptomsStep: React.FC<UserSymptomsStepProps> = ({
   initialData,
   onComplete,
+  onBack,
 }) => {
   const [selectedMap, setSelectedMap] = useState<
     Record<string, "never" | "occasionally" | "frequently" | "almost_always">
@@ -262,10 +264,20 @@ export const UserSymptomsStep: React.FC<UserSymptomsStepProps> = ({
         </div>
 
         {/* Submit Step */}
-        <div className="flex justify-end pt-4">
+        <div className="flex items-center justify-between pt-4 gap-4">
+          {onBack ? (
+            <button
+              type="button"
+              onClick={onBack}
+              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full border border-[#D2D2D7] bg-white hover:bg-[#F5F5F7] text-[#1D1D1F] text-sm font-semibold transition-all shadow-xs cursor-pointer"
+            >
+              <ArrowLeft size={16} />
+              <span>Back to Diagnostics</span>
+            </button>
+          ) : <div />}
           <button
             type="submit"
-            className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-[#0071E3] hover:bg-[#0077ED] text-white text-sm font-semibold transition-all shadow-md cursor-pointer"
+            className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-[#0071E3] hover:bg-[#0077ED] text-white text-sm font-semibold transition-all shadow-md cursor-pointer ml-auto"
           >
             <span>Review Assessment →</span>
           </button>

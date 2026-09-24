@@ -17,7 +17,7 @@ import {
   UserSymptomsData,
   VisualInspectionData,
 } from "@/types/assessment";
-import { Lock, ArrowRight, ShieldCheck } from "lucide-react";
+import { Lock, ArrowRight, ShieldCheck, ArrowLeft } from "lucide-react";
 
 export default function AssessDevicePage() {
   const { user } = useAuth();
@@ -139,6 +139,11 @@ export default function AssessDevicePage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  const handleBackStep = () => {
+    setCurrentStep((prev) => Math.max(1, prev - 1));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   const handleGenerateProfile = async () => {
     if (!user) {
       handleOpenAuth("login");
@@ -166,6 +171,12 @@ export default function AssessDevicePage() {
 
       setConditionProfile(data.assessment.conditionProfile);
       setAssessmentId(data.assessment.id);
+      try {
+        localStorage.setItem(`assessment_${data.assessment.id}`, JSON.stringify(data.assessment));
+        localStorage.setItem("current_assessment", JSON.stringify(data.assessment));
+      } catch (err) {
+        console.warn("Could not write assessment to localStorage", err);
+      }
       setCurrentStep(5);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err: any) {
@@ -233,6 +244,19 @@ export default function AssessDevicePage() {
 
             {/* Step Content Router */}
             <div className="pb-20">
+              {currentStep > 1 && currentStep < 5 && (
+                <div className="max-w-4xl mx-auto px-6 pt-4 pb-2">
+                  <button
+                    type="button"
+                    onClick={handleBackStep}
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#6E6E73] hover:text-[#0071E3] transition-colors cursor-pointer group"
+                  >
+                    <ArrowLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
+                    <span>Back to Step {currentStep - 1}</span>
+                  </button>
+                </div>
+              )}
+
               {currentStep === 1 && (
                 <VisualInspectionStep
                   initialData={visualData}
@@ -246,6 +270,7 @@ export default function AssessDevicePage() {
                   manufacturer={visualData.identifiedProduct.manufacturer}
                   initialData={diagnosticsData}
                   onComplete={handleDiagnosticsComplete}
+                  onBack={handleBackStep}
                 />
               )}
 
@@ -253,6 +278,7 @@ export default function AssessDevicePage() {
                 <UserSymptomsStep
                   initialData={symptomsData}
                   onComplete={handleSymptomsComplete}
+                  onBack={handleBackStep}
                 />
               )}
 
@@ -263,6 +289,7 @@ export default function AssessDevicePage() {
                   symptoms={symptomsData}
                   onGenerateProfile={handleGenerateProfile}
                   isGenerating={isGenerating}
+                  onBack={handleBackStep}
                 />
               )}
 

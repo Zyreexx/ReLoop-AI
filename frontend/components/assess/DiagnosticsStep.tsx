@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { HelpCircle, AlertCircle, Info, ChevronDown, ChevronUp, CheckCircle2 } from "lucide-react";
+import { HelpCircle, AlertCircle, Info, ChevronDown, ChevronUp, CheckCircle2, ArrowLeft } from "lucide-react";
 import { DiagnosticData } from "@/types/assessment";
 
 interface DiagnosticsStepProps {
@@ -9,6 +9,7 @@ interface DiagnosticsStepProps {
   manufacturer: string;
   initialData: DiagnosticData;
   onComplete: (data: DiagnosticData) => void;
+  onBack?: () => void;
 }
 
 export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
@@ -16,6 +17,7 @@ export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
   manufacturer,
   initialData,
   onComplete,
+  onBack,
 }) => {
   const [deviceAge, setDeviceAge] = useState<number>(initialData.deviceAgeYears || 4);
 
@@ -523,10 +525,20 @@ export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
         </div>
 
         {/* Submit Step */}
-        <div className="flex justify-end pt-4">
+        <div className="flex items-center justify-between pt-4 gap-4">
+          {onBack ? (
+            <button
+              type="button"
+              onClick={onBack}
+              className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full border border-[#D2D2D7] bg-white hover:bg-[#F5F5F7] text-[#1D1D1F] text-sm font-semibold transition-all shadow-xs cursor-pointer"
+            >
+              <ArrowLeft size={16} />
+              <span>Back to Visual Inspection</span>
+            </button>
+          ) : <div />}
           <button
             type="submit"
-            className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-[#0071E3] hover:bg-[#0077ED] text-white text-sm font-semibold transition-all shadow-md cursor-pointer"
+            className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-[#0071E3] hover:bg-[#0077ED] text-white text-sm font-semibold transition-all shadow-md cursor-pointer ml-auto"
           >
             <span>Continue to User Symptoms →</span>
           </button>

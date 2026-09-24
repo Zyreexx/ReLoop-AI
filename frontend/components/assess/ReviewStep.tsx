@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { DiagnosticData, UserSymptomsData, VisualInspectionData } from "@/types/assessment";
-import { Sparkles, RefreshCw, CheckCircle2, ShieldCheck, AlertCircle } from "lucide-react";
+import { Sparkles, RefreshCw, CheckCircle2, ShieldCheck, AlertCircle, ArrowLeft } from "lucide-react";
 
 interface ReviewStepProps {
   visual: VisualInspectionData;
@@ -10,6 +10,7 @@ interface ReviewStepProps {
   symptoms: UserSymptomsData;
   onGenerateProfile: () => void;
   isGenerating: boolean;
+  onBack?: () => void;
 }
 
 export const ReviewStep: React.FC<ReviewStepProps> = ({
@@ -18,6 +19,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
   symptoms,
   onGenerateProfile,
   isGenerating,
+  onBack,
 }) => {
   const objectiveTitles: Record<string, string> = {
     lowest_cost: "Lowest cost",
@@ -223,24 +225,37 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
             </p>
           </div>
 
-          <button
-            type="button"
-            disabled={isGenerating}
-            onClick={onGenerateProfile}
-            className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-[#0071E3] hover:bg-[#0077ED] text-white text-sm font-semibold transition-all shadow-md cursor-pointer shrink-0"
-          >
-            {isGenerating ? (
-              <>
-                <RefreshCw className="w-4 h-4 animate-spin" />
-                <span>Processing Evidence...</span>
-              </>
-            ) : (
-              <>
-                <Sparkles className="w-4 h-4" />
-                <span>Generate Condition Profile</span>
-              </>
+          <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
+            {onBack && (
+              <button
+                type="button"
+                onClick={onBack}
+                disabled={isGenerating}
+                className="inline-flex items-center gap-2 px-5 py-3.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-sm font-semibold transition-all cursor-pointer disabled:opacity-50"
+              >
+                <ArrowLeft size={16} />
+                <span>Back</span>
+              </button>
             )}
-          </button>
+            <button
+              type="button"
+              disabled={isGenerating}
+              onClick={onGenerateProfile}
+              className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-[#0071E3] hover:bg-[#0077ED] text-white text-sm font-semibold transition-all shadow-md cursor-pointer shrink-0"
+            >
+              {isGenerating ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <span>Processing Evidence...</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4" />
+                  <span>Generate Condition Profile</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
     </div>

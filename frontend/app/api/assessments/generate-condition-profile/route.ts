@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { saveAssessment } from "@/lib/assessmentsStore";
 import {
   ComponentConditionRecord,
   DiagnosticData,
@@ -282,6 +283,8 @@ export async function POST(req: NextRequest) {
       symptoms,
       conditionProfile,
     };
+
+    saveAssessment(assessmentRecord.id, assessmentRecord);
 
     return NextResponse.json({
       success: true,

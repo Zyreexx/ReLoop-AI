@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { Providers } from "@/components/providers/Providers";
+import { BackgroundLightEffect } from "@/components/ui/BackgroundLightEffect";
 import "./globals.css";
 
 const inter = Inter({
@@ -31,8 +32,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${inter.variable} scroll-smooth`}>
-      <body className="min-h-screen flex flex-col font-sans antialiased bg-[#F5F5F7] text-[#1D1D1F]">
-        <Providers>{children}</Providers>
+      <body className="min-h-screen flex flex-col font-sans antialiased bg-[#F5F5F7] text-[#1D1D1F] relative">
+        <Providers>
+          <BackgroundLightEffect />
+          {children}
+        </Providers>
       </body>
     </html>
   );

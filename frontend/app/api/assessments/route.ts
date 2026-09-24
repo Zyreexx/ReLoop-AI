@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-
-// Simple server-side in-memory cache for prototype sessions
-const assessmentsStore = new Map<string, any>();
+import { saveAssessment, getAssessment } from "@/lib/assessmentsStore";
 
 export async function POST(req: NextRequest) {
   try {
@@ -15,7 +13,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    assessmentsStore.set(id, body);
+    saveAssessment(id, body);
 
     return NextResponse.json({
       success: true,
@@ -38,7 +36,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Assessment ID missing" }, { status: 400 });
   }
 
-  const found = assessmentsStore.get(id);
+  const found = getAssessment(id);
   if (!found) {
     return NextResponse.json({ error: "Assessment not found" }, { status: 404 });
   }
