@@ -64,14 +64,16 @@ export const IntakeWorkflowSection: React.FC = () => {
   ];
 
   return (
-    <section id="how-it-works" className="py-20 md:py-28 bg-[#F5F5F7]">
+    <section id="how-it-works" className="py-24 md:py-36 bg-[#FBFBFD] border-b border-[#E5E5E7] relative">
       <div className="max-w-6xl mx-auto px-6">
-        {/* Apple-style Section Header */}
+        {/* Apple-style Section Header with Index Marker */}
         <div className="text-center max-w-3xl mx-auto mb-16">
-          <span className="text-xs font-semibold uppercase tracking-wider text-[#0071E3] block mb-2">
-            Evidence Provenance
-          </span>
-          <h2 className="text-[32px] sm:text-[44px] md:text-[50px] font-bold text-[#1D1D1F] tracking-tight leading-tight mb-4">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-[#E5E5E7] text-[11px] font-mono font-bold text-[#6E6E73] mb-4 shadow-2xs">
+            <span>SECTION 02</span>
+            <span>•</span>
+            <span className="text-[#0071E3]">EVIDENCE INTAKE & PROVENANCE</span>
+          </div>
+          <h2 className="text-[34px] sm:text-[46px] md:text-[52px] font-bold text-[#1D1D1F] tracking-tight leading-tight mb-4">
             How ReLoop builds the ground truth.
           </h2>
           <p className="text-[17px] text-[#6E6E73] leading-relaxed">

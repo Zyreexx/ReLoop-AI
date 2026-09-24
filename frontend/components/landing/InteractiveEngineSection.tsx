@@ -236,14 +236,16 @@ export const InteractiveEngineSection: React.FC<{ onOpenAuth: (mode: "login" | "
   const winner = pathwayResults.find((p) => p.recommended) || pathwayResults[0];
 
   return (
-    <section id="live-engine" className="py-20 md:py-28 bg-[#FFFFFF]">
+    <section id="live-engine" className="py-24 md:py-36 bg-white border-b border-[#E5E5E7] relative">
       <div className="max-w-6xl mx-auto px-6">
-        {/* Section Header */}
-        <div className="text-center max-w-3xl mx-auto mb-14">
-          <span className="text-xs font-semibold uppercase tracking-wider text-[#0071E3] block mb-2">
-            Deterministic Decision Engine
-          </span>
-          <h2 className="text-[32px] sm:text-[44px] md:text-[50px] font-bold text-[#1D1D1F] tracking-tight leading-tight mb-4">
+        {/* Section Header with Index Marker */}
+        <div className="text-center max-w-3xl mx-auto mb-16">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#F5F5F7] border border-[#E5E5E7] text-[11px] font-mono font-bold text-[#6E6E73] mb-4">
+            <span>SECTION 03</span>
+            <span>•</span>
+            <span className="text-[#0071E3]">INTERACTIVE SCORING ENGINE</span>
+          </div>
+          <h2 className="text-[34px] sm:text-[46px] md:text-[52px] font-bold text-[#1D1D1F] tracking-tight leading-tight mb-4">
             Test the optimizer in real time.
           </h2>
           <p className="text-[17px] text-[#6E6E73] leading-relaxed">
