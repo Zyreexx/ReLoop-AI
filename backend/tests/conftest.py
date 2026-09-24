@@ -18,6 +18,38 @@ from app.schemas.evidence import EvidenceItem
 from app.schemas.condition import ComponentCondition, ConditionProfile
 
 
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
+from app.db.base import Base
+from app.db.session import get_db
+
+test_engine = create_engine(
+    "sqlite:///:memory:",
+    connect_args={"check_same_thread": False},
+    poolclass=StaticPool,
+)
+TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)
+
+
+@pytest.fixture(autouse=True)
+def setup_test_db():
+    """Setup clean in-memory SQLite database and override get_db dependency for tests."""
+    Base.metadata.create_all(bind=test_engine)
+
+    def override_get_db():
+        db = TestingSessionLocal()
+        try:
+            yield db
+        finally:
+            db.close()
+
+    app.dependency_overrides[get_db] = override_get_db
+    yield
+    Base.metadata.drop_all(bind=test_engine)
+    app.dependency_overrides.clear()
+
+
 @pytest.fixture(autouse=True)
 def clean_store():
     """Reset in-memory store before each test run."""
@@ -28,7 +60,8 @@ def clean_store():
 
 @pytest.fixture
 def client():
-    return TestClient(app)
+    with TestClient(app) as c:
+        yield c
 
 
 @pytest.fixture

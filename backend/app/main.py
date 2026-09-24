@@ -7,8 +7,23 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from app.config import settings
-from app.schemas.errors import AppException
 from app.api.routes import api_router
+from contextlib import asynccontextmanager
+from app.db.session import create_all_tables
+import logging
+
+logger = logging.getLogger("reloop-ai")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    try:
+        logger.info("Creating database tables on startup...")
+        create_all_tables()
+    except Exception as e:
+        logger.warning(f"Could not initialize database tables on startup: {e}")
+    yield
+
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -16,6 +31,7 @@ app = FastAPI(
     version=settings.VERSION,
     docs_url="/docs",
     redoc_url="/redoc",
+    lifespan=lifespan,
 )
 
 
