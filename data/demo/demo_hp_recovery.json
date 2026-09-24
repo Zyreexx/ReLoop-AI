@@ -1,0 +1,56 @@
+{
+  "id": "demo-hp-elitebook-recovery",
+  "title": "Damaged Enterprise HP EliteBook 840 G7 - Component Recovery",
+  "product": {
+    "manufacturer": "HP",
+    "model": "EliteBook 840 G7",
+    "model_year": 2020,
+    "age_years": 5.2,
+    "category": "LAPTOP",
+    "slug": "hp-elitebook-840-g7"
+  },
+  "vision_findings": {
+    "basis": "assumption",
+    "image_names": ["hp_cracked_lid.jpg"],
+    "visible_damages": [
+      {
+        "component": "DISPLAY",
+        "description": "Severely shattered LCD glass panel and broken left hinge.",
+        "severity": "HIGH",
+        "confidence": 0.95
+      }
+    ]
+  },
+  "diagnostics": {
+    "basis": "assumption",
+    "battery": {
+      "design_capacity_mwh": 53000,
+      "full_charge_capacity_mwh": 46000,
+      "cycle_count": 220,
+      "health_percent": 86.8
+    },
+    "ssd": {
+      "health_percent": 98.0,
+      "power_on_hours": 3200,
+      "tbw_written": 14.5
+    },
+    "ram": {
+      "test_result": "PASS",
+      "size_gb": 32,
+      "errors_found": 0
+    },
+    "thermals": {
+      "max_temp_c": 70.0,
+      "throttling_detected": false
+    },
+    "system": {
+      "critical_errors": []
+    }
+  },
+  "user_symptoms": {
+    "basis": "assumption",
+    "reported_issues": [
+      "Screen is shattered and hinge is completely sheared off after accidental drop"
+    ]
+  }
+}

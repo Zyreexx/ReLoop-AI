@@ -1,0 +1,56 @@
+{
+  "id": "demo-macbook-air-recycle",
+  "title": "Water Damaged Apple MacBook Air M1 - Responsible Material Recycling",
+  "product": {
+    "manufacturer": "Apple",
+    "model": "MacBook Air M1",
+    "model_year": 2020,
+    "age_years": 5.5,
+    "category": "LAPTOP",
+    "slug": "macbook-air-m1"
+  },
+  "vision_findings": {
+    "basis": "assumption",
+    "image_names": ["macbook_liquid.jpg"],
+    "visible_damages": [
+      {
+        "component": "CHASSIS",
+        "description": "Corrosion marks around USB-C ports and keyboard backlight discoloration.",
+        "severity": "HIGH",
+        "confidence": 0.92
+      }
+    ]
+  },
+  "diagnostics": {
+    "basis": "assumption",
+    "battery": {
+      "design_capacity_mwh": 49900,
+      "full_charge_capacity_mwh": 0,
+      "cycle_count": 980,
+      "health_percent": 0.0
+    },
+    "ssd": {
+      "health_percent": 0.0,
+      "power_on_hours": 0,
+      "tbw_written": 0.0
+    },
+    "ram": {
+      "test_result": "FAIL",
+      "size_gb": 8,
+      "errors_found": 999
+    },
+    "thermals": {
+      "max_temp_c": 105.0,
+      "throttling_detected": true
+    },
+    "system": {
+      "critical_errors": ["PMIC_SHORT", "NAND_UNREACHABLE", "BATTERY_DISCONNECTED"]
+    }
+  },
+  "user_symptoms": {
+    "basis": "assumption",
+    "reported_issues": [
+      "Severe liquid spill, unit does not power on, burnt smell"
+    ]
+  }
+}

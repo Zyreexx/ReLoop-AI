@@ -1,0 +1,59 @@
+{
+  "id": "demo-dell-latitude-repair",
+  "title": "Corporate Fleet Dell Latitude 5420 - Component Repair Pathway",
+  "product": {
+    "manufacturer": "Dell",
+    "model": "Latitude 5420",
+    "model_year": 2021,
+    "age_years": 4.5,
+    "category": "LAPTOP",
+    "slug": "dell-latitude-5420"
+  },
+  "vision_findings": {
+    "basis": "assumption",
+    "image_names": ["dell_front.jpg", "dell_keyboard.jpg"],
+    "visible_damages": [
+      {
+        "component": "KEYBOARD",
+        "description": "Loose keycaps on left spacebar and worn key labeling.",
+        "severity": "MODERATE",
+        "confidence": 0.88
+      }
+    ]
+  },
+  "diagnostics": {
+    "basis": "assumption",
+    "battery": {
+      "design_capacity_mwh": 54000,
+      "full_charge_capacity_mwh": 31000,
+      "cycle_count": 820,
+      "health_percent": 57.4
+    },
+    "ssd": {
+      "health_percent": 94.0,
+      "power_on_hours": 9400,
+      "tbw_written": 42.5
+    },
+    "ram": {
+      "test_result": "PASS",
+      "size_gb": 16,
+      "errors_found": 0
+    },
+    "thermals": {
+      "max_temp_c": 96.0,
+      "throttling_detected": true,
+      "fan_rpm_nominal": true
+    },
+    "system": {
+      "critical_errors": [],
+      "bios_version_ok": true
+    }
+  },
+  "user_symptoms": {
+    "basis": "assumption",
+    "reported_issues": [
+      "Battery drains in under 1.5 hours",
+      "Laptop gets uncomfortably hot and fans run loudly"
+    ]
+  }
+}

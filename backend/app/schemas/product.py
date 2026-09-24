@@ -68,24 +68,36 @@ class ProductIdentifyRequest(BaseModel):
     image_base64: Optional[List[str]] = Field(default_factory=list)
     hint: Optional[str] = None
     manual_model: Optional[str] = None
+    model_id: Optional[str] = None
     serial_or_identifier: Optional[str] = None
 
     @model_validator(mode="before")
     @classmethod
     def reconcile_hints(cls, values):
         if isinstance(values, dict):
-            if not values.get("hint") and values.get("manual_model"):
-                values["hint"] = values["manual_model"]
-            elif not values.get("manual_model") and values.get("hint"):
-                values["manual_model"] = values["hint"]
+            target = values.get("manual_model") or values.get("model_id") or values.get("hint")
+            if target:
+                if not values.get("manual_model"):
+                    values["manual_model"] = target
+                if not values.get("hint"):
+                    values["hint"] = target
+                if not values.get("model_id"):
+                    values["model_id"] = target
         return values
 
 
 class ProductIdentifyResponse(BaseModel):
-    identified_model: ProductCandidate
-    alternative_models: List[ProductCandidate] = Field(default_factory=list)
+    identified_model: Optional[ProductCandidate] = None
+    is_supported: bool = True
+    confidence: float = 0.85
+    visible_label_text: Optional[str] = None
     visual_clues: List[str] = Field(default_factory=list)
+    needs_confirmation: bool = True
     requires_user_confirmation: bool = True
+    alternative_models: List[ProductCandidate] = Field(default_factory=list)
+    supported_models: List[ProductCandidate] = Field(default_factory=list)
+    message: Optional[str] = None
+
 
 
 # Aliases
