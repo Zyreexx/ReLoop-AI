@@ -45,21 +45,21 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth }) => {
 
           {/* Desktop Navigation Links */}
           <nav className="hidden md:flex items-center gap-7 text-[13px] font-medium text-[#6E6E73]">
-            <a href="#overview" className="hover:text-[#1D1D1F] transition-colors">
+            <Link href="/" className="hover:text-[#1D1D1F] transition-colors">
               Overview
-            </a>
-            <a href="#pathways" className="hover:text-[#1D1D1F] transition-colors">
+            </Link>
+            <Link href="/pathways" className="hover:text-[#1D1D1F] transition-colors">
               6 Pathways
-            </a>
-            <a href="#how-it-works" className="hover:text-[#1D1D1F] transition-colors">
+            </Link>
+            <Link href="/how-it-works" className="hover:text-[#1D1D1F] transition-colors">
               How It Works
-            </a>
-            <a href="#live-engine" className="hover:text-[#1D1D1F] transition-colors">
-              Interactive Engine
-            </a>
-            <a href="#philosophy" className="hover:text-[#1D1D1F] transition-colors">
+            </Link>
+            <Link href="/engine" className="hover:text-[#1D1D1F] transition-colors">
+              Decision Engine
+            </Link>
+            <Link href="/philosophy" className="hover:text-[#1D1D1F] transition-colors">
               Philosophy
-            </a>
+            </Link>
           </nav>
 
           {/* Actions */}
@@ -95,41 +95,41 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth }) => {
         {/* Mobile dropdown */}
         {mobileMenuOpen && (
           <div className="md:hidden bg-white/95 backdrop-blur-xl border-b border-[#E5E5E7] px-6 py-4 flex flex-col gap-3 shadow-lg">
-            <a
-              href="#overview"
+            <Link
+              href="/"
               onClick={() => setMobileMenuOpen(false)}
               className="text-[15px] font-medium text-[#1D1D1F] py-1.5"
             >
               Overview
-            </a>
-            <a
-              href="#pathways"
+            </Link>
+            <Link
+              href="/pathways"
               onClick={() => setMobileMenuOpen(false)}
               className="text-[15px] font-medium text-[#1D1D1F] py-1.5"
             >
               6 Circular Pathways
-            </a>
-            <a
-              href="#how-it-works"
+            </Link>
+            <Link
+              href="/how-it-works"
               onClick={() => setMobileMenuOpen(false)}
               className="text-[15px] font-medium text-[#1D1D1F] py-1.5"
             >
               How It Works
-            </a>
-            <a
-              href="#live-engine"
+            </Link>
+            <Link
+              href="/engine"
               onClick={() => setMobileMenuOpen(false)}
               className="text-[15px] font-medium text-[#1D1D1F] py-1.5"
             >
-              Interactive Engine
-            </a>
-            <a
-              href="#philosophy"
+              Decision Engine
+            </Link>
+            <Link
+              href="/philosophy"
               onClick={() => setMobileMenuOpen(false)}
               className="text-[15px] font-medium text-[#1D1D1F] py-1.5"
             >
               Philosophy
-            </a>
+            </Link>
             <div className="pt-3 border-t border-[#E5E5E7] flex flex-col gap-2">
               <button
                 type="button"
