@@ -1,0 +1,188 @@
+{
+  "case_id": "demo-02-repairable",
+  "demo_file": "demo_02_repairable.json",
+  "title": "Repairable Enterprise Laptop \u2014 Battery, Thermal & Keyboard Service",
+  "product": {
+    "manufacturer": "Dell",
+    "model": "Latitude 5420",
+    "model_year": 2021
+  },
+  "objectives": {
+    "LOWEST_COST": {
+      "selected_pathway": "REUSE",
+      "primary_score": 81.7,
+      "ranked_pathways": [
+        "REUSE",
+        "REPAIR",
+        "COMPONENT_RECOVERY",
+        "REFURBISH",
+        "UPGRADE",
+        "RECYCLE"
+      ],
+      "scored_ranking": [
+        {
+          "rank": 1,
+          "pathway": "REUSE",
+          "score": 81.7
+        },
+        {
+          "rank": 2,
+          "pathway": "REPAIR",
+          "score": 72.0
+        },
+        {
+          "rank": 3,
+          "pathway": "COMPONENT_RECOVERY",
+          "score": 65.7
+        },
+        {
+          "rank": 4,
+          "pathway": "REFURBISH",
+          "score": 64.0
+        },
+        {
+          "rank": 5,
+          "pathway": "UPGRADE",
+          "score": 63.0
+        },
+        {
+          "rank": 6,
+          "pathway": "RECYCLE",
+          "score": 7.5
+        }
+      ]
+    },
+    "MAX_LIFE": {
+      "selected_pathway": "REPAIR",
+      "primary_score": 79.0,
+      "ranked_pathways": [
+        "REPAIR",
+        "REFURBISH",
+        "REUSE",
+        "UPGRADE",
+        "COMPONENT_RECOVERY",
+        "RECYCLE"
+      ],
+      "scored_ranking": [
+        {
+          "rank": 1,
+          "pathway": "REPAIR",
+          "score": 79.0
+        },
+        {
+          "rank": 2,
+          "pathway": "REFURBISH",
+          "score": 77.0
+        },
+        {
+          "rank": 3,
+          "pathway": "REUSE",
+          "score": 73.0
+        },
+        {
+          "rank": 4,
+          "pathway": "UPGRADE",
+          "score": 62.2
+        },
+        {
+          "rank": 5,
+          "pathway": "COMPONENT_RECOVERY",
+          "score": 49.9
+        },
+        {
+          "rank": 6,
+          "pathway": "RECYCLE",
+          "score": 3.0
+        }
+      ]
+    },
+    "ENVIRONMENTAL": {
+      "selected_pathway": "REPAIR",
+      "primary_score": 82.2,
+      "ranked_pathways": [
+        "REPAIR",
+        "REUSE",
+        "REFURBISH",
+        "UPGRADE",
+        "COMPONENT_RECOVERY",
+        "RECYCLE"
+      ],
+      "scored_ranking": [
+        {
+          "rank": 1,
+          "pathway": "REPAIR",
+          "score": 82.2
+        },
+        {
+          "rank": 2,
+          "pathway": "REUSE",
+          "score": 81.8
+        },
+        {
+          "rank": 3,
+          "pathway": "REFURBISH",
+          "score": 80.7
+        },
+        {
+          "rank": 4,
+          "pathway": "UPGRADE",
+          "score": 69.7
+        },
+        {
+          "rank": 5,
+          "pathway": "COMPONENT_RECOVERY",
+          "score": 47.8
+        },
+        {
+          "rank": 6,
+          "pathway": "RECYCLE",
+          "score": 2.8
+        }
+      ]
+    },
+    "FASTEST_RECOVERY": {
+      "selected_pathway": "REUSE",
+      "primary_score": 79.2,
+      "ranked_pathways": [
+        "REUSE",
+        "REPAIR",
+        "UPGRADE",
+        "REFURBISH",
+        "COMPONENT_RECOVERY",
+        "RECYCLE"
+      ],
+      "scored_ranking": [
+        {
+          "rank": 1,
+          "pathway": "REUSE",
+          "score": 79.2
+        },
+        {
+          "rank": 2,
+          "pathway": "REPAIR",
+          "score": 77.3
+        },
+        {
+          "rank": 3,
+          "pathway": "UPGRADE",
+          "score": 72.4
+        },
+        {
+          "rank": 4,
+          "pathway": "REFURBISH",
+          "score": 66.1
+        },
+        {
+          "rank": 5,
+          "pathway": "COMPONENT_RECOVERY",
+          "score": 60.2
+        },
+        {
+          "rank": 6,
+          "pathway": "RECYCLE",
+          "score": 6.8
+        }
+      ]
+    }
+  }
+}
