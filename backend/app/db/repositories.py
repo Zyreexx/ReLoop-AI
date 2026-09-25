@@ -35,6 +35,22 @@ class ProductRepository:
             specs_dict = data.specs.model_dump() if hasattr(data.specs, "model_dump") else data.specs
             age = data.age
             cat = data.category.value if hasattr(data.category, "value") else str(data.category)
+
+            # Idempotency check by ID
+            existing = db.query(ProductModel).filter(ProductModel.id == prod_id).first()
+            if existing:
+                return ProductRepository._to_schema(existing)
+
+            # Idempotency check by serial_or_identifier
+            if data.serial_or_identifier:
+                existing_serial = (
+                    db.query(ProductModel)
+                    .filter(ProductModel.serial_or_identifier == data.serial_or_identifier)
+                    .first()
+                )
+                if existing_serial:
+                    return ProductRepository._to_schema(existing_serial)
+
             entity = ProductModel(
                 id=prod_id,
                 manufacturer=data.manufacturer,
@@ -48,8 +64,23 @@ class ProductRepository:
             )
         else:
             specs_dict = ProductSpecs().model_dump()
-            age = data.age_years if data.age_years is not None else (data.age if data.age is not None else max(0.5, float(2026 - data.model_year)))
+            age = (
+                data.age_years
+                if data.age_years is not None
+                else (data.age if data.age is not None else max(0.5, float(2026 - data.model_year)))
+            )
             cat = data.category.value if hasattr(data.category, "value") else str(data.category)
+
+            # Idempotency check by serial_or_identifier
+            if data.serial_or_identifier:
+                existing_serial = (
+                    db.query(ProductModel)
+                    .filter(ProductModel.serial_or_identifier == data.serial_or_identifier)
+                    .first()
+                )
+                if existing_serial:
+                    return ProductRepository._to_schema(existing_serial)
+
             entity = ProductModel(
                 manufacturer=data.manufacturer,
                 model=data.model,
@@ -281,8 +312,29 @@ class AssessmentRepository:
 class RecommendationRepository:
     @staticmethod
     def save(db: Session, rec: Recommendation) -> Recommendation:
-        p_pathway = rec.selected_pathway.value if hasattr(rec.selected_pathway, "value") else str(rec.selected_pathway)
-        obj_str = rec.objective.value if hasattr(rec.objective, "value") else str(rec.objective)
+        p_pathway = (
+            rec.selected_pathway.value
+            if hasattr(rec.selected_pathway, "value")
+            else str(rec.selected_pathway)
+        )
+        obj_str = (
+            rec.objective.value
+            if hasattr(rec.objective, "value")
+            else str(rec.objective)
+        )
+
+        # Idempotent cleanup of prior recommendation for this ID or product
+        existing = (
+            db.query(RecommendationModel)
+            .filter(
+                (RecommendationModel.id == rec.id)
+                | (RecommendationModel.product_id == rec.product_id)
+            )
+            .first()
+        )
+        if existing:
+            db.delete(existing)
+            db.commit()
 
         entity = RecommendationModel(
             id=rec.id,
