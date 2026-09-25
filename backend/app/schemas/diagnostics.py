@@ -126,6 +126,23 @@ class SystemDiagnostic(BaseModel):
     critical_errors: List[str] = Field(default_factory=list)
     post_successful: bool = True
     motherboard_power_stable: bool = True
+    uefi_post_status: Optional[str] = None
+    power_rails: Optional[str] = None
+    status: Optional[str] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def sync_aliases(cls, values):
+        if isinstance(values, dict):
+            if "uefi_post_status" in values:
+                val = str(values["uefi_post_status"]).upper()
+                values["post_successful"] = (val == "PASS")
+            if "power_rails" in values:
+                val = str(values["power_rails"]).upper()
+                values["motherboard_power_stable"] = (val not in ["SHORTED", "FAIL", "FAULT"])
+            if "status" in values and str(values["status"]).upper() in ["REPLACE", "FAIL", "DAMAGED"]:
+                values["post_successful"] = False
+        return values
 
 
 class DiagnosticsValidateRequest(BaseModel):
@@ -136,6 +153,15 @@ class DiagnosticsValidateRequest(BaseModel):
     ram: Optional[RamDiagnostic] = None
     thermals: Optional[ThermalDiagnostic] = None
     system: Optional[SystemDiagnostic] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def unpack_nested_diagnostics(cls, values):
+        if isinstance(values, dict) and "diagnostics" in values and isinstance(values["diagnostics"], dict):
+            diag_map = values["diagnostics"]
+            merged = {**diag_map, **values}
+            return merged
+        return values
 
 
 class DiagnosticsValidateResponse(BaseModel):

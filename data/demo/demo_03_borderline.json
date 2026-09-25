@@ -100,8 +100,8 @@
     "note": "Simulated user intake survey responses."
   },
   "expected_pathway": {
-    "primary": "REFURBISH",
-    "alternative": "UPGRADE",
+    "primary": "REPAIR",
+    "alternative": "REFURBISH",
     "key_interventions": [
       "Install new 53Wh battery",
       "Upgrade RAM from 8GB to 16GB via secondary open SO-DIMM slot",
