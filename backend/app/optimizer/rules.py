@@ -187,8 +187,9 @@ def evaluate_recycle_eligibility(
     ineligible_reasons: List[str] = []
 
     system_cond = profile.get_component("system")
-    is_catastrophic = (
-        system_cond and system_cond.status == ComponentStatus.REPLACE_REQUIRED
+    is_catastrophic = bool(
+        system_cond
+        and system_cond.status == ComponentStatus.REPLACE_REQUIRED
         and not specs.ram_modular
         and not specs.ssd_modular
     )
@@ -202,7 +203,7 @@ def evaluate_recycle_eligibility(
             "Higher-value circular loops are exhausted or non-viable. Material recovery and certified WEEE recycling is appropriate to reclaim copper, aluminum, gold, and polymers."
         )
 
-    is_eligible = not higher_pathways_viable or is_catastrophic
+    is_eligible = bool(not higher_pathways_viable or is_catastrophic)
     return PathwayEligibility(
         is_eligible=is_eligible,
         reasons=reasons,

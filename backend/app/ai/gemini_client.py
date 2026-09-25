@@ -297,6 +297,35 @@ class GeminiClient:
             results.append({"component": "system", "symptom": "Lifecycle check", "severity": "LOW", "user_statement": "General check"})
         return results
 
+    def generate_explanation(
+        self,
+        pathway: str,
+        model: str,
+        objective: str,
+        evidence_summary: str,
+        life_extension: str,
+        cost: str,
+        co2_avoided: str,
+    ) -> Optional[Any]:
+        """
+        Generates structured AI explanation using Gemini when live.
+        """
+        if self.is_live:
+            from app.ai.prompt_loader import load_prompt
+            from app.ai.schemas import ExplanationOutput
+            prompt_obj = load_prompt("explanation", "v1")
+            formatted = prompt_obj.format(
+                pathway=pathway,
+                model=model,
+                objective=objective,
+                evidence_summary=evidence_summary,
+                life_extension=life_extension,
+                cost=cost,
+                co2_avoided=co2_avoided,
+            )
+            return self.generate_structured(formatted, ExplanationOutput)
+        return None
+
     def explain_recommendation(
         self, pathway: str, model: str, objective: str, evidence_summary: str, life_extension: str, cost: str, co2_avoided: str
     ) -> str:

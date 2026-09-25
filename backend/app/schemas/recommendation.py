@@ -4,11 +4,21 @@ Recommendation: selected_pathway, objective, score, alternative_pathways, reason
 And section 9 POST /api/recommendations/generate and GET /api/reports/{id}.
 """
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 from uuid import uuid4
 from pydantic import BaseModel, Field, model_validator
 from app.schemas.enums import Objective, PathwayType
 from app.schemas.pathway import Pathway
+
+
+class RecommendationExplanation(BaseModel):
+    summary: str
+    details: List[str] = Field(default_factory=list)
+    assumptions: List[str] = Field(default_factory=list)
+    source: Literal["ai", "template"] = "template"
+
+
+ExplanationPayload = RecommendationExplanation
 
 
 class ScoredPathway(BaseModel):
@@ -49,6 +59,7 @@ class Recommendation(BaseModel):
     )
     evidence_ids: List[str] = Field(default_factory=list)
     assumptions: List[str] = Field(default_factory=list)
+    explanation: Optional[RecommendationExplanation] = None
 
     # UI and enrichment helpers
     primary_recommendation: Optional[ScoredPathway] = None

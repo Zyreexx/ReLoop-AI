@@ -142,6 +142,7 @@ class RecommendationRecord(Base):
     evidence_ids = Column(JSON, nullable=True)
     assumptions = Column(JSON, nullable=True)
     primary_recommendation = Column(JSON, nullable=True)
+    explanation = Column(JSON, nullable=True)
     second_life = Column(JSON, nullable=True)
     component_recovery = Column(JSON, nullable=True)
     created_at = Column(

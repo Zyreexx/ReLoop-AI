@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 
 from app.schemas.condition import ConditionProfile
 from app.schemas.product import Product
-from app.schemas.recommendation import Recommendation, ScoredPathway
+from app.schemas.recommendation import Recommendation, RecommendationExplanation, ScoredPathway
 
 
 class ReportImpactEstimates(BaseModel):
@@ -36,6 +36,7 @@ class ConditionReportResponse(BaseModel):
     impact_estimates: ReportImpactEstimates
     assumptions: List[str] = Field(default_factory=list)
     data_gaps: List[str] = Field(default_factory=list)
+    explanation: Optional[RecommendationExplanation] = None
     disclaimer: str = "Demo baseline assumptions, not verified market data. Estimates are derived from deterministic model parameters."
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
