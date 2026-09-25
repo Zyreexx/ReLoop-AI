@@ -1,0 +1,188 @@
+{
+  "case_id": "demo-01-healthy",
+  "demo_file": "demo_01_healthy.json",
+  "title": "Healthy Corporate Workhorse \u2014 Second Life & Redeployment",
+  "product": {
+    "manufacturer": "Lenovo",
+    "model": "ThinkPad T14 Gen 1",
+    "model_year": 2021
+  },
+  "objectives": {
+    "LOWEST_COST": {
+      "selected_pathway": "REUSE",
+      "primary_score": 81.7,
+      "ranked_pathways": [
+        "REUSE",
+        "REFURBISH",
+        "UPGRADE",
+        "COMPONENT_RECOVERY",
+        "REPAIR",
+        "RECYCLE"
+      ],
+      "scored_ranking": [
+        {
+          "rank": 1,
+          "pathway": "REUSE",
+          "score": 81.7
+        },
+        {
+          "rank": 2,
+          "pathway": "REFURBISH",
+          "score": 75.7
+        },
+        {
+          "rank": 3,
+          "pathway": "UPGRADE",
+          "score": 70.0
+        },
+        {
+          "rank": 4,
+          "pathway": "COMPONENT_RECOVERY",
+          "score": 65.7
+        },
+        {
+          "rank": 5,
+          "pathway": "REPAIR",
+          "score": 12.5
+        },
+        {
+          "rank": 6,
+          "pathway": "RECYCLE",
+          "score": 7.5
+        }
+      ]
+    },
+    "MAX_LIFE": {
+      "selected_pathway": "REFURBISH",
+      "primary_score": 80.0,
+      "ranked_pathways": [
+        "REFURBISH",
+        "UPGRADE",
+        "REUSE",
+        "COMPONENT_RECOVERY",
+        "REPAIR",
+        "RECYCLE"
+      ],
+      "scored_ranking": [
+        {
+          "rank": 1,
+          "pathway": "REFURBISH",
+          "score": 80.0
+        },
+        {
+          "rank": 2,
+          "pathway": "UPGRADE",
+          "score": 74.4
+        },
+        {
+          "rank": 3,
+          "pathway": "REUSE",
+          "score": 73.0
+        },
+        {
+          "rank": 4,
+          "pathway": "COMPONENT_RECOVERY",
+          "score": 49.9
+        },
+        {
+          "rank": 5,
+          "pathway": "REPAIR",
+          "score": 12.3
+        },
+        {
+          "rank": 6,
+          "pathway": "RECYCLE",
+          "score": 3.0
+        }
+      ]
+    },
+    "ENVIRONMENTAL": {
+      "selected_pathway": "REFURBISH",
+      "primary_score": 82.2,
+      "ranked_pathways": [
+        "REFURBISH",
+        "REUSE",
+        "UPGRADE",
+        "COMPONENT_RECOVERY",
+        "REPAIR",
+        "RECYCLE"
+      ],
+      "scored_ranking": [
+        {
+          "rank": 1,
+          "pathway": "REFURBISH",
+          "score": 82.2
+        },
+        {
+          "rank": 2,
+          "pathway": "REUSE",
+          "score": 81.8
+        },
+        {
+          "rank": 3,
+          "pathway": "UPGRADE",
+          "score": 76.7
+        },
+        {
+          "rank": 4,
+          "pathway": "COMPONENT_RECOVERY",
+          "score": 47.8
+        },
+        {
+          "rank": 5,
+          "pathway": "REPAIR",
+          "score": 12.5
+        },
+        {
+          "rank": 6,
+          "pathway": "RECYCLE",
+          "score": 2.8
+        }
+      ]
+    },
+    "FASTEST_RECOVERY": {
+      "selected_pathway": "REUSE",
+      "primary_score": 79.2,
+      "ranked_pathways": [
+        "REUSE",
+        "UPGRADE",
+        "REFURBISH",
+        "COMPONENT_RECOVERY",
+        "REPAIR",
+        "RECYCLE"
+      ],
+      "scored_ranking": [
+        {
+          "rank": 1,
+          "pathway": "REUSE",
+          "score": 79.2
+        },
+        {
+          "rank": 2,
+          "pathway": "UPGRADE",
+          "score": 77.7
+        },
+        {
+          "rank": 3,
+          "pathway": "REFURBISH",
+          "score": 70.5
+        },
+        {
+          "rank": 4,
+          "pathway": "COMPONENT_RECOVERY",
+          "score": 60.2
+        },
+        {
+          "rank": 5,
+          "pathway": "REPAIR",
+          "score": 12.3
+        },
+        {
+          "rank": 6,
+          "pathway": "RECYCLE",
+          "score": 6.8
+        }
+      ]
+    }
+  }
+}
