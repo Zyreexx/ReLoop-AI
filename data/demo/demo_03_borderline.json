@@ -1,0 +1,115 @@
+{
+  "id": "demo-03-borderline",
+  "title": "Borderline 5-Year Fleet Unit — Refurbish vs Targeted Upgrade",
+  "product": {
+    "manufacturer": "HP",
+    "model": "EliteBook 840 G7",
+    "slug": "hp-elitebook-840-g7",
+    "model_year": 2020,
+    "category": "LAPTOP",
+    "age_years": 5.0,
+    "specs": {
+      "category": "LAPTOP",
+      "ram_modular": true,
+      "ssd_modular": true,
+      "battery_replaceable": true,
+      "display_size_inches": 14.0,
+      "weight_kg": 1.33,
+      "baseline_embodied_co2_kg": 285.0,
+      "estimated_original_msrp_usd": 1280.0
+    }
+  },
+  "vision_findings": {
+    "image_names": ["elitebook_top_cover.jpg", "elitebook_keyboard_gloss.jpg", "elitebook_hinge.jpg"],
+    "identified_model": "HP EliteBook 840 G7",
+    "confidence": "HIGH",
+    "cosmetic_grade": "C+",
+    "visible_damages": [
+      {
+        "component": "chassis",
+        "description": "Moderate corner denting and edge anodization rubbing from intensive backpack carry.",
+        "severity": "MEDIUM",
+        "evidence_type": "VISUAL"
+      },
+      {
+        "component": "keyboard",
+        "description": "Keycaps heavily polished from high keystroke count, lettering slightly worn on home row.",
+        "severity": "LOW",
+        "evidence_type": "VISUAL"
+      },
+      {
+        "component": "hinge_chassis",
+        "description": "Left hinge has 5 degrees of mechanical play but remains fully functional.",
+        "severity": "LOW",
+        "evidence_type": "VISUAL"
+      }
+    ],
+    "basis": "assumption",
+    "note": "Simulated computer vision inspection findings from uploaded demo photos."
+  },
+  "diagnostics": {
+    "battery": {
+      "health_percentage": 58.0,
+      "cycle_count": 920,
+      "design_capacity_wh": 53.0,
+      "full_charge_capacity_wh": 30.7,
+      "status": "WEAR",
+      "evidence_type": "DIAGNOSTIC"
+    },
+    "ssd": {
+      "health_percentage": 68.0,
+      "capacity_gb": 256,
+      "power_on_hours": 14200,
+      "smart_status": "PASS",
+      "status": "WEAR",
+      "evidence_type": "DIAGNOSTIC"
+    },
+    "ram": {
+      "total_gb": 8,
+      "diagnostic_status": "PASS",
+      "status": "GOOD",
+      "evidence_type": "DIAGNOSTIC"
+    },
+    "thermals": {
+      "cpu_idle_temp_c": 62,
+      "cpu_load_temp_c": 92,
+      "thermal_throttling": true,
+      "fan_operational": true,
+      "status": "WEAR",
+      "evidence_type": "DIAGNOSTIC"
+    },
+    "system": {
+      "uefi_post_status": "PASS",
+      "motherboard_sensors": "NORMAL",
+      "status": "GOOD",
+      "evidence_type": "DIAGNOSTIC"
+    },
+    "basis": "assumption",
+    "note": "Simulated device diagnostics telemetry."
+  },
+  "user_symptoms": {
+    "reported_issues": [
+      "Short battery runtime (~45 minutes).",
+      "Multitasking lag with multiple apps open due to 8GB RAM ceiling.",
+      "Storage drive is 90% full."
+    ],
+    "daily_usage_hours": 5.0,
+    "target_objective": "ENVIRONMENTAL",
+    "evidence_type": "USER_REPORTED",
+    "basis": "assumption",
+    "note": "Simulated user intake survey responses."
+  },
+  "expected_pathway": {
+    "primary": "REFURBISH",
+    "alternative": "UPGRADE",
+    "key_interventions": [
+      "Install new 53Wh battery",
+      "Upgrade RAM from 8GB to 16GB via secondary open SO-DIMM slot",
+      "Upgrade SSD from 256GB to 512GB/1TB NVMe",
+      "Thermal cleaning and re-grease"
+    ],
+    "reasoning": "Device is on the economic borderline between simple repair and full refurbishment. Because the chassis and motherboard are healthy and the model features modular dual-RAM and M.2 storage, a comprehensive refurbishment maximizes circular lifespan extension and environmental carbon abatement.",
+    "basis": "assumption"
+  },
+  "disclaimer": "Demo case scenario for testing and demonstration purposes."
+}

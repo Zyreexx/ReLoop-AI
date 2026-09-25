@@ -1,0 +1,147 @@
+{
+  "manufacturer": "HP",
+  "model": "EliteBook 840 G7",
+  "slug": "hp-elitebook-840-g7",
+  "aliases": ["hp-elitebook-840-g6", "hp-elitebook-840", "elitebook-840-g7", "elitebook-840-g6"],
+  "model_year": 2020,
+  "category": "LAPTOP",
+  "specs": {
+    "category": "LAPTOP",
+    "ram_modular": true,
+    "ssd_modular": true,
+    "battery_replaceable": true,
+    "display_size_inches": 14.0,
+    "weight_kg": 1.33,
+    "baseline_embodied_co2_kg": 285.0,
+    "estimated_original_msrp_usd": 1280.0
+  },
+  "component_configuration": {
+    "cpu": "Intel Core i5-10210U / i7-10610U (10th Gen Comet Lake)",
+    "ram_slots": 2,
+    "max_ram_gb": 64,
+    "ram_type": "DDR4-2666 / DDR4-3200 SO-DIMM",
+    "storage_interface": "1x M.2 2280 PCIe NVMe SSD",
+    "battery_capacity_wh": 53.0,
+    "display_resolution": "1920x1080 FHD IPS Anti-Glare 400 nits (Low Power)",
+    "chassis_material": "CNC machined aluminum unibody"
+  },
+  "compatible_parts": {
+    "battery": [
+      "HP 3-cell 53Wh Long Life Type CC03XL",
+      "HP 3-cell 53Wh Type L77608-005",
+      "HP Type HSTNN-DB9Q"
+    ],
+    "ssd": [
+      "M.2 2280 PCIe NVMe Gen3 / Gen4 SSD (up to 2TB)"
+    ],
+    "ram": [
+      "8GB DDR4-3200 SODIMM",
+      "16GB DDR4-3200 SODIMM",
+      "32GB DDR4-3200 SODIMM"
+    ]
+  },
+  "repairability_score": {
+    "score": 8.0,
+    "max_score": 10.0,
+    "source": "HP Maintenance and Service Guide / French Repairability Index",
+    "basis": "assumption",
+    "note": "Demo assumption: 5 captive screws for bottom panel access, modular dual SO-DIMMs, easily swappable battery with pull tabs."
+  },
+  "typical_repair_cost_inr": {
+    "battery": {
+      "min": 2900,
+      "max": 4900,
+      "basis": "assumption",
+      "note": "Demo assumption for HP CC03XL 53Wh replacement battery in India market."
+    },
+    "ssd": {
+      "min": 2400,
+      "max": 5800,
+      "basis": "assumption",
+      "note": "Demo assumption for 512GB to 1TB Gen3 NVMe M.2 SSD."
+    },
+    "ram": {
+      "min": 1600,
+      "max": 3800,
+      "basis": "assumption",
+      "note": "Demo assumption for 8GB/16GB DDR4 SODIMM RAM module."
+    },
+    "keyboard": {
+      "min": 2000,
+      "max": 3500,
+      "basis": "assumption",
+      "note": "Demo assumption for HP spill-resistant backlit keyboard."
+    },
+    "thermals": {
+      "min": 800,
+      "max": 1800,
+      "basis": "assumption",
+      "note": "Demo assumption for fan cleaning and CPU thermal paste application."
+    },
+    "display": {
+      "min": 4400,
+      "max": 7800,
+      "basis": "assumption",
+      "note": "Demo assumption for 14.0-inch FHD IPS 30-pin matte panel."
+    },
+    "motherboard": {
+      "min": 8800,
+      "max": 16800,
+      "basis": "assumption",
+      "note": "Demo assumption for HP system board replacement."
+    }
+  },
+  "expected_useful_life": {
+    "baseline_years": 6.0,
+    "extended_years_post_repair": 3.0,
+    "basis": "assumption",
+    "note": "Demo assumption: Aluminum enterprise build with high component serviceability."
+  },
+  "resale_recovery_values_inr": {
+    "whole_working": {
+      "min": 18500,
+      "max": 27000,
+      "basis": "assumption",
+      "note": "Demo assumption for working HP EliteBook in second-hand commercial market."
+    },
+    "components": {
+      "battery": {
+        "min": 650,
+        "max": 1300,
+        "basis": "assumption",
+        "note": "Demo assumption for functional CC03XL battery."
+      },
+      "ssd": {
+        "min": 1200,
+        "max": 2500,
+        "basis": "assumption",
+        "note": "Demo assumption for working M.2 NVMe SSD."
+      },
+      "ram": {
+        "min": 800,
+        "max": 1800,
+        "basis": "assumption",
+        "note": "Demo assumption for reusable DDR4 RAM."
+      },
+      "display": {
+        "min": 1900,
+        "max": 3400,
+        "basis": "assumption",
+        "note": "Demo assumption for undamaged 400-nit FHD screen."
+      },
+      "chassis": {
+        "min": 700,
+        "max": 1400,
+        "basis": "assumption",
+        "note": "Demo assumption for recyclable aluminum top/bottom covers."
+      },
+      "motherboard_scrap": {
+        "min": 300,
+        "max": 750,
+        "basis": "assumption",
+        "note": "Demo assumption for electronic scrap value."
+      }
+    }
+  },
+  "disclaimer": "All pricing, lifespan and repairability metrics are structured demo assumptions, not real-time verified market quotes."
+}

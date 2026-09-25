@@ -1,0 +1,140 @@
+{
+  "manufacturer": "Apple",
+  "model": "MacBook Air (M1, 2020)",
+  "slug": "apple-macbook-air-m1-2020",
+  "aliases": ["macbook-air-m1", "macbook-air-2020", "macbook-pro-13-2019", "apple-macbook-pro-13-2019"],
+  "model_year": 2020,
+  "category": "LAPTOP",
+  "specs": {
+    "category": "LAPTOP",
+    "ram_modular": false,
+    "ssd_modular": false,
+    "battery_replaceable": true,
+    "display_size_inches": 13.3,
+    "weight_kg": 1.29,
+    "baseline_embodied_co2_kg": 250.0,
+    "estimated_original_msrp_usd": 999.0
+  },
+  "component_configuration": {
+    "cpu": "Apple M1 chip (8-core CPU, 7/8-core GPU, 16-core Neural Engine)",
+    "ram_slots": 0,
+    "soldered_ram_gb": 8,
+    "max_ram_gb": 16,
+    "ram_type": "Unified Memory Architecture (LPDDR4X-4266 soldered on SoC)",
+    "storage_interface": "Soldered NAND flash on logic board (Apple controller)",
+    "battery_capacity_wh": 49.9,
+    "display_resolution": "2560x1600 Retina IPS Display 400 nits P3 Wide Color",
+    "chassis_material": "100% recycled aluminum enclosure"
+  },
+  "compatible_parts": {
+    "battery": [
+      "Apple OEM 49.9Wh Battery Model A2389 (requires adhesive remover kit)"
+    ],
+    "ssd": [],
+    "ram": []
+  },
+  "repairability_score": {
+    "score": 4.5,
+    "max_score": 10.0,
+    "source": "iFixit Teardown & Repairability Assessment",
+    "basis": "assumption",
+    "note": "Demo assumption: Pentalobe exterior screws, battery secured with strong stretch-release adhesive strips, soldered unified memory and NAND flash storage prevent modular upgrades."
+  },
+  "typical_repair_cost_inr": {
+    "battery": {
+      "min": 6500,
+      "max": 11500,
+      "basis": "assumption",
+      "note": "Demo assumption for authorized or high-grade third-party A2389 battery replacement including specialized labor."
+    },
+    "ssd": {
+      "min": 0,
+      "max": 0,
+      "basis": "assumption",
+      "note": "Not modularly replaceable; requires micro-soldering NAND replacement or whole logic board swap."
+    },
+    "ram": {
+      "min": 0,
+      "max": 0,
+      "basis": "assumption",
+      "note": "Not modularly upgradeable; integrated into Apple Silicon SoC."
+    },
+    "keyboard": {
+      "min": 7500,
+      "max": 14000,
+      "basis": "assumption",
+      "note": "Demo assumption for full top case with battery and Magic Keyboard assembly."
+    },
+    "thermals": {
+      "min": 600,
+      "max": 1400,
+      "basis": "assumption",
+      "note": "Demo assumption for passive heatsink thermal paste inspection (fanless design)."
+    },
+    "display": {
+      "min": 14000,
+      "max": 22000,
+      "basis": "assumption",
+      "note": "Demo assumption for complete Retina display assembly with TrueTone sensor calibration."
+    },
+    "motherboard": {
+      "min": 22000,
+      "max": 38000,
+      "basis": "assumption",
+      "note": "Demo assumption for replacement M1 logic board."
+    }
+  },
+  "expected_useful_life": {
+    "baseline_years": 7.0,
+    "extended_years_post_repair": 2.5,
+    "basis": "assumption",
+    "note": "Demo assumption: High SoC performance longevity and macOS software support, offset by unupgradeable storage/memory."
+  },
+  "resale_recovery_values_inr": {
+    "whole_working": {
+      "min": 38000,
+      "max": 52000,
+      "basis": "assumption",
+      "note": "Demo assumption for high residual value Apple M1 device in used market."
+    },
+    "components": {
+      "battery": {
+        "min": 500,
+        "max": 1200,
+        "basis": "assumption",
+        "note": "Demo assumption for intact battery pack."
+      },
+      "ssd": {
+        "min": 0,
+        "max": 0,
+        "basis": "assumption",
+        "note": "Soldered NAND cannot be salvaged as standard modular storage."
+      },
+      "ram": {
+        "min": 0,
+        "max": 0,
+        "basis": "assumption",
+        "note": "Soldered SoC unified RAM cannot be salvaged independently."
+      },
+      "display": {
+        "min": 6000,
+        "max": 11000,
+        "basis": "assumption",
+        "note": "Demo assumption for working OEM Retina display assembly."
+      },
+      "chassis": {
+        "min": 1500,
+        "max": 3000,
+        "basis": "assumption",
+        "note": "Demo assumption for unibody aluminum chassis top/bottom shell."
+      },
+      "motherboard_scrap": {
+        "min": 500,
+        "max": 1200,
+        "basis": "assumption",
+        "note": "Demo assumption for high-density scrap logic board."
+      }
+    }
+  },
+  "disclaimer": "All pricing, lifespan and repairability metrics are structured demo assumptions, not real-time verified market quotes."
+}

@@ -1,0 +1,114 @@
+{
+  "id": "demo-02-repairable",
+  "title": "Repairable Enterprise Laptop — Battery, Thermal & Keyboard Service",
+  "product": {
+    "manufacturer": "Dell",
+    "model": "Latitude 5420",
+    "slug": "dell-latitude-5420",
+    "model_year": 2021,
+    "category": "LAPTOP",
+    "age_years": 4.0,
+    "specs": {
+      "category": "LAPTOP",
+      "ram_modular": true,
+      "ssd_modular": true,
+      "battery_replaceable": true,
+      "display_size_inches": 14.0,
+      "weight_kg": 1.40,
+      "baseline_embodied_co2_kg": 295.0,
+      "estimated_original_msrp_usd": 1200.0
+    }
+  },
+  "vision_findings": {
+    "image_names": ["latitude_keyboard_detail.jpg", "latitude_front_bezel.jpg", "latitude_ports.jpg"],
+    "identified_model": "Dell Latitude 5420",
+    "confidence": "HIGH",
+    "cosmetic_grade": "B-",
+    "visible_damages": [
+      {
+        "component": "keyboard",
+        "description": "2 missing keycaps observed: F4 and Left Alt keys detached from scissor switches.",
+        "severity": "MEDIUM",
+        "evidence_type": "VISUAL"
+      },
+      {
+        "component": "chassis",
+        "description": "Light edge wear and minor surface scratches on bottom chassis casing.",
+        "severity": "LOW",
+        "evidence_type": "VISUAL"
+      },
+      {
+        "component": "display",
+        "description": "Display panel intact with no cracks, scratches, or line defects.",
+        "severity": "NONE",
+        "evidence_type": "VISUAL"
+      }
+    ],
+    "basis": "assumption",
+    "note": "Simulated computer vision inspection findings from uploaded demo photos."
+  },
+  "diagnostics": {
+    "battery": {
+      "health_percentage": 73.0,
+      "cycle_count": 680,
+      "design_capacity_wh": 54.0,
+      "full_charge_capacity_wh": 39.4,
+      "status": "WEAR",
+      "evidence_type": "DIAGNOSTIC"
+    },
+    "ssd": {
+      "health_percentage": 91.0,
+      "capacity_gb": 512,
+      "power_on_hours": 8200,
+      "smart_status": "PASS",
+      "status": "GOOD",
+      "evidence_type": "DIAGNOSTIC"
+    },
+    "ram": {
+      "total_gb": 16,
+      "diagnostic_status": "PASS",
+      "status": "GOOD",
+      "evidence_type": "DIAGNOSTIC"
+    },
+    "thermals": {
+      "cpu_idle_temp_c": 58,
+      "cpu_load_temp_c": 96,
+      "thermal_throttling": true,
+      "fan_operational": true,
+      "status": "WEAR",
+      "evidence_type": "DIAGNOSTIC"
+    },
+    "system": {
+      "uefi_post_status": "PASS",
+      "motherboard_sensors": "NORMAL",
+      "status": "GOOD",
+      "evidence_type": "DIAGNOSTIC"
+    },
+    "basis": "assumption",
+    "note": "Simulated device diagnostics telemetry."
+  },
+  "user_symptoms": {
+    "reported_issues": [
+      "Battery only lasts about 1.5 hours under light work.",
+      "Cooling fan is loud, running at max speed continuously, and laptop gets hot on the lap.",
+      "Two keyboard keys popped off during transit."
+    ],
+    "daily_usage_hours": 8.0,
+    "target_objective": "MAX_LIFE",
+    "evidence_type": "USER_REPORTED",
+    "basis": "assumption",
+    "note": "Simulated user intake survey responses."
+  },
+  "expected_pathway": {
+    "primary": "REPAIR",
+    "alternative": "REFURBISH",
+    "key_interventions": [
+      "Replace degraded 54Wh battery pack (estimated INR 2,800 - 4,800)",
+      "Replace or re-key keyboard assembly (estimated INR 1,800 - 3,200)",
+      "Clean thermal heatsink and apply fresh thermal compound (estimated INR 800 - 1,800)"
+    ],
+    "reasoning": "High-value core components (i5 11th Gen CPU, 91% health NVMe SSD, 16GB RAM) remain in excellent health. Targeted repair avoids 295 kg CO2e embodied impact and extends useful device life by 3.0 years.",
+    "basis": "assumption"
+  },
+  "disclaimer": "Demo case scenario for testing and demonstration purposes."
+}

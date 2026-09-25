@@ -1,0 +1,130 @@
+{
+  "id": "demo-04-recovery",
+  "title": "Liquid-Damaged Motherboard — Component Recovery & Harvesting",
+  "product": {
+    "manufacturer": "Dell",
+    "model": "Latitude 5420",
+    "slug": "dell-latitude-5420",
+    "model_year": 2021,
+    "category": "LAPTOP",
+    "age_years": 4.5,
+    "specs": {
+      "category": "LAPTOP",
+      "ram_modular": true,
+      "ssd_modular": true,
+      "battery_replaceable": true,
+      "display_size_inches": 14.0,
+      "weight_kg": 1.40,
+      "baseline_embodied_co2_kg": 295.0,
+      "estimated_original_msrp_usd": 1200.0
+    }
+  },
+  "vision_findings": {
+    "image_names": ["damaged_motherboard_spill.jpg", "corroded_type_c_port.jpg", "display_panel_front.jpg"],
+    "identified_model": "Dell Latitude 5420",
+    "confidence": "HIGH",
+    "cosmetic_grade": "D",
+    "visible_damages": [
+      {
+        "component": "system",
+        "description": "Visible greenish copper corrosion and burnt power-delivery MOSFETs near primary USB-C power circuitry from liquid ingress.",
+        "severity": "CRITICAL",
+        "evidence_type": "VISUAL"
+      },
+      {
+        "component": "keyboard",
+        "description": "Sticky liquid residue under keycaps; keyboard membrane compromised.",
+        "severity": "HIGH",
+        "evidence_type": "VISUAL"
+      },
+      {
+        "component": "display",
+        "description": "Top lid and 1080p IPS panel completely dry and mechanically unblemished; no liquid ingress inside display bezel.",
+        "severity": "NONE",
+        "evidence_type": "VISUAL"
+      }
+    ],
+    "basis": "assumption",
+    "note": "Simulated computer vision inspection findings from uploaded demo photos."
+  },
+  "diagnostics": {
+    "battery": {
+      "health_percentage": null,
+      "status": "UNKNOWN",
+      "note": "Untested / suspected shorted BMS protection board due to liquid contact.",
+      "evidence_type": "DIAGNOSTIC"
+    },
+    "ssd": {
+      "health_percentage": 98.0,
+      "capacity_gb": 1024,
+      "model": "Kioxia XG6 1TB NVMe M.2",
+      "smart_status": "PASS",
+      "tested_externally": true,
+      "status": "GOOD",
+      "evidence_type": "DIAGNOSTIC"
+    },
+    "ram": {
+      "total_gb": 32,
+      "configuration": "2x 16GB DDR4-3200 SODIMM",
+      "diagnostic_status": "PASS",
+      "tested_externally": true,
+      "status": "GOOD",
+      "evidence_type": "DIAGNOSTIC"
+    },
+    "thermals": {
+      "status": "UNKNOWN",
+      "note": "System unable to power on to run fan or thermal diagnostics.",
+      "evidence_type": "DIAGNOSTIC"
+    },
+    "system": {
+      "uefi_post_status": "FAIL",
+      "power_rails": "SHORTED",
+      "status": "REPLACE",
+      "evidence_type": "DIAGNOSTIC"
+    },
+    "display": {
+      "tested_externally": true,
+      "status": "GOOD",
+      "note": "Panel tested on test bench with eDP signal generator; 100% operational.",
+      "evidence_type": "DIAGNOSTIC"
+    },
+    "basis": "assumption",
+    "note": "Diagnostic measurements obtained via external bench testing of isolated sub-assemblies."
+  },
+  "user_symptoms": {
+    "reported_issues": [
+      "Device does not turn on or charge after large sugary coffee spill directly onto keyboard.",
+      "Third-party repair shop quoted replacement motherboard at INR 16,500, which exceeds the economic value of the repaired machine."
+    ],
+    "daily_usage_hours": 0.0,
+    "target_objective": "FASTEST_RECOVERY",
+    "evidence_type": "USER_REPORTED",
+    "basis": "assumption",
+    "note": "Simulated user intake survey responses."
+  },
+  "expected_pathway": {
+    "primary": "COMPONENT_RECOVERY",
+    "alternative": "RECYCLE",
+    "recoverable_components": [
+      {
+        "component": "ssd",
+        "description": "1TB NVMe M.2 SSD (98% health)",
+        "estimated_value_inr": { "min": 2500, "max": 4000, "basis": "assumption" }
+      },
+      {
+        "component": "ram",
+        "description": "2x 16GB DDR4-3200 SODIMM (32GB Total Tested PASS)",
+        "estimated_value_inr": { "min": 2800, "max": 4500, "basis": "assumption" }
+      },
+      {
+        "component": "display",
+        "description": "14.0-inch FHD 1080p IPS screen assembly",
+        "estimated_value_inr": { "min": 2000, "max": 3500, "basis": "assumption" }
+      }
+    ],
+    "residual_action": "Safe certified e-waste recycling of irreparably damaged motherboard and compromised battery.",
+    "reasoning": "Whole-unit device repair is economically unviable due to catastrophic motherboard failure. However, harvesting modular 1TB SSD, 32GB RAM, and pristine display panel preserves substantial economic value and prevents functional electronics from entering the shredder prematurely.",
+    "basis": "assumption"
+  },
+  "disclaimer": "Demo case scenario for testing and demonstration purposes."
+}

@@ -1,0 +1,106 @@
+{
+  "id": "demo-01-healthy",
+  "title": "Healthy Corporate Workhorse — Second Life & Redeployment",
+  "product": {
+    "manufacturer": "Lenovo",
+    "model": "ThinkPad T14 Gen 1",
+    "slug": "lenovo-thinkpad-t14-gen-1",
+    "model_year": 2021,
+    "category": "LAPTOP",
+    "age_years": 3.0,
+    "specs": {
+      "category": "LAPTOP",
+      "ram_modular": true,
+      "ssd_modular": true,
+      "battery_replaceable": true,
+      "display_size_inches": 14.0,
+      "weight_kg": 1.46,
+      "baseline_embodied_co2_kg": 310.0,
+      "estimated_original_msrp_usd": 1350.0
+    }
+  },
+  "vision_findings": {
+    "image_names": ["thinkpad_top_lid.jpg", "thinkpad_keyboard.jpg", "thinkpad_screen_on.jpg"],
+    "identified_model": "Lenovo ThinkPad T14 Gen 1",
+    "confidence": "HIGH",
+    "cosmetic_grade": "A-",
+    "visible_damages": [
+      {
+        "component": "chassis",
+        "description": "Minor superficial scuffing on rubberized outer top lid coating; no dents or cracks.",
+        "severity": "LOW",
+        "evidence_type": "VISUAL"
+      },
+      {
+        "component": "display",
+        "description": "Screen surface completely intact, zero dead pixels or backlight bleed observed.",
+        "severity": "NONE",
+        "evidence_type": "VISUAL"
+      },
+      {
+        "component": "keyboard",
+        "description": "All keycaps present with standard matte finish; TrackPoint cap intact.",
+        "severity": "NONE",
+        "evidence_type": "VISUAL"
+      }
+    ],
+    "basis": "assumption",
+    "note": "Simulated computer vision inspection findings from uploaded demo photos."
+  },
+  "diagnostics": {
+    "battery": {
+      "health_percentage": 92.0,
+      "cycle_count": 185,
+      "design_capacity_wh": 50.0,
+      "full_charge_capacity_wh": 46.0,
+      "status": "GOOD",
+      "evidence_type": "DIAGNOSTIC"
+    },
+    "ssd": {
+      "health_percentage": 98.0,
+      "capacity_gb": 512,
+      "power_on_hours": 3200,
+      "smart_status": "PASS",
+      "status": "GOOD",
+      "evidence_type": "DIAGNOSTIC"
+    },
+    "ram": {
+      "total_gb": 16,
+      "diagnostic_status": "PASS",
+      "status": "GOOD",
+      "evidence_type": "DIAGNOSTIC"
+    },
+    "thermals": {
+      "cpu_idle_temp_c": 44,
+      "cpu_load_temp_c": 68,
+      "thermal_throttling": false,
+      "status": "GOOD",
+      "evidence_type": "DIAGNOSTIC"
+    },
+    "system": {
+      "uefi_post_status": "PASS",
+      "motherboard_sensors": "NORMAL",
+      "status": "GOOD",
+      "evidence_type": "DIAGNOSTIC"
+    },
+    "basis": "assumption",
+    "note": "Simulated device diagnostics telemetry."
+  },
+  "user_symptoms": {
+    "reported_issues": [
+      "User is upgrading to a newer company-issued model; device functions flawlessly for daily productivity tasks."
+    ],
+    "daily_usage_hours": 6.0,
+    "target_objective": "LOWEST_COST",
+    "evidence_type": "USER_REPORTED",
+    "basis": "assumption",
+    "note": "Simulated user intake survey responses."
+  },
+  "expected_pathway": {
+    "primary": "REUSE",
+    "alternative": "UPGRADE",
+    "reasoning": "With 92% battery capacity, 98% SSD health, passing memory diagnostics, and cool thermal operation, this machine is in prime condition for immediate internal redeployment or secondary-market reuse with zero repair expenditure required.",
+    "basis": "assumption"
+  },
+  "disclaimer": "Demo case scenario for testing and demonstration purposes."
+}

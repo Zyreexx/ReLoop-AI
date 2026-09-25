@@ -1,0 +1,149 @@
+{
+  "manufacturer": "Lenovo",
+  "model": "ThinkPad T14 Gen 1",
+  "slug": "lenovo-thinkpad-t14-gen-1",
+  "aliases": ["lenovo-thinkpad-t14", "lenovo-thinkpad-t490", "thinkpad-t14", "thinkpad-t490"],
+  "model_year": 2020,
+  "category": "LAPTOP",
+  "specs": {
+    "category": "LAPTOP",
+    "ram_modular": true,
+    "ssd_modular": true,
+    "battery_replaceable": true,
+    "display_size_inches": 14.0,
+    "weight_kg": 1.46,
+    "baseline_embodied_co2_kg": 310.0,
+    "estimated_original_msrp_usd": 1350.0
+  },
+  "component_configuration": {
+    "cpu": "Intel Core i5-10310U / AMD Ryzen 5 Pro 4650U",
+    "ram_slots": 1,
+    "soldered_ram_gb": 8,
+    "max_ram_gb": 40,
+    "ram_type": "DDR4-3200 (1 soldered channel + 1 SO-DIMM socket)",
+    "storage_interface": "1x M.2 2280 PCIe NVMe 3.0 x4",
+    "battery_capacity_wh": 50.0,
+    "display_resolution": "1920x1080 FHD IPS Anti-Glare 300 nits",
+    "chassis_material": "Polyphenylene sulfide (PPS) base with glass-fiber reinforced plastic"
+  },
+  "compatible_parts": {
+    "battery": [
+      "Lenovo 3-cell 50Wh Internal Type 5B10W13930",
+      "Lenovo 3-cell 50Wh Type L19M3P72",
+      "Lenovo 50Wh Type L19L3P72"
+    ],
+    "ssd": [
+      "M.2 2280 PCIe NVMe SSD (up to 2TB)",
+      "M.2 2242 PCIe NVMe SSD (in WWAN slot for secondary storage)"
+    ],
+    "ram": [
+      "8GB DDR4-3200 SODIMM",
+      "16GB DDR4-3200 SODIMM",
+      "32GB DDR4-3200 SODIMM"
+    ]
+  },
+  "repairability_score": {
+    "score": 8.0,
+    "max_score": 10.0,
+    "source": "Lenovo Hardware Maintenance Manual / iFixit ThinkPad Benchmark",
+    "basis": "assumption",
+    "note": "Demo assumption: Easy keyboard replacement from top side, captive base cover screws, dual storage expansion capability, 1 soldered RAM slot."
+  },
+  "typical_repair_cost_inr": {
+    "battery": {
+      "min": 3000,
+      "max": 5200,
+      "basis": "assumption",
+      "note": "Demo assumption for 50Wh OEM-grade replacement battery pack in India market."
+    },
+    "ssd": {
+      "min": 2400,
+      "max": 5800,
+      "basis": "assumption",
+      "note": "Demo assumption for 512GB to 1TB Gen3 NVMe M.2 SSD replacement."
+    },
+    "ram": {
+      "min": 1600,
+      "max": 3800,
+      "basis": "assumption",
+      "note": "Demo assumption for 8GB/16GB DDR4-3200 SO-DIMM upgrade."
+    },
+    "keyboard": {
+      "min": 2200,
+      "max": 3800,
+      "basis": "assumption",
+      "note": "Demo assumption for TrackPoint-equipped ThinkPad keyboard unit."
+    },
+    "thermals": {
+      "min": 800,
+      "max": 1800,
+      "basis": "assumption",
+      "note": "Demo assumption for thermal paste replacement and copper heatsink cleaning."
+    },
+    "display": {
+      "min": 4500,
+      "max": 8000,
+      "basis": "assumption",
+      "note": "Demo assumption for 14.0-inch FHD 30-pin IPS panel."
+    },
+    "motherboard": {
+      "min": 9000,
+      "max": 17500,
+      "basis": "assumption",
+      "note": "Demo assumption for replacement system planar board."
+    }
+  },
+  "expected_useful_life": {
+    "baseline_years": 7.0,
+    "extended_years_post_repair": 3.5,
+    "basis": "assumption",
+    "note": "Demo assumption: MIL-STD tested ThinkPad chassis with high longevity in enterprise and Linux second-life deployments."
+  },
+  "resale_recovery_values_inr": {
+    "whole_working": {
+      "min": 19000,
+      "max": 28000,
+      "basis": "assumption",
+      "note": "Demo assumption for functioning ThinkPad T-series in commercial refurbished market."
+    },
+    "components": {
+      "battery": {
+        "min": 700,
+        "max": 1400,
+        "basis": "assumption",
+        "note": "Demo assumption for reusable battery pack."
+      },
+      "ssd": {
+        "min": 1200,
+        "max": 2500,
+        "basis": "assumption",
+        "note": "Demo assumption for working M.2 NVMe SSD."
+      },
+      "ram": {
+        "min": 800,
+        "max": 1800,
+        "basis": "assumption",
+        "note": "Demo assumption for modular DDR4 SO-DIMM stick."
+      },
+      "display": {
+        "min": 2000,
+        "max": 3500,
+        "basis": "assumption",
+        "note": "Demo assumption for tested 1080p IPS panel."
+      },
+      "chassis": {
+        "min": 800,
+        "max": 1500,
+        "basis": "assumption",
+        "note": "Demo assumption for sturdy ThinkPad chassis and lid."
+      },
+      "motherboard_scrap": {
+        "min": 350,
+        "max": 800,
+        "basis": "assumption",
+        "note": "Demo assumption for precious metals recovery."
+      }
+    }
+  },
+  "disclaimer": "All pricing, lifespan and repairability metrics are structured demo assumptions, not real-time verified market quotes."
+}

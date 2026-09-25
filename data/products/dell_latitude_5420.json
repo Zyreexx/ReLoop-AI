@@ -1,0 +1,147 @@
+{
+  "manufacturer": "Dell",
+  "model": "Latitude 5420",
+  "slug": "dell-latitude-5420",
+  "model_year": 2021,
+  "category": "LAPTOP",
+  "specs": {
+    "category": "LAPTOP",
+    "ram_modular": true,
+    "ssd_modular": true,
+    "battery_replaceable": true,
+    "display_size_inches": 14.0,
+    "weight_kg": 1.40,
+    "baseline_embodied_co2_kg": 295.0,
+    "estimated_original_msrp_usd": 1200.0
+  },
+  "component_configuration": {
+    "cpu": "Intel Core i5-1145G7 / i7-1185G7 (11th Gen Tiger Lake)",
+    "ram_slots": 2,
+    "max_ram_gb": 64,
+    "ram_type": "DDR4-3200 SO-DIMM non-ECC",
+    "storage_interface": "1x M.2 2280 PCIe NVMe 3.0/4.0 x4",
+    "battery_capacity_wh": 54.0,
+    "display_resolution": "1920x1080 FHD IPS Anti-Glare 250 nits",
+    "chassis_material": "Post-industrial carbon fiber reinforced polymer"
+  },
+  "compatible_parts": {
+    "battery": [
+      "Dell 4-cell 63Wh Type RJ40G",
+      "Dell 3-cell 42Wh Type WY9DX",
+      "Dell 4-cell 54Wh Type 1V1XF"
+    ],
+    "ssd": [
+      "M.2 2280 PCIe NVMe SSD (Gen 3 / Gen 4 up to 2TB)",
+      "M.2 2230 PCIe NVMe SSD with adapter bracket"
+    ],
+    "ram": [
+      "8GB DDR4-3200 SODIMM (1Rx8 / 1Rx16)",
+      "16GB DDR4-3200 SODIMM (2Rx8)",
+      "32GB DDR4-3200 SODIMM (2Rx8)"
+    ]
+  },
+  "repairability_score": {
+    "score": 8.5,
+    "max_score": 10.0,
+    "source": "French Repairability Index (Indice de réparabilité) / iFixit Assessment",
+    "basis": "assumption",
+    "note": "Demo assumption: Standard Phillips #00 screws throughout, captive bottom cover screws, no glued components, modular I/O daughterboard."
+  },
+  "typical_repair_cost_inr": {
+    "battery": {
+      "min": 2800,
+      "max": 4800,
+      "basis": "assumption",
+      "note": "Demo assumption for 54Wh/63Wh OEM-grade replacement battery pack in India market."
+    },
+    "ssd": {
+      "min": 2400,
+      "max": 5800,
+      "basis": "assumption",
+      "note": "Demo assumption for 512GB to 1TB Gen3/Gen4 NVMe M.2 SSD replacement."
+    },
+    "ram": {
+      "min": 1600,
+      "max": 3800,
+      "basis": "assumption",
+      "note": "Demo assumption for 8GB to 16GB DDR4-3200 SODIMM module."
+    },
+    "keyboard": {
+      "min": 1800,
+      "max": 3200,
+      "basis": "assumption",
+      "note": "Demo assumption for OEM backlit replacement keyboard unit."
+    },
+    "thermals": {
+      "min": 800,
+      "max": 1800,
+      "basis": "assumption",
+      "note": "Demo assumption for thermal paste repaste (PTM7950/Kryonaut) and cooling fan de-dusting/replacement."
+    },
+    "display": {
+      "min": 4200,
+      "max": 7500,
+      "basis": "assumption",
+      "note": "Demo assumption for 14.0-inch 1080p 30-pin eDP replacement panel."
+    },
+    "motherboard": {
+      "min": 8500,
+      "max": 16500,
+      "basis": "assumption",
+      "note": "Demo assumption for refurbished system board with integrated i5 CPU."
+    }
+  },
+  "expected_useful_life": {
+    "baseline_years": 6.0,
+    "extended_years_post_repair": 3.0,
+    "basis": "assumption",
+    "note": "Demo assumption: Enterprise Latitude series engineered for 5-7 year deployment cycle with mid-life battery/thermal service."
+  },
+  "resale_recovery_values_inr": {
+    "whole_working": {
+      "min": 18000,
+      "max": 26000,
+      "basis": "assumption",
+      "note": "Demo assumption for Grade A/B refurbished corporate laptop resale."
+    },
+    "components": {
+      "battery": {
+        "min": 600,
+        "max": 1200,
+        "basis": "assumption",
+        "note": "Demo assumption for salvageable battery pack tested >80% health."
+      },
+      "ssd": {
+        "min": 1200,
+        "max": 2500,
+        "basis": "assumption",
+        "note": "Demo assumption for tested 512GB NVMe SSD with >90% SMART life."
+      },
+      "ram": {
+        "min": 800,
+        "max": 1800,
+        "basis": "assumption",
+        "note": "Demo assumption for tested 8GB/16GB DDR4 SODIMM stick."
+      },
+      "display": {
+        "min": 1800,
+        "max": 3200,
+        "basis": "assumption",
+        "note": "Demo assumption for scratch-free 1080p IPS display assembly."
+      },
+      "chassis": {
+        "min": 600,
+        "max": 1200,
+        "basis": "assumption",
+        "note": "Demo assumption for undamaged top palmrest / bottom cover."
+      },
+      "motherboard_scrap": {
+        "min": 300,
+        "max": 700,
+        "basis": "assumption",
+        "note": "Demo assumption for e-waste precious metals recovery value."
+      }
+    }
+  },
+  "disclaimer": "All pricing, lifespan and repairability metrics are structured demo assumptions, not real-time verified market quotes."
+}
