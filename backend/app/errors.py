@@ -88,6 +88,9 @@ class AppError(Exception):
 AppException = AppError
 
 
+from starlette.exceptions import HTTPException as StarletteHTTPException
+
+
 def register_error_handlers(app: FastAPI) -> None:
     """
     Registers global exception handlers on the FastAPI app.
@@ -124,6 +127,28 @@ def register_error_handlers(app: FastAPI) -> None:
             },
         )
 
+    @app.exception_handler(StarletteHTTPException)
+    async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+        code = (
+            ErrorCode.NOT_FOUND.value
+            if exc.status_code == 404
+            else (
+                ErrorCode.INVALID_INPUT.value
+                if exc.status_code in [400, 422]
+                else ErrorCode.INTERNAL_ERROR.value
+            )
+        )
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={
+                "error": {
+                    "code": code,
+                    "message": str(exc.detail),
+                    "field": None,
+                }
+            },
+        )
+
     @app.exception_handler(Exception)
     async def unhandled_exception_handler(request: Request, exc: Exception):
         logger.error(f"Unhandled server error on {request.url.path}: {exc}", exc_info=True)
@@ -137,3 +162,4 @@ def register_error_handlers(app: FastAPI) -> None:
                 }
             },
         )
+

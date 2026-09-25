@@ -26,10 +26,10 @@ def _create_database_engine():
         # Test connection
         with eng.connect() as conn:
             conn.execute(text("SELECT 1"))
-        logger.info("Connected to database via DATABASE_URL")
+        logger.info("Connected to database successfully.")
         return eng
-    except Exception as e:
-        logger.warning(f"Could not connect to configured DATABASE_URL ({e}). Falling back to SQLite './reloop.db'.")
+    except Exception:
+        logger.warning("Could not connect to primary database. Falling back to local SQLite './reloop.db'.")
         return create_engine(
             "sqlite:///./reloop.db",
             connect_args={"check_same_thread": False},
