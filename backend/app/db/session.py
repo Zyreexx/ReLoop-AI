@@ -56,6 +56,7 @@ def create_all_tables():
     Initializes all database tables registered with Base metadata.
     """
     global engine, SessionLocal
+    import app.models.entities  # Ensure all model tables are registered
     try:
         Base.metadata.create_all(bind=engine)
     except Exception as e:

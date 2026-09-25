@@ -329,3 +329,48 @@ def test_analyze_gemini_failure_returns_ai_failure(client: TestClient, registere
     assert res.status_code == 502
     err = res.json()["error"]
     assert err["code"] == ErrorCode.AI_FAILURE.value
+
+
+def test_identify_demo_fallback_flag(client: TestClient, monkeypatch):
+    monkeypatch.setattr("app.config.settings.DEMO_FALLBACK", True)
+    res = client.post("/api/products/identify", json={"hint": "Lenovo ThinkPad T14 Gen 1"})
+    assert res.status_code == 200
+    data = res.json()
+    assert data["is_supported"] is True
+    assert data["identified_model"]["manufacturer"] == "Lenovo"
+    assert any("sample-data" in clue for clue in data["visual_clues"])
+
+
+def test_analyze_demo_fallback_flag(client: TestClient, registered_product, monkeypatch):
+    monkeypatch.setattr("app.config.settings.DEMO_FALLBACK", True)
+    res = client.post(
+        "/api/vision/analyze",
+        json={"product_id": registered_product.id, "inspection_notes": "dell latitude 5420 keyboard"},
+    )
+    assert res.status_code == 200
+    data = res.json()
+    assert len(data["findings"]) > 0
+    # Check that saved evidence is labeled source: "sample-data"
+    evidence_list = store.get_evidence(registered_product.id)
+    sample_ev = [e for e in evidence_list if e.source == "sample-data"]
+    assert len(sample_ev) > 0
+
+
+def test_gemini_failure_fallback_for_demo_model(client: TestClient):
+    with patch.object(
+        gemini_client,
+        "generate_structured",
+        side_effect=AppError(
+            code=ErrorCode.AI_FAILURE.value,
+            message="Gemini connection timeout",
+            http_status=502,
+        ),
+    ):
+        files = [("images", ("thinkpad_lid.jpg", BytesIO(VALID_JPEG), "image/jpeg"))]
+        res = client.post("/api/products/identify", data={"hint": "ThinkPad T14"}, files=files)
+
+    assert res.status_code == 200
+    data = res.json()
+    assert data["is_supported"] is True
+    assert data["identified_model"]["manufacturer"] == "Lenovo"
+    assert any("sample-data" in clue for clue in data["visual_clues"])

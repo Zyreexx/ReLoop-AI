@@ -9,19 +9,24 @@ Enforces non-negotiable rules:
 - Results persisted as VISUAL evidence records linked to product
 """
 import re
+import logging
 from typing import Any, Dict, List, Optional
 from sqlalchemy.orm import Session
 from app.ai.gemini_client import gemini_client
 from app.ai.prompt_loader import load_prompt
 from app.ai.schemas import ModelIdentificationOutput, DamageAssessmentOutput
+from app.config import settings
 from app.db.repositories import product_repo, evidence_repo
 from app.db.store import store
 from app.errors import AppError, ErrorCode
 from app.knowledge.models_catalog import get_all_models, lookup_model
+from app.knowledge.sample_data import get_sample_identify_response, get_sample_vision_findings, find_demo_case
 from app.schemas.enums import ComponentName, ComponentStatus, ConfidenceLevel, EvidenceType
 from app.schemas.evidence import Evidence
 from app.schemas.product import ProductCandidate, ProductIdentifyResponse, ProductSpecs
 from app.schemas.vision import VisibleFinding, VisionAnalyzeResponse
+
+logger = logging.getLogger(__name__)
 
 # Keywords indicating internal hardware health that are strictly forbidden from visual reports
 FORBIDDEN_INTERNAL_KEYWORDS = [
@@ -84,11 +89,17 @@ class VisionService:
         Identifies model from images or direct manual model_id.
         Always sets needs_confirmation=True for MVP.
         Returns unsupported response if unknown.
+        Supports DEMO_FALLBACK mode and automatic fallback on Gemini failure for demo models.
         """
         all_supported = get_all_models()
-
-        # 1. Manual path: client sends manual_model or model_id directly
         target_model = manual_model or model_id or hint
+
+        # 1. Demo fallback mode explicit flag
+        if settings.DEMO_FALLBACK:
+            logger.info("DEMO_FALLBACK active: serving precomputed sample identification.")
+            return get_sample_identify_response(target_model)
+
+        # 2. Manual path: client sends manual_model or model_id directly
         if target_model and not image_bytes_list:
             matched = lookup_model(target_model)
             if matched:
@@ -120,23 +131,30 @@ class VisionService:
                     message=f"Model '{target_model}' is not in the supported catalog. Please select a supported model.",
                 )
 
-        # 2. Vision path with Gemini
+        # 3. Vision path with Gemini (with demo fallback on failure)
         supported_str = "\n".join([f"- {m.manufacturer} {m.model}" for m in all_supported])
         prompt_obj = load_prompt("vision_identify", "v1")
         prompt_text = prompt_obj.format(supported_models=supported_str)
         if hint:
             prompt_text += f"\nUser hint: {hint}"
 
-        # Call Gemini (raises AppError AI_FAILURE on failure)
-        ai_res: ModelIdentificationOutput = gemini_client.generate_structured(
-            prompt=prompt_text,
-            response_model=ModelIdentificationOutput,
-            images=image_bytes_list,
-        )
+        try:
+            ai_res: ModelIdentificationOutput = gemini_client.generate_structured(
+                prompt=prompt_text,
+                response_model=ModelIdentificationOutput,
+                images=image_bytes_list,
+            )
+        except Exception as e:
+            # Check if this query corresponds to a demo model
+            demo_match = find_demo_case(target_model or hint)
+            if demo_match:
+                logger.info(f"Gemini API identify call failed ({e}); falling back to precomputed sample data for '{demo_match.get('id')}'.")
+                return get_sample_identify_response(target_model or hint)
+            # Never silently use sample data outside explicit flag or demo model failure path
+            raise
 
         matched_data = lookup_model(ai_res.model_name)
         if not matched_data or ai_res.model_name.lower() == "unknown":
-            # Model unknown or unsupported: return response letting user pick manually
             return ProductIdentifyResponse(
                 identified_model=None,
                 is_supported=False,
@@ -185,6 +203,7 @@ class VisionService:
         """
         Analyzes visible exterior damage, post-filters internal claims,
         and saves results as VISUAL evidence items.
+        Supports DEMO_FALLBACK mode and automatic fallback on Gemini failure for demo models.
         """
         product = store.get_product(product_id)
         if not product and db:
@@ -198,6 +217,11 @@ class VisionService:
                 http_status=404,
             )
 
+        # 1. Demo fallback mode explicit flag
+        if settings.DEMO_FALLBACK:
+            logger.info(f"DEMO_FALLBACK active: serving precomputed sample vision findings for product {product_id}.")
+            return get_sample_vision_findings(product_id, query_or_notes=inspection_notes, image_names=image_names)
+
         raw_findings: List[VisibleFinding] = []
 
         if image_bytes_list:
@@ -206,27 +230,37 @@ class VisionService:
             if inspection_notes:
                 prompt_text += f"\nInspection context from user: {inspection_notes}"
 
-            ai_res: DamageAssessmentOutput = gemini_client.generate_structured(
-                prompt=prompt_text,
-                response_model=DamageAssessmentOutput,
-                images=image_bytes_list,
-            )
+            try:
+                ai_res: DamageAssessmentOutput = gemini_client.generate_structured(
+                    prompt=prompt_text,
+                    response_model=DamageAssessmentOutput,
+                    images=image_bytes_list,
+                )
 
-            # Map raw AI items to VisibleFinding
-            for crack in ai_res.cracks:
-                raw_findings.append(VisibleFinding(component=ComponentName.DISPLAY, description=crack, severity="HIGH"))
-            for dent in ai_res.dents:
-                raw_findings.append(VisibleFinding(component=ComponentName.HINGE_CHASSIS, description=dent, severity="LOW"))
-            for key in ai_res.missing_keys:
-                raw_findings.append(VisibleFinding(component=ComponentName.KEYBOARD, description=key, severity="MODERATE"))
-            for h_dmg in ai_res.hinge_damage:
-                raw_findings.append(VisibleFinding(component=ComponentName.HINGE_CHASSIS, description=h_dmg, severity="HIGH"))
-            for p_dmg in ai_res.port_damage:
-                raw_findings.append(VisibleFinding(component="PORTS", description=p_dmg, severity="MODERATE"))
-            for swell in ai_res.visible_swelling:
-                raw_findings.append(VisibleFinding(component=ComponentName.HINGE_CHASSIS, description=f"Visible exterior bulge: {swell}", severity="HIGH"))
-            for obs in ai_res.observations:
-                raw_findings.append(VisibleFinding(component=ComponentName.HINGE_CHASSIS, description=obs, severity="LOW"))
+                # Map raw AI items to VisibleFinding
+                for crack in ai_res.cracks:
+                    raw_findings.append(VisibleFinding(component=ComponentName.DISPLAY, description=crack, severity="HIGH"))
+                for dent in ai_res.dents:
+                    raw_findings.append(VisibleFinding(component=ComponentName.HINGE_CHASSIS, description=dent, severity="LOW"))
+                for key in ai_res.missing_keys:
+                    raw_findings.append(VisibleFinding(component=ComponentName.KEYBOARD, description=key, severity="MODERATE"))
+                for h_dmg in ai_res.hinge_damage:
+                    raw_findings.append(VisibleFinding(component=ComponentName.HINGE_CHASSIS, description=h_dmg, severity="HIGH"))
+                for p_dmg in ai_res.port_damage:
+                    raw_findings.append(VisibleFinding(component="PORTS", description=p_dmg, severity="MODERATE"))
+                for swell in ai_res.visible_swelling:
+                    raw_findings.append(VisibleFinding(component=ComponentName.HINGE_CHASSIS, description=f"Visible exterior bulge: {swell}", severity="HIGH"))
+                for obs in ai_res.observations:
+                    raw_findings.append(VisibleFinding(component=ComponentName.HINGE_CHASSIS, description=obs, severity="LOW"))
+
+            except Exception as e:
+                # Check if this product or context corresponds to a demo case
+                demo_match = find_demo_case(inspection_notes or (image_names[0] if image_names else None), product_id=product_id)
+                if demo_match:
+                    logger.info(f"Gemini API vision call failed ({e}); falling back to sample data for demo case '{demo_match.get('id')}'.")
+                    return get_sample_vision_findings(product_id, query_or_notes=inspection_notes, image_names=image_names)
+                # Never silently use sample data outside explicit flag or demo failure path
+                raise
         elif inspection_notes:
             # Fallback when only notes provided without images
             lowered = inspection_notes.lower()
@@ -267,8 +301,8 @@ class VisionService:
             evidence_items.append(ev)
 
         # Determine overall condition
-        has_severe = any(f.severity == "HIGH" for f in clean_findings)
-        has_moderate = any(f.severity == "MODERATE" for f in clean_findings)
+        has_severe = any(f.severity in ["HIGH", "CRITICAL"] for f in clean_findings)
+        has_moderate = any(f.severity in ["MODERATE", "MEDIUM"] for f in clean_findings)
         overall_cond = ComponentStatus.DAMAGED if has_severe else (ComponentStatus.WEAR if has_moderate else ComponentStatus.GOOD)
 
         return VisionAnalyzeResponse(

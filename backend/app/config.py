@@ -32,5 +32,12 @@ class Settings:
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
     GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 
+    # Fallback mode for demo deployment / Gemini failure
+    DEMO_FALLBACK: bool = os.getenv("DEMO_FALLBACK", "false").lower() in (
+        "true",
+        "1",
+        "yes",
+    )
+
 
 settings = Settings()

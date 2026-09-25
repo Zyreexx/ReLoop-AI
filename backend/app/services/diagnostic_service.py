@@ -109,7 +109,7 @@ class DiagnosticService:
         # 4. RAM validation
         if data.ram:
             ram = data.ram
-            status_val = ram.memory_test_status.upper()
+            status_val = str(ram.memory_test_status or ram.test_result or "PASS").upper()
             if status_val not in ["PASS", "FAIL", "UNKNOWN"]:
                 raise AppException(
                     code="INVALID_DIAGNOSTIC",
@@ -165,6 +165,32 @@ class DiagnosticService:
             store.add_evidence(product_id, ev)
             evidence_items.append(ev)
             summary["thermals"] = "Service Required" if service_needed else "Normal"
+
+        # 6. System / Motherboard validation
+        if data.system:
+            sys_diag = data.system
+            post_pass = sys_diag.post_successful
+            power_ok = sys_diag.motherboard_power_stable
+            critical = sys_diag.critical_errors or []
+            status_val = "PASS" if (post_pass and power_ok and not critical) else "FAIL"
+
+            ev = EvidenceItem(
+                type=EvidenceType.DIAGNOSTIC,
+                source="UEFI POST / Motherboard Power Diagnostic",
+                component="system",
+                value={
+                    "post_successful": post_pass,
+                    "motherboard_power_stable": power_ok,
+                    "critical_errors": critical,
+                    "uefi_post_status": "PASS" if post_pass else "FAIL",
+                    "power_rails": "NORMAL" if power_ok else "SHORTED",
+                    "status": "GOOD" if post_pass and power_ok else "REPLACE",
+                },
+                confidence=ConfidenceLevel.HIGH,
+            )
+            store.add_evidence(product_id, ev)
+            evidence_items.append(ev)
+            summary["system"] = status_val
 
         return DiagnosticValidationResult(
             valid=True,
