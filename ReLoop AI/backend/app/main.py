@@ -2,6 +2,9 @@
 ReLoop AI Backend — FastAPI Application Entrypoint.
 The Next-Life Engine for Products.
 """
+import os
+os.environ["DISABLE_SQLALCHEMY_CEXT"] = "1"
+
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
