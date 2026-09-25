@@ -5,6 +5,7 @@ Maintains clear boundaries:
 - Clear evidence source attribution for every component claim.
 """
 from typing import Dict, List, Optional
+from sqlalchemy.orm import Session
 from app.db.store import store
 from app.schemas.enums import ComponentStatus, ConfidenceLevel, EvidenceType
 from app.schemas.errors import AppException
@@ -14,8 +15,12 @@ from app.schemas.product import ProductRecord
 
 
 class AssessmentService:
-    def build_profile(self, product_id: str) -> ConditionProfile:
+    def build_profile(self, product_id: str, db: Optional[Session] = None) -> ConditionProfile:
+        from app.db.repositories import product_repo, evidence_repo, assessment_repo
         product = store.get_product(product_id)
+        if not product and db:
+            product = product_repo.get_by_id(db, product_id)
+
         if not product:
             raise AppException(
                 code="PRODUCT_NOT_FOUND",
@@ -25,6 +30,8 @@ class AssessmentService:
             )
 
         evidence_list = store.get_evidence(product_id)
+        if not evidence_list and db:
+            evidence_list = evidence_repo.get_by_product_id(db, product_id)
         components: Dict[str, ComponentCondition] = {}
 
         # 1. BATTERY
@@ -76,6 +83,8 @@ class AssessmentService:
             components=components,
             all_evidence=evidence_list,
         )
+        if db:
+            assessment_repo.save(db, profile)
         return store.save_profile(profile)
 
     def _synthesize_battery(self, evs: List[EvidenceItem], prod: ProductRecord) -> ComponentCondition:

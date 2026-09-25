@@ -52,6 +52,17 @@ OBJECTIVE_WEIGHTS: Dict[ObjectiveType, Dict[str, float]] = {
 }
 
 
+PATHWAY_CIRCULAR_PRIORITY: Dict[PathwayType, int] = {
+    PathwayType.REUSE: 6,
+    PathwayType.REUSE_REDEPLOY: 6,
+    PathwayType.REPAIR: 5,
+    PathwayType.UPGRADE: 4,
+    PathwayType.REFURBISH: 3,
+    PathwayType.COMPONENT_RECOVERY: 2,
+    PathwayType.RECYCLE: 1,
+}
+
+
 def score_pathways(
     product: ProductRecord,
     profile: ConditionProfile,
@@ -119,9 +130,13 @@ def score_pathways(
             )
         )
 
-    # Sort descending by score, prioritizing eligible over ineligible
+    # Sort descending by score, prioritizing eligible over ineligible, breaking ties deterministically by circular hierarchy
     scored.sort(
-        key=lambda item: (item.pathway.eligibility.is_eligible, item.score),
+        key=lambda item: (
+            item.pathway.eligibility.is_eligible,
+            item.score,
+            PATHWAY_CIRCULAR_PRIORITY.get(item.pathway.type, 0),
+        ),
         reverse=True,
     )
 
