@@ -14,7 +14,7 @@ from app.models.entities import (
 from app.schemas.product import Product, ProductCreate, ProductSpecs
 from app.schemas.evidence import Evidence
 from app.schemas.condition import AssessmentBuildResponse, ComponentCondition
-from app.schemas.recommendation import Recommendation, ScoredPathway, SecondLifeSuggestion, ComponentRecoveryManifest
+from app.schemas.recommendation import Recommendation, RecommendationExplanation, ScoredPathway, SecondLifeSuggestion, ComponentRecoveryManifest
 from app.schemas.pathway import Pathway
 from app.schemas.enums import (
     ComponentName,
@@ -302,6 +302,11 @@ class RecommendationRepository:
                 if hasattr(rec.primary_recommendation, "model_dump")
                 else rec.primary_recommendation
             ),
+            explanation=(
+                rec.explanation.model_dump()
+                if hasattr(rec.explanation, "model_dump")
+                else rec.explanation
+            ),
             second_life=(
                 rec.second_life.model_dump()
                 if hasattr(rec.second_life, "model_dump")
@@ -351,6 +356,10 @@ class RecommendationRepository:
         if entity.primary_recommendation:
             primary_rec = ScoredPathway(**entity.primary_recommendation) if isinstance(entity.primary_recommendation, dict) else entity.primary_recommendation
 
+        explanation = None
+        if entity.explanation:
+            explanation = RecommendationExplanation(**entity.explanation) if isinstance(entity.explanation, dict) else entity.explanation
+
         second_life = None
         if entity.second_life:
             second_life = SecondLifeSuggestion(**entity.second_life) if isinstance(entity.second_life, dict) else entity.second_life
@@ -370,6 +379,7 @@ class RecommendationRepository:
             evidence_ids=entity.evidence_ids or [],
             assumptions=entity.assumptions or [],
             primary_recommendation=primary_rec,
+            explanation=explanation,
             second_life=second_life,
             component_recovery=recovery,
             created_at=entity.created_at,

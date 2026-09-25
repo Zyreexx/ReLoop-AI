@@ -25,3 +25,10 @@ class DamageAssessmentOutput(BaseModel):
 class SymptomClassificationOutput(BaseModel):
     matched_symptom_tags: List[str] = Field(default_factory=list)
     user_summary: Optional[str] = None
+
+
+class ExplanationOutput(BaseModel):
+    summary: str = Field(..., description="Executive narrative summary of the circular recommendation")
+    details: List[str] = Field(default_factory=list, description="Supporting bullet points grounded in verified evidence")
+    assumptions: List[str] = Field(default_factory=list, description="Explicit notes of key assumptions")
+

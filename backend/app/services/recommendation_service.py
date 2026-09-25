@@ -51,6 +51,14 @@ class RecommendationService:
             objective=req.objective or Objective.MAX_LIFE,
         )
 
+        # Generate guarded narrative explanation (AI with template fallback)
+        from app.services.explanation_service import explanation_service
+        rec.explanation = explanation_service.generate_guarded_explanation(
+            product=product,
+            recommendation=rec,
+            profile=profile,
+        )
+
         # Save to database and memory store
         if db:
             recommendation_repo.save(db, rec)

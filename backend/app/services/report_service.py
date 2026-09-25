@@ -117,7 +117,16 @@ class ReportService:
                 obs_snippet = cond.observations[0] if cond.observations else "No diagnostic uploaded"
                 data_gaps.append(f"{comp_name.upper()}: {cond.label} — {obs_snippet}")
 
-        # 7. Construct and return ConditionReportResponse
+        # 7. Ensure explanation exists
+        if not recommendation.explanation:
+            from app.services.explanation_service import explanation_service
+            recommendation.explanation = explanation_service.generate_guarded_explanation(
+                product=product,
+                recommendation=recommendation,
+                profile=profile,
+            )
+
+        # 8. Construct and return ConditionReportResponse
         return ConditionReportResponse(
             id=assessment_id,
             assessment_id=assessment_id,
@@ -129,6 +138,7 @@ class ReportService:
             impact_estimates=impact,
             assumptions=deduped_assumptions,
             data_gaps=data_gaps,
+            explanation=recommendation.explanation,
             disclaimer="Demo baseline assumptions, not verified market data. Estimates are derived from deterministic model parameters.",
             timestamp=profile.created_at,
         )
