@@ -60,6 +60,11 @@ from app.schemas.recommendation import (
     SecondLifeSuggestion,
     ComponentRecoveryManifest,
 )
+from app.schemas.report import (
+    ConditionReportResponse,
+    ReportImpactEstimates,
+    ReportPayload,
+)
 from app.schemas.symptoms import (
     SymptomsParseRequest,
     SymptomsParseResponse,
@@ -140,6 +145,9 @@ __all__ = [
     "RecommendationsGenerateResponse",
     "RecommendationRequest",
     "ReportResponse",
+    "ConditionReportResponse",
+    "ReportImpactEstimates",
+    "ReportPayload",
     "PathwayEligibility",
     "EnvironmentalEstimate",
     "LogisticsEstimate",

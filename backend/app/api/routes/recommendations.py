@@ -1,5 +1,5 @@
 """
-Recommendation generation and condition report retrieval routes.
+Recommendation generation routes.
 """
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
@@ -10,10 +10,10 @@ from app.schemas.recommendation import (
 )
 from app.services.recommendation_service import recommendation_service
 
-router = APIRouter(tags=["Recommendations & Reports"])
+router = APIRouter(prefix="/recommendations", tags=["Recommendations"])
 
 
-@router.post("/recommendations/generate", response_model=RecommendationResponse)
+@router.post("/generate", response_model=RecommendationResponse)
 def generate_recommendation(
     req: RecommendationRequest,
     db: Session = Depends(get_db),
@@ -23,14 +23,3 @@ def generate_recommendation(
     Returns ranked pathways, score breakdown, evidence links, and assumptions.
     """
     return recommendation_service.generate_recommendation(req, db=db)
-
-
-@router.get("/reports/{identifier}", response_model=RecommendationResponse)
-def get_recommendation_report(
-    identifier: str,
-    db: Session = Depends(get_db),
-):
-    """
-    Retrieves a generated circular recommendation report by report ID or product ID.
-    """
-    return recommendation_service.get_by_id(identifier, db=db)
