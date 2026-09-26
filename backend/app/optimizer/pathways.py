@@ -270,7 +270,7 @@ def generate_all_pathways(
             min_val=0.0,
             max_val=20.0,
             unit="INR",
-            display_range="$0–$20",
+            display_range="₹0–₹20",
             basis="DATABASE_ESTIMATE",
             assumptions=[
                 "Minimal physical intervention; software repurposing only",
@@ -326,10 +326,10 @@ def generate_all_pathways(
             min_val=15.0,
             max_val=35.0,
             unit="INR",
-            display_range="$15–$35 (Disassembly & Testing)",
+            display_range="₹15–₹35 (Disassembly & Testing)",
             basis="DATABASE_ESTIMATE",
             assumptions=[
-                "Harvest labor offset by spare part inventory value ($60–$140 reclaimed value)",
+                "Harvest labor offset by spare part inventory value (₹60–₹140 reclaimed value)",
             ],
         ),
         expected_life_extension_years=RangeEstimate(
@@ -389,7 +389,7 @@ def generate_all_pathways(
             min_val=0.0,
             max_val=15.0,
             unit="INR",
-            display_range="$0–$15",
+            display_range="₹0–₹15",
             basis="DATABASE_ESTIMATE",
             assumptions=[
                 "Drop-off at certified e-waste partner facility",
