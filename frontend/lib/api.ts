@@ -1,8 +1,8 @@
-/**
- * ReLoop AI — Backend API Client
- * Centralized helper for communicating with the FastAPI backend via Next.js rewrites proxy.
- * All backend calls go through /backend-api/* which is silently proxied to http://127.0.0.1:8000/api/*
- */
+// mvc/**
+/* ReLoop AI — Backend API Client
+* Centralized helper for communicating with the FastAPI backend via Next.js rewrites proxy.
+* All backend calls go through /backend-api/* which is silently proxied to http://127.0.0.1:8000/api/*
+*/
 
 const BACKEND_PREFIX = "/backend-api";
 
