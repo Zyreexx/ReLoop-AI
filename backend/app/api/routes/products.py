@@ -23,9 +23,10 @@ router = APIRouter(prefix="/products", tags=["Products"])
 @router.post("/identify", response_model=ProductIdentifyResponse)
 async def identify_product(request: Request):
     """
-    Identifies device model from uploaded images (1-3) or manual model selection.
-    Thin route handler delegating directly to vision_service.
+    Identifies device model from uploaded images (1-6) or manual model selection.
+    Delegates directly to vision_service with optional custom Gemini API key.
     """
+    api_key_header = request.headers.get("x-gemini-api-key")
     content_type = request.headers.get("content-type", "")
     if "multipart/form-data" in content_type:
         form = await request.form()
@@ -34,6 +35,7 @@ async def identify_product(request: Request):
         hint = form.get("hint")
         manual_model = form.get("manual_model")
         model_id = form.get("model_id")
+        api_key = form.get("api_key") or form.get("gemini_api_key") or api_key_header
 
         image_bytes = None
         if uploaded_files:
@@ -45,16 +47,19 @@ async def identify_product(request: Request):
             manual_model=str(manual_model) if manual_model else None,
             model_id=str(model_id) if model_id else None,
             hint=str(hint) if hint else None,
+            api_key=str(api_key) if api_key else None,
         )
 
     # JSON payload
     body = await request.json() if request.headers.get("content-length", "0") != "0" else {}
     req = ProductIdentifyRequest(**body)
+    custom_key = body.get("api_key") or body.get("gemini_api_key") or api_key_header
     return vision_service.identify(
         image_bytes_list=None,
         manual_model=req.manual_model,
         model_id=req.model_id,
         hint=req.hint,
+        api_key=str(custom_key) if custom_key else None,
     )
 
 

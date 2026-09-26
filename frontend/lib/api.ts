@@ -1,8 +1,8 @@
-/**
- * ReLoop AI — Backend API Client
- * Centralized helper for communicating with the FastAPI backend via Next.js rewrites proxy.
- * All backend calls go through /backend-api/* which is silently proxied to http://127.0.0.1:8000/api/*
- */
+// mvc/**
+/* ReLoop AI — Backend API Client
+* Centralized helper for communicating with the FastAPI backend via Next.js rewrites proxy.
+* All backend calls go through /backend-api/* which is silently proxied to http://127.0.0.1:8000/api/*
+*/
 
 const BACKEND_PREFIX = "/backend-api";
 
@@ -51,16 +51,24 @@ export async function identifyProduct(
   images: File[],
   hint?: string,
   manualModel?: string,
-  modelId?: string
+  modelId?: string,
+  apiKey?: string
 ): Promise<ProductIdentifyResponse> {
   const formData = new FormData();
   images.forEach((img) => formData.append("images", img));
   if (hint) formData.append("hint", hint);
   if (manualModel) formData.append("manual_model", manualModel);
   if (modelId) formData.append("model_id", modelId);
+  if (apiKey) formData.append("api_key", apiKey);
+
+  const headers: Record<string, string> = {};
+  if (apiKey) {
+    headers["X-Gemini-API-Key"] = apiKey;
+  }
 
   const res = await fetch(`${BACKEND_PREFIX}/products/identify`, {
     method: "POST",
+    headers,
     body: formData,
   });
   return handleResponse(res);

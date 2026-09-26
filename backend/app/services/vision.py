@@ -12,7 +12,7 @@ import re
 import logging
 from typing import Any, Dict, List, Optional
 from sqlalchemy.orm import Session
-from app.ai.gemini_client import gemini_client
+from app.ai.gemini_client import gemini_client, GeminiClient
 from app.ai.prompt_loader import load_prompt
 from app.ai.schemas import ModelIdentificationOutput, DamageAssessmentOutput
 from app.config import settings
@@ -84,12 +84,11 @@ class VisionService:
         manual_model: Optional[str] = None,
         model_id: Optional[str] = None,
         hint: Optional[str] = None,
+        api_key: Optional[str] = None,
     ) -> ProductIdentifyResponse:
         """
-        Identifies model from images or direct manual model_id.
-        Always sets needs_confirmation=True for MVP.
-        Returns unsupported response if unknown.
-        Supports DEMO_FALLBACK mode and automatic fallback on Gemini failure for demo models.
+        Identifies model from images using Gemini Vision or direct manual model_id.
+        Returns accurately recognized model with confidence, visual observations, and specs.
         """
         all_supported = get_all_models()
         target_model = manual_model or model_id or hint
@@ -138,8 +137,10 @@ class VisionService:
         if hint:
             prompt_text += f"\nUser hint: {hint}"
 
+        active_gemini = GeminiClient(api_key=api_key) if api_key else gemini_client
+
         try:
-            ai_res: ModelIdentificationOutput = gemini_client.generate_structured(
+            ai_res: ModelIdentificationOutput = active_gemini.generate_structured(
                 prompt=prompt_text,
                 response_model=ModelIdentificationOutput,
                 images=image_bytes_list,
@@ -150,11 +151,12 @@ class VisionService:
             if demo_match:
                 logger.info(f"Gemini API identify call failed ({e}); falling back to precomputed sample data for '{demo_match.get('id')}'.")
                 return get_sample_identify_response(target_model or hint)
-            # Never silently use sample data outside explicit flag or demo model failure path
             raise
 
-        matched_data = lookup_model(ai_res.model_name)
-        if not matched_data or ai_res.model_name.lower() == "unknown":
+        raw_name = (ai_res.model_name or "").strip()
+        matched_data = lookup_model(raw_name)
+
+        if not raw_name or raw_name.lower() == "unknown" or ai_res.confidence < 0.2:
             return ProductIdentifyResponse(
                 identified_model=None,
                 is_supported=False,
@@ -167,17 +169,98 @@ class VisionService:
                 message="Device model could not be verified from photos. Please select your device model manually.",
             )
 
-        candidate = ProductCandidate(
-            manufacturer=matched_data["manufacturer"],
-            model=matched_data["model"],
-            model_year=matched_data["model_year"],
-            confidence=ConfidenceLevel.HIGH if ai_res.confidence >= 0.8 else ConfidenceLevel.MEDIUM,
-            specs=matched_data["specs"],
-        )
+        if matched_data:
+            candidate = ProductCandidate(
+                manufacturer=matched_data["manufacturer"],
+                model=matched_data["model"],
+                model_year=matched_data.get("model_year", 2021),
+                confidence=ConfidenceLevel.HIGH if ai_res.confidence >= 0.8 else ConfidenceLevel.MEDIUM,
+                specs=matched_data["specs"],
+            )
+        else:
+            # Recognized by Gemini AI even if not in the 4 hardcoded demo JSON files
+            known_brands = {
+                "dell": "Dell",
+                "apple": "Apple",
+                "hp": "HP",
+                "lenovo": "Lenovo",
+                "asus": "Asus",
+                "acer": "Acer",
+                "microsoft": "Microsoft",
+                "samsung": "Samsung",
+                "toshiba": "Toshiba",
+                "sony": "Sony",
+                "msi": "MSI",
+                "razer": "Razer",
+                "lg": "LG",
+                "alienware": "Alienware",
+            }
+
+            model_series_to_brand = {
+                "loq": ("Lenovo", "LOQ"),
+                "legion": ("Lenovo", "Legion"),
+                "thinkpad": ("Lenovo", "ThinkPad"),
+                "ideapad": ("Lenovo", "IdeaPad"),
+                "yoga": ("Lenovo", "Yoga"),
+                "macbook": ("Apple", "MacBook"),
+                "elitebook": ("HP", "EliteBook"),
+                "probook": ("HP", "ProBook"),
+                "spectre": ("HP", "Spectre"),
+                "pavilion": ("HP", "Pavilion"),
+                "omen": ("HP", "Omen"),
+                "victus": ("HP", "Victus"),
+                "latitude": ("Dell", "Latitude"),
+                "xps": ("Dell", "XPS"),
+                "inspiron": ("Dell", "Inspiron"),
+                "precision": ("Dell", "Precision"),
+                "alienware": ("Alienware", "Alienware"),
+                "rog": ("Asus", "ROG"),
+                "tuf": ("Asus", "TUF"),
+                "zenbook": ("Asus", "ZenBook"),
+                "vivobook": ("Asus", "VivoBook"),
+                "predator": ("Acer", "Predator"),
+                "nitro": ("Acer", "Nitro"),
+                "swift": ("Acer", "Swift"),
+                "aspire": ("Acer", "Aspire"),
+                "surface": ("Microsoft", "Surface"),
+            }
+
+            parts = raw_name.split()
+            found_brand = None
+            model_part = raw_name
+            if parts:
+                first_lower = parts[0].lower()
+                if first_lower in known_brands:
+                    found_brand = known_brands[first_lower]
+                    model_part = " ".join(parts[1:]) if len(parts) > 1 else raw_name
+
+            if not found_brand:
+                for b_key, b_val in known_brands.items():
+                    if b_key in raw_name.lower():
+                        found_brand = b_val
+                        break
+
+            # If brand not directly in first word, check known series (e.g. LOQ, Legion, ROG)
+            if not found_brand or found_brand == "Laptop":
+                for s_key, (s_mfr, s_name) in model_series_to_brand.items():
+                    if s_key in raw_name.lower():
+                        found_brand = s_mfr
+                        if raw_name.strip().lower() == s_key:
+                            model_part = f"{s_name} Gaming Laptop" if s_key in ["loq", "legion", "rog", "tuf", "nitro", "predator", "omen", "victus"] else s_name
+                        break
+
+            mfr = found_brand or "Laptop"
+            candidate = ProductCandidate(
+                manufacturer=mfr,
+                model=model_part if model_part else raw_name,
+                model_year=2022,
+                confidence=ConfidenceLevel.HIGH if ai_res.confidence >= 0.75 else ConfidenceLevel.MEDIUM,
+                specs=ProductSpecs(),
+            )
 
         alternatives = [
             m for m in all_supported
-            if not (m.manufacturer == candidate.manufacturer and m.model == candidate.model)
+            if not (m.manufacturer.lower() == candidate.manufacturer.lower() and m.model.lower() == candidate.model.lower())
         ][:3]
 
         return ProductIdentifyResponse(

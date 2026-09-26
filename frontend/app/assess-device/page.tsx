@@ -40,34 +40,12 @@ export default function AssessDevicePage() {
   const [visualData, setVisualData] = useState<VisualInspectionData>({
     images: [],
     identifiedProduct: {
-      manufacturer: "Dell",
-      model: "Latitude 5420",
-      confidence: 0.91,
+      manufacturer: "",
+      model: "",
+      confidence: 0,
       confirmed: false,
     },
-    visibleObservations: [
-      {
-        id: "vis-chassis-1",
-        component: "chassis",
-        condition: "surface_scratches",
-        observation: "Minor cosmetic scratches near palm rest",
-        confidence: 0.88,
-      },
-      {
-        id: "vis-display-1",
-        component: "display",
-        condition: "no_visible_damage",
-        observation: "No visible crack detected on display glass",
-        confidence: 0.94,
-      },
-      {
-        id: "vis-keyboard-1",
-        component: "keyboard",
-        condition: "minor_wear",
-        observation: "Keycaps present; 2 loose keys reported",
-        confidence: 0.85,
-      },
-    ],
+    visibleObservations: [],
   });
 
   // Step 2 data: Diagnostics
@@ -132,30 +110,32 @@ export default function AssessDevicePage() {
   const handleVisualComplete = async (data: VisualInspectionData) => {
     setVisualData(data);
 
-    // Create product record in the backend
-    try {
-      const product = await createProduct({
-        manufacturer: data.identifiedProduct.manufacturer,
-        model: data.identifiedProduct.model,
-        model_year: 2021, // Default estimate — could be enhanced
-        category: "LAPTOP",
-        age: 4.5,
-      });
-      setProductId(product.id);
-      console.log("[ReLoop] Product created in backend:", product.id);
+    // Create product record in the backend if model identified
+    if (data.identifiedProduct?.model) {
+      try {
+        const product = await createProduct({
+          manufacturer: data.identifiedProduct.manufacturer || "Laptop",
+          model: data.identifiedProduct.model,
+          model_year: 2021, // Default estimate — could be enhanced
+          category: "LAPTOP",
+          age: 4.5,
+        });
+        setProductId(product.id);
+        console.log("[ReLoop] Product created in backend:", product.id);
 
-      // Record visual damage analysis evidence in backend if photos/observations available
-      if (data.rawFiles && data.rawFiles.length > 0) {
-        try {
-          const notes = data.visibleObservations.map((o) => `${o.component}: ${o.observation}`).join(". ");
-          await analyzeVision(product.id, data.rawFiles, notes);
-          console.log("[ReLoop] Visual evidence recorded in backend for product:", product.id);
-        } catch (vErr: any) {
-          console.warn("[ReLoop] Backend vision analysis warning:", vErr.message);
+        // Record visual damage analysis evidence in backend if photos/observations available
+        if (data.rawFiles && data.rawFiles.length > 0) {
+          try {
+            const notes = data.visibleObservations.map((o) => `${o.component}: ${o.observation}`).join(". ");
+            await analyzeVision(product.id, data.rawFiles, notes);
+            console.log("[ReLoop] Visual evidence recorded in backend for product:", product.id);
+          } catch (vErr: any) {
+            console.warn("[ReLoop] Backend vision analysis warning:", vErr.message);
+          }
         }
+      } catch (err: any) {
+        console.warn("[ReLoop] Backend product creation failed, using local flow:", err.message);
       }
-    } catch (err: any) {
-      console.warn("[ReLoop] Backend product creation failed, using local flow:", err.message);
     }
 
     setCurrentStep(2);

@@ -200,10 +200,13 @@ def register(body: RegisterRequest, db: Session = Depends(get_db)):
         db.commit()
 
         # Send OTP code via email service wrapper
-        print(f"\n" + "=" * 58, flush=True)
-        print(f" [RELOOP OTP] Verification code for {user.email}: {raw_code}", flush=True)
-        print(f"=" * 58 + "\n", flush=True)
-        logger.info(f"[OTP CODE] Verification code for {user.email}: {raw_code}")
+        if settings.ENVIRONMENT == "development":
+            print(f"\n" + "=" * 58, flush=True)
+            print(f" [RELOOP OTP] Verification code for {user.email}: {raw_code}", flush=True)
+            print(f"=" * 58 + "\n", flush=True)
+            logger.info(f"[OTP CODE] Verification code for {user.email}: {raw_code}")
+        else:
+            logger.info(f"Verification code issued for {user.email}")
         try:
             email_service.send_otp_email(to_email=user.email, code=raw_code)
         except Exception as e:
@@ -377,10 +380,13 @@ def resend_otp(body: ResendOtpRequest, db: Session = Depends(get_db)):
     db.commit()
 
     # Send OTP code via email service wrapper
-    print(f"\n" + "=" * 58, flush=True)
-    print(f" [RELOOP OTP] Resent verification code for {user.email}: {raw_code}", flush=True)
-    print(f"=" * 58 + "\n", flush=True)
-    logger.info(f"[OTP CODE] Resent verification code for {user.email}: {raw_code}")
+    if settings.ENVIRONMENT == "development":
+        print(f"\n" + "=" * 58, flush=True)
+        print(f" [RELOOP OTP] Resent verification code for {user.email}: {raw_code}", flush=True)
+        print(f"=" * 58 + "\n", flush=True)
+        logger.info(f"[OTP CODE] Resent verification code for {user.email}: {raw_code}")
+    else:
+        logger.info(f"Verification code resent to {user.email}")
     try:
         email_service.send_otp_email(to_email=user.email, code=raw_code)
     except Exception as e:
