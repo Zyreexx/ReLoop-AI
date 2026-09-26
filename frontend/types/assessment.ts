@@ -56,6 +56,7 @@ export type VisualObservation = {
 
 export type VisualInspectionData = {
   images: string[];
+  rawFiles?: File[];
   identifiedProduct: {
     manufacturer: string;
     model: string;

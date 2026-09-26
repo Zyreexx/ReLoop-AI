@@ -42,7 +42,7 @@ async def analyze_visible_damage(
         image_bytes = None
         image_names = None
         if uploaded_files:
-            processed = await validate_and_process_upload_files(uploaded_files, min_files=1, max_files=3)
+            processed = await validate_and_process_upload_files(uploaded_files, min_files=1, max_files=6)
             image_bytes = [img.data for img in processed]
             image_names = [img.filename for img in processed]
 

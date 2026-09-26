@@ -33,3 +33,7 @@ Thumbs.db
 *.sqlite
 *.sqlite3
 uploads/
+
+#Skills
+.agents
+brag-output

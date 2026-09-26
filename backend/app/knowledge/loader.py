@@ -42,6 +42,8 @@ def get_demo_data_dir() -> Path:
         Path.cwd() / "data" / "demo",
         Path.cwd().parent / "data" / "demo",
         Path(__file__).resolve().parents[2] / "data" / "demo",
+        Path(__file__).resolve().parents[2] / "tests" / "golden",
+        Path.cwd() / "tests" / "golden",
     ]
     for p in candidates:
         if p.exists() and p.is_dir():

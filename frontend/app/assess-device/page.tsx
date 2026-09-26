@@ -18,6 +18,13 @@ import {
   VisualInspectionData,
 } from "@/types/assessment";
 import { Lock, ArrowRight, ShieldCheck, ArrowLeft } from "lucide-react";
+import {
+  createProduct,
+  validateDiagnostics,
+  parseSymptoms,
+  buildAssessment,
+  analyzeVision,
+} from "@/lib/api";
 
 export default function AssessDevicePage() {
   const { user } = useAuth();
@@ -27,6 +34,7 @@ export default function AssessDevicePage() {
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [assessmentId, setAssessmentId] = useState<string>("");
+  const [productId, setProductId] = useState<string>("");
 
   // Step 1 data: Visual
   const [visualData, setVisualData] = useState<VisualInspectionData>({
@@ -121,20 +129,113 @@ export default function AssessDevicePage() {
     setAuthModalOpen(true);
   };
 
-  const handleVisualComplete = (data: VisualInspectionData) => {
+  const handleVisualComplete = async (data: VisualInspectionData) => {
     setVisualData(data);
+
+    // Create product record in the backend
+    try {
+      const product = await createProduct({
+        manufacturer: data.identifiedProduct.manufacturer,
+        model: data.identifiedProduct.model,
+        model_year: 2021, // Default estimate — could be enhanced
+        category: "LAPTOP",
+        age: 4.5,
+      });
+      setProductId(product.id);
+      console.log("[ReLoop] Product created in backend:", product.id);
+
+      // Record visual damage analysis evidence in backend if photos/observations available
+      if (data.rawFiles && data.rawFiles.length > 0) {
+        try {
+          const notes = data.visibleObservations.map((o) => `${o.component}: ${o.observation}`).join(". ");
+          await analyzeVision(product.id, data.rawFiles, notes);
+          console.log("[ReLoop] Visual evidence recorded in backend for product:", product.id);
+        } catch (vErr: any) {
+          console.warn("[ReLoop] Backend vision analysis warning:", vErr.message);
+        }
+      }
+    } catch (err: any) {
+      console.warn("[ReLoop] Backend product creation failed, using local flow:", err.message);
+    }
+
     setCurrentStep(2);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleDiagnosticsComplete = (data: DiagnosticData) => {
+  const handleDiagnosticsComplete = async (data: DiagnosticData) => {
     setDiagnosticsData(data);
+
+    // Send diagnostics to backend for validation and evidence recording
+    if (productId) {
+      try {
+        const result = await validateDiagnostics({
+          product_id: productId,
+          battery: data.battery.notProvided
+            ? undefined
+            : {
+                design_capacity: data.battery.designCapacity,
+                full_charge_capacity: data.battery.fullChargeCapacity,
+                cycle_count: data.battery.cycleCount,
+                health_percent: data.battery.healthPercentage,
+              },
+          ssd: data.ssd.notProvided
+            ? undefined
+            : {
+                health_percent: data.ssd.healthPercentage,
+                smart_status: data.ssd.smartStatus,
+                power_on_hours: data.ssd.powerOnHours,
+              },
+          ram: {
+            test_result: data.ram.testResult,
+            installed_gb: data.ram.capacityGB,
+          },
+          thermals: {
+            max_temp_c: data.thermals.cpuTempC,
+            throttling_detected: data.thermals.thermalThrottling === "DETECTED",
+          },
+          system: {
+            critical_errors:
+              data.system.criticalFaults === "None reported" ? [] : [data.system.criticalFaults],
+            post_successful: data.system.hardwareResult === "PASS",
+            motherboard_power_stable: data.system.hardwareResult !== "FAIL",
+          },
+        });
+        console.log("[ReLoop] Diagnostics validated in backend:", result.summary);
+      } catch (err: any) {
+        console.warn("[ReLoop] Backend diagnostics validation failed:", err.message);
+      }
+    }
+
     setCurrentStep(3);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const handleSymptomsComplete = (data: UserSymptomsData) => {
+  const handleSymptomsComplete = async (data: UserSymptomsData) => {
     setSymptomsData(data);
+
+    // Send symptoms to backend for parsing and evidence recording
+    if (productId) {
+      try {
+        const symptomLabels = data.selectedSymptoms.map((s) => s.label);
+        const objectiveMap: Record<string, string> = {
+          max_life: "daily_office_and_web",
+          lowest_cost: "backup_secondary",
+          environmental: "daily_office_and_web",
+          fastest_recovery: "daily_office_and_web",
+        };
+
+        await parseSymptoms({
+          product_id: productId,
+          symptoms: symptomLabels,
+          notes: data.userDescription,
+          intended_use: objectiveMap[data.userObjective] || "daily_office_and_web",
+        });
+        console.log("[ReLoop] Symptoms parsed in backend");
+      } catch (err: any) {
+        console.warn("[ReLoop] Backend symptoms parsing failed:", err.message);
+      }
+    }
+
     setCurrentStep(4);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -152,6 +253,85 @@ export default function AssessDevicePage() {
 
     setIsGenerating(true);
     try {
+      // If we have a backend product_id, build the assessment in the backend
+      if (productId) {
+        try {
+          const profile = await buildAssessment(productId);
+
+          // Map backend ConditionProfile (components dict) to frontend ComponentConditionRecord[]
+          const condProfile: ComponentConditionRecord[] = Object.entries(
+            profile.components
+          ).map(([key, comp]) => {
+            const statusMap: Record<string, "good" | "needs_attention" | "needs_service" | "fault"> = {
+              GOOD: "good",
+              WEAR: "needs_attention",
+              SERVICE_REQUIRED: "needs_attention",
+              REPLACE: "needs_service",
+              REPLACE_REQUIRED: "needs_service",
+              DAMAGED: "fault",
+              UNKNOWN: "needs_attention",
+            };
+
+            const labelMap: Record<string, string> = {
+              battery: "Battery",
+              ssd: "SSD / Storage",
+              ram: "RAM Memory",
+              thermals: "Thermals & Cooling",
+              display: "Display Panel",
+              keyboard: "Keyboard",
+              chassis: "Chassis / Case",
+              system: "System / Motherboard",
+            };
+
+            return {
+              component: labelMap[key] || comp.label || key,
+              status: statusMap[comp.status] || "good",
+              statusLabel: comp.label || comp.status,
+              summary: comp.observations.join(" • ") || "Evaluated",
+              confidence: comp.confidence || "High",
+              evidence: comp.evidence_ids.map((id: string) => ({
+                text: id,
+                source: comp.evidence_sources[0] || "DIAGNOSTIC" as any,
+              })),
+              sourceTypes: comp.evidence_sources.map((s: string) => s as any),
+            };
+          });
+
+          const backendAssessmentId = productId;
+          setConditionProfile(condProfile);
+          setAssessmentId(backendAssessmentId);
+
+          // Save to localStorage for the engine page
+          const assessmentRecord = {
+            id: backendAssessmentId,
+            userId: user.email,
+            userEmail: user.email,
+            createdAt: new Date().toISOString(),
+            visual: visualData,
+            diagnostics: diagnosticsData,
+            symptoms: symptomsData,
+            conditionProfile: condProfile,
+            backendProductId: productId,
+            overallHealth: profile.overall_hardware_health,
+          };
+
+          try {
+            localStorage.setItem(`assessment_${backendAssessmentId}`, JSON.stringify(assessmentRecord));
+            localStorage.setItem("current_assessment", JSON.stringify(assessmentRecord));
+          } catch (err) {
+            console.warn("Could not write assessment to localStorage", err);
+          }
+
+          console.log("[ReLoop] Assessment built from backend:", profile.overall_hardware_health);
+          setCurrentStep(5);
+          window.scrollTo({ top: 0, behavior: "smooth" });
+          return;
+        } catch (backendErr: any) {
+          console.warn("[ReLoop] Backend assessment build failed, falling back to local:", backendErr.message);
+        }
+      }
+
+      // Fallback: Use the existing Next.js mock route
       const res = await fetch("/api/assessments/generate-condition-profile", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -172,8 +352,12 @@ export default function AssessDevicePage() {
       setConditionProfile(data.assessment.conditionProfile);
       setAssessmentId(data.assessment.id);
       try {
-        localStorage.setItem(`assessment_${data.assessment.id}`, JSON.stringify(data.assessment));
-        localStorage.setItem("current_assessment", JSON.stringify(data.assessment));
+        const enrichedRecord = {
+          ...data.assessment,
+          backendProductId: productId || data.assessment.backendProductId || data.assessment.id,
+        };
+        localStorage.setItem(`assessment_${data.assessment.id}`, JSON.stringify(enrichedRecord));
+        localStorage.setItem("current_assessment", JSON.stringify(enrichedRecord));
       } catch (err) {
         console.warn("Could not write assessment to localStorage", err);
       }

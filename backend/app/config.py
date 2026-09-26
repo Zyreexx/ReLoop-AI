@@ -16,7 +16,7 @@ class Settings:
     HOST: str = os.getenv("HOST", "0.0.0.0")
     MAX_UPLOAD_MB: int = 10
     DATABASE_URL: str = os.getenv(
-        "DATABASE_URL", "postgresql+psycopg://postgres:postgres@localhost:5432/reloop"
+        "DATABASE_URL", "sqlite:///./reloop.db"
     )
 
     # CORS
