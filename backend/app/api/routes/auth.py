@@ -23,6 +23,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, EmailStr, Field
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.db.session import get_db
 from app.errors import AppError, ErrorCode
 from app.models.entities import OtpCode, User
@@ -107,6 +108,7 @@ class ResendOtpRequest(BaseModel):
 class ResendOtpResponse(BaseModel):
     message: str
     cooldown_seconds: int = 60
+    dev_otp: Optional[str] = None
 
 
 class GoogleAuthRequest(BaseModel):
@@ -123,9 +125,10 @@ class UserResponse(BaseModel):
     provider: str
     is_email_verified: bool = False
     created_at: str
+    dev_otp: Optional[str] = None
 
 
-def _user_to_response(u: User) -> UserResponse:
+def _user_to_response(u: User, dev_otp: Optional[str] = None) -> UserResponse:
     return UserResponse(
         id=u.id,
         email=u.email,
@@ -134,6 +137,7 @@ def _user_to_response(u: User) -> UserResponse:
         provider=u.provider,
         is_email_verified=bool(getattr(u, "is_email_verified", False)),
         created_at=u.created_at.isoformat(),
+        dev_otp=dev_otp,
     )
 
 
@@ -196,13 +200,18 @@ def register(body: RegisterRequest, db: Session = Depends(get_db)):
         db.commit()
 
         # Send OTP code via email service wrapper
+        print(f"\n" + "=" * 58, flush=True)
+        print(f" [RELOOP OTP] Verification code for {user.email}: {raw_code}", flush=True)
+        print(f"=" * 58 + "\n", flush=True)
+        logger.info(f"[OTP CODE] Verification code for {user.email}: {raw_code}")
         try:
             email_service.send_otp_email(to_email=user.email, code=raw_code)
         except Exception as e:
             logger.error(f"Failed to send OTP email to {user.email}: {e}")
 
+    dev_otp = raw_code if (body.provider == "email" and settings.ENVIRONMENT == "development") else None
     logger.info(f"New user registered: {user.email} via {user.provider}")
-    return _user_to_response(user)
+    return _user_to_response(user, dev_otp=dev_otp)
 
 
 @router.post("/verify-otp", response_model=UserResponse)
@@ -368,15 +377,21 @@ def resend_otp(body: ResendOtpRequest, db: Session = Depends(get_db)):
     db.commit()
 
     # Send OTP code via email service wrapper
+    print(f"\n" + "=" * 58, flush=True)
+    print(f" [RELOOP OTP] Resent verification code for {user.email}: {raw_code}", flush=True)
+    print(f"=" * 58 + "\n", flush=True)
+    logger.info(f"[OTP CODE] Resent verification code for {user.email}: {raw_code}")
     try:
         email_service.send_otp_email(to_email=user.email, code=raw_code)
     except Exception as e:
         logger.error(f"Failed to send resend OTP email to {user.email}: {e}")
 
+    dev_otp = raw_code if settings.ENVIRONMENT == "development" else None
     logger.info(f"Verification code resent to {user.email}")
     return ResendOtpResponse(
         message="A new verification code has been sent to your email.",
         cooldown_seconds=RATE_LIMIT_SECONDS,
+        dev_otp=dev_otp,
     )
 
 

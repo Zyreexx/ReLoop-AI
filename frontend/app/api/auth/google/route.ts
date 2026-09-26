@@ -30,8 +30,12 @@ export async function POST(req: NextRequest) {
     const data = await res.json();
 
     if (!res.ok) {
+      const errorMessage =
+        (typeof data.error === "object" ? data.error?.message : data.error) ||
+        data.detail ||
+        "Google authentication failed.";
       return NextResponse.json(
-        { error: data.detail || "Google authentication failed." },
+        { error: errorMessage },
         { status: res.status }
       );
     }
@@ -39,7 +43,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(data);
   } catch (err) {
     return NextResponse.json(
-      { error: "Could not reach the server. Please try again." },
+      { error: "Could not reach the backend server (http://localhost:8000). Please start the backend in a terminal." },
       { status: 503 }
     );
   }

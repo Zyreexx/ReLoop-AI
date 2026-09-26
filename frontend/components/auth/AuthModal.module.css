@@ -340,6 +340,90 @@
   border-color: #86868b;
 }
 
+.otpInput {
+  width: 100%;
+  height: 52px;
+  text-align: center;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: 0.35em;
+  padding: 0 16px;
+  border-radius: 12px;
+  border: 1.5px solid #d2d2d7;
+  background: #fbfbfd;
+  color: #1d1d1f;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.otpInput:focus {
+  outline: none;
+  border-color: #0071e3;
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.15);
+}
+
+.otpInfoBox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f5f5f7;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 12px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+}
+
+.otpResendRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 14px;
+  font-size: 12px;
+  color: #6e6e73;
+}
+
+.resendBtn {
+  background: none;
+  border: none;
+  color: #0071e3;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: opacity 0.2s ease;
+}
+
+.resendBtn:hover:not(:disabled) {
+  text-decoration: underline;
+}
+
+.resendBtn:disabled {
+  color: #86868b;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.backBtn {
+  background: none;
+  border: none;
+  color: #6e6e73;
+  font-size: 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+}
+
+.backBtn:hover {
+  color: #1d1d1f;
+}
+
 @media (max-width: 640px) {
   .card {
     height: auto;
@@ -359,3 +443,4 @@
     padding: 24px;
   }
 }
+
