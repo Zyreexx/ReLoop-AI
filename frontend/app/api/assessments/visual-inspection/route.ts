@@ -13,6 +13,145 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Check for Gemini API Key in header, body, or environment
+    const geminiApiKey =
+      req.headers.get("x-gemini-api-key") ||
+      body.apiKey ||
+      process.env.GEMINI_API_KEY ||
+      process.env.NEXT_PUBLIC_GEMINI_API_KEY;
+
+    // Check if we can run direct Gemini Vision analysis on uploaded images
+    if (geminiApiKey && images && images.length > 0) {
+      try {
+        const imageParts: any[] = [];
+        for (const img of images.slice(0, 3)) {
+          if (typeof img === "string" && img.startsWith("data:")) {
+            const parts = img.split(",", 2);
+            const mime = parts[0].split(";")[0].replace("data:", "") || "image/jpeg";
+            imageParts.push({
+              inline_data: {
+                mime_type: mime,
+                data: parts[1],
+              },
+            });
+          }
+        }
+
+        if (imageParts.length > 0) {
+          const supportedList = MVP_SUPPORTED_MODELS.map(
+            (m) => `- ${m.manufacturer} ${m.model}`
+          ).join("\n");
+
+          const prompt = `You are an expert optical laptop hardware identifier.
+Examine the laptop image(s) and identify the exact manufacturer and model name.
+Examine brand logos (Dell, Apple, Lenovo, HP, Asus, Acer, Samsung, Microsoft, etc.), bezel markings, stickers, chassis design, hinge style, and port layout.
+
+Preferred primary catalog models:
+${supportedList}
+
+If it is one of these or any other laptop, output pure JSON in this format:
+{
+  "manufacturer": "<e.g. Dell, Apple, Lenovo, HP, Asus, Acer>",
+  "model": "<e.g. Latitude 5420, MacBook Air M1, ThinkPad T14 Gen 1, XPS 13, etc.>",
+  "confidence": 0.95,
+  "visual_clues": ["<clue 1>", "<clue 2>"],
+  "visible_label_text": "<read text or null>"
+}`;
+
+          const candidateModels = [
+            "gemini-flash-latest",
+            "gemini-3.5-flash-lite",
+            "gemini-3.1-flash-lite",
+            "gemini-3.5-flash",
+          ];
+          let rawText = "";
+
+          for (const model of candidateModels) {
+            try {
+              const geminiRes = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiApiKey}`,
+                {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    contents: [
+                      {
+                        parts: [{ text: prompt }, ...imageParts],
+                      },
+                    ],
+                    generationConfig: {
+                      responseMimeType: "application/json",
+                    },
+                  }),
+                }
+              );
+
+              if (geminiRes.ok) {
+                const geminiData = await geminiRes.json();
+                const text =
+                  geminiData.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (text) {
+                  rawText = text;
+                  break;
+                }
+              }
+            } catch {
+              continue;
+            }
+          }
+
+          if (rawText) {
+            const parsed = JSON.parse(rawText);
+            const detectedModel =
+              parsed.model ||
+              parsed.model_name ||
+              parsed.identification ||
+              parsed.series ||
+              "";
+            const detectedMfr = parsed.manufacturer || parsed.brand || "Laptop";
+
+            if (detectedModel && detectedModel.toLowerCase() !== "unknown") {
+              const observations: VisualObservation[] = (
+                parsed.visual_clues ||
+                parsed.distinguishing_features ||
+                []
+              ).map((clue: string, i: number) => ({
+                id: `vis-gemini-${i}`,
+                component: "chassis" as const,
+                condition: "no_visible_damage" as const,
+                observation: clue,
+                confidence: parsed.confidence || 0.92,
+              }));
+
+              if (observations.length === 0) {
+                observations.push({
+                  id: "vis-gemini-1",
+                  component: "chassis",
+                  condition: "no_visible_damage",
+                  observation: `Identified as ${detectedMfr} ${detectedModel} from optical inspection`,
+                  confidence: parsed.confidence || 0.92,
+                });
+              }
+
+              return NextResponse.json({
+                success: true,
+                identified_product: {
+                  manufacturer: detectedMfr,
+                  model: detectedModel,
+                  confidence: parsed.confidence || 0.92,
+                  confirmed: (parsed.confidence || 0.92) >= 0.85,
+                  visible_label_text: parsed.visible_label_text || null,
+                },
+                visible_observations: observations,
+              });
+            }
+          }
+        }
+      } catch (geminiErr) {
+        console.warn("[Gemini API fallback]", geminiErr);
+      }
+    }
+
     // Combine any text clues from file names or hints
     const cluesText = [
       hint || "",
@@ -21,7 +160,7 @@ export async function POST(req: NextRequest) {
     ].join(" ").toLowerCase();
 
     // Model selection with intelligent keyword matching across supported models
-    let matchedModel = MVP_SUPPORTED_MODELS[0];
+    let matchedModel: any = null;
     let confidence = 0.85;
 
     if (selectedModelId) {
@@ -30,20 +169,24 @@ export async function POST(req: NextRequest) {
         matchedModel = found;
         confidence = 1.0;
       }
+    } else if (cluesText.includes("loq") || cluesText.includes("legion")) {
+      matchedModel = {
+        id: "lenovo-loq",
+        manufacturer: "Lenovo",
+        model: cluesText.includes("loq") ? "LOQ Gaming Laptop" : "Legion Gaming Laptop",
+        category: "Gaming Laptop",
+      };
+      confidence = 0.93;
     } else if (cluesText.includes("macbook") || cluesText.includes("apple") || cluesText.includes("retina") || cluesText.includes("macos")) {
-      // Apple MacBook detection
       matchedModel = MVP_SUPPORTED_MODELS.find((m) => m.manufacturer === "Apple") || MVP_SUPPORTED_MODELS[3];
       confidence = 0.94;
     } else if (cluesText.includes("thinkpad") || cluesText.includes("lenovo") || cluesText.includes("t14") || cluesText.includes("x1")) {
-      // Lenovo ThinkPad detection
       matchedModel = MVP_SUPPORTED_MODELS.find((m) => m.manufacturer === "Lenovo") || MVP_SUPPORTED_MODELS[2];
       confidence = 0.93;
     } else if (cluesText.includes("elitebook") || cluesText.includes("hp") || cluesText.includes("840")) {
-      // HP EliteBook detection
       matchedModel = MVP_SUPPORTED_MODELS.find((m) => m.manufacturer === "HP") || MVP_SUPPORTED_MODELS[4];
       confidence = 0.91;
     } else if (cluesText.includes("dell") || cluesText.includes("latitude") || cluesText.includes("5420")) {
-      // Dell Latitude detection
       matchedModel = MVP_SUPPORTED_MODELS.find((m) => m.manufacturer === "Dell") || MVP_SUPPORTED_MODELS[0];
       confidence = 0.92;
     } else {

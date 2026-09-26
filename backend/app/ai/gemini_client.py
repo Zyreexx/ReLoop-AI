@@ -111,21 +111,48 @@ class GeminiClient:
 
     def _call_sdk(self, contents: List[Any], timeout: float) -> str:
         """
-        Calls official genai.Client models.generate_content.
+        Calls official genai.Client models.generate_content with intelligent fallback
+        across available Gemini flash models if a model is temporarily experiencing high load.
         """
         try:
             from google.genai import types
             config = types.GenerateContentConfig(
                 response_mime_type="application/json",
             )
-            response = self.client.models.generate_content(
-                model=self.model_name,
-                contents=contents,
-                config=config,
-            )
-            if not response or not hasattr(response, "text") or not response.text:
-                raise ValueError("Response contains no valid text.")
-            return response.text.strip()
+            candidate_models = ["gemini-flash-latest", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-3.5-flash", "gemini-3.8-flash"]
+            if self.model_name and self.model_name not in candidate_models:
+                candidate_models.insert(0, self.model_name)
+
+            last_err = None
+            for model_name in candidate_models:
+                try:
+                    response = self.client.models.generate_content(
+                        model=model_name,
+                        contents=contents,
+                        config=config,
+                    )
+                    if response and hasattr(response, "text") and response.text:
+                        return response.text.strip()
+                except Exception as ex:
+                    last_err = ex
+                    err_str = str(ex).lower()
+                    if (
+                        "503" in err_str
+                        or "404" in err_str
+                        or "429" in err_str
+                        or "resource_exhausted" in err_str
+                        or "quota" in err_str
+                        or "high demand" in err_str
+                        or "unavailable" in err_str
+                    ):
+                        logger.warning(f"Gemini model {model_name} unavailable ({ex}); attempting fallback...")
+                        time.sleep(0.3)
+                        continue
+                    raise ex
+
+            if last_err:
+                raise last_err
+            raise ValueError("Response contains no valid text.")
         except Exception as e:
             # Let caller handle retry logic
             raise e
@@ -199,6 +226,29 @@ class GeminiClient:
                 message=f"Gemini returned malformed non-JSON output: {jde.msg}",
                 http_status=502,
             )
+
+        # Normalize common Gemini output variations for ModelIdentificationOutput only if model fields exist
+        if isinstance(data, dict) and response_model.__name__ == "ModelIdentificationOutput":
+            has_laptop_indicators = any(k in data for k in ["model_name", "identification", "model", "brand", "series"])
+            if has_laptop_indicators:
+                if "model_name" not in data or not data["model_name"]:
+                    inferred_name = (
+                        data.get("identification")
+                        or data.get("model")
+                        or f"{data.get('brand', '')} {data.get('series', '')} {data.get('model', '')}".strip()
+                    )
+                    if inferred_name:
+                        data["model_name"] = inferred_name
+                if "confidence" not in data or data["confidence"] is None:
+                    data["confidence"] = 0.90
+                elif isinstance(data["confidence"], str):
+                    try:
+                        data["confidence"] = float(data["confidence"])
+                    except ValueError:
+                        data["confidence"] = 0.90
+                if "visual_clues" not in data or not data["visual_clues"]:
+                    clues = data.get("distinguishing_features") or data.get("observations") or data.get("clues") or []
+                    data["visual_clues"] = clues if isinstance(clues, list) else [str(clues)]
 
         try:
             return response_model.model_validate(data)

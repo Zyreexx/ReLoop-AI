@@ -62,6 +62,7 @@ export type VisualInspectionData = {
     model: string;
     confidence: number;
     confirmed: boolean;
+    visible_label_text?: string | null;
   };
   visibleObservations: VisualObservation[];
 };
