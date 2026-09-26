@@ -145,28 +145,7 @@ class VisionService:
                 images=image_bytes_list,
             )
         except Exception as e:
-            # Check if target_model or hint keywords match a catalog model
-            matched_candidate = lookup_model(target_model or hint)
-            if matched_candidate:
-                logger.info(f"Gemini API identify call failed ({e}); matched catalog model from hint: {matched_candidate['model']}")
-                cand = ProductCandidate(
-                    manufacturer=matched_candidate["manufacturer"],
-                    model=matched_candidate["model"],
-                    model_year=matched_candidate["model_year"],
-                    confidence=ConfidenceLevel.HIGH,
-                    specs=matched_candidate["specs"],
-                )
-                return ProductIdentifyResponse(
-                    identified_model=cand,
-                    is_supported=True,
-                    confidence=0.92,
-                    needs_confirmation=True,
-                    requires_user_confirmation=True,
-                    visual_clues=["Model identified via filename/metadata hint", "Subject to visual verification"],
-                    supported_models=all_supported,
-                )
-
-            # Check if this query corresponds to a demo model
+            # Check if this query corresponds to a known/supported demo model
             demo_match = find_demo_case(target_model or hint)
             if demo_match:
                 logger.info(f"Gemini API identify call failed ({e}); falling back to precomputed sample data for '{demo_match.get('id')}'.")

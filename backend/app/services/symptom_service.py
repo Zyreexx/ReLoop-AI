@@ -17,10 +17,22 @@ from app.schemas.symptoms import (
 class SymptomService:
     def parse_and_record(self, data: SymptomInput) -> SymptomParseResult:
         product_id = data.product_id or "default"
-        parsed_items_raw = gemini_client.parse_symptoms(
-            symptoms=data.selected_symptoms,
-            notes=data.user_notes,
-        )
+        try:
+            parsed_items_raw = gemini_client.parse_symptoms(
+                symptoms=data.selected_symptoms,
+                notes=data.user_notes,
+            )
+        except Exception as e:
+            # Deterministic fallback when Gemini API is unreachable or fails
+            text = " ".join(data.selected_symptoms) + " " + (data.user_notes or "")
+            lowered = text.lower()
+            parsed_items_raw = []
+            if any(w in lowered for w in ["battery", "drain", "charge"]):
+                parsed_items_raw.append({"component": "battery", "symptom": "Rapid discharge", "severity": "MODERATE", "user_statement": "Battery drains quickly"})
+            if any(w in lowered for w in ["fan", "loud", "heat", "hot", "thermal"]):
+                parsed_items_raw.append({"component": "thermals", "symptom": "Audible fans / elevated heat", "severity": "MODERATE", "user_statement": "Elevated thermals / loud fans"})
+            if not parsed_items_raw:
+                parsed_items_raw.append({"component": "system", "symptom": "Lifecycle check", "severity": "LOW", "user_statement": "General operational check"})
 
         parsed_items: List[ParsedSymptomItem] = []
         evidence_items: List[EvidenceItem] = []
