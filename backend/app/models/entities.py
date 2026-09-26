@@ -1,6 +1,6 @@
 """
 SQLAlchemy ORM models for ReLoop AI persistence:
-Product, Assessment, Evidence, ComponentConditionRecord, RecommendationRecord.
+User, Product, Assessment, Evidence, ComponentConditionRecord, RecommendationRecord.
 """
 from datetime import datetime, timezone
 from uuid import uuid4
@@ -17,6 +17,52 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import relationship
 from app.db.base import Base
+
+
+class User(Base):
+    """Stores registered user accounts. Login requires prior registration."""
+    __tablename__ = "users"
+
+    id = Column(String(50), primary_key=True, default=lambda: f"usr_{uuid4().hex[:10]}")
+    email = Column(String(255), unique=True, nullable=False, index=True)
+    name = Column(String(150), nullable=False)
+    picture = Column(String(512), nullable=True)
+    # Provider: 'google' for Google OAuth users, 'email' for email/password
+    provider = Column(String(20), nullable=False, default="google")
+    # Only set for email/password users; None for Google OAuth users
+    password_hash = Column(String(255), nullable=True)
+    is_email_verified = Column(Boolean, default=False, nullable=False)
+    created_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+    last_login_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        nullable=True,
+    )
+
+    otp_codes = relationship("OtpCode", back_populates="user", cascade="all, delete-orphan")
+
+
+class OtpCode(Base):
+    """Stores hashed one-time verification codes for user email verification."""
+    __tablename__ = "otp_codes"
+
+    id = Column(String(50), primary_key=True, default=lambda: f"otp_{uuid4().hex[:10]}")
+    user_id = Column(String(50), ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    code_hash = Column(String(255), nullable=False)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    attempts = Column(Integer, default=0, nullable=False)
+    created_at = Column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+
+    user = relationship("User", back_populates="otp_codes")
 
 
 class Product(Base):

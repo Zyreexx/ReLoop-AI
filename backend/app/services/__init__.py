@@ -8,6 +8,7 @@ from app.services.symptom_service import symptom_service, SymptomService
 from app.services.assessment_service import assessment_service, AssessmentService
 from app.services.recommendation_service import recommendation_service, RecommendationService
 from app.services.report_service import report_service, ReportService
+from app.services import email_service
 
 __all__ = [
     "product_service",
@@ -24,4 +25,5 @@ __all__ = [
     "RecommendationService",
     "report_service",
     "ReportService",
+    "email_service",
 ]

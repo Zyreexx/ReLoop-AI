@@ -8,6 +8,7 @@ export interface UserProfile {
   email: string;
   picture?: string;
   provider: "google" | "email";
+  is_email_verified?: boolean;
 }
 
 interface AuthContextType {

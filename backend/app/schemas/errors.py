@@ -16,6 +16,10 @@ from app.errors import (
     NOT_FOUND,
     INTERNAL_ERROR,
     VALIDATION_ERROR,
+    OTP_EXPIRED,
+    OTP_INVALID,
+    OTP_ATTEMPTS_EXCEEDED,
+    RATE_LIMITED,
 )
 
 __all__ = [
@@ -33,4 +37,8 @@ __all__ = [
     "NOT_FOUND",
     "INTERNAL_ERROR",
     "VALIDATION_ERROR",
+    "OTP_EXPIRED",
+    "OTP_INVALID",
+    "OTP_ATTEMPTS_EXCEEDED",
+    "RATE_LIMITED",
 ]

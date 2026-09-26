@@ -37,3 +37,7 @@ uploads/
 #Skills
 .agents
 brag-output
+
+# Archives & Temporary Extractions
+ReLoop AI/
+*.zip

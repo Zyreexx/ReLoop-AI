@@ -10,8 +10,11 @@ from app.api.routes.symptoms import router as symptoms_router
 from app.api.routes.assessment import router as assessment_router
 from app.api.routes.recommendations import router as recommendations_router
 from app.api.routes.reports import router as reports_router
+from app.api.routes.auth import router as auth_router
+
 
 api_router = APIRouter(prefix="/api")
+api_router.include_router(auth_router)
 api_router.include_router(health_router)
 api_router.include_router(products_router)
 api_router.include_router(vision_router)

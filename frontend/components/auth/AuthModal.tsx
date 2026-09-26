@@ -2,27 +2,22 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, X, Sparkles, CheckCircle2, AlertCircle, ShieldCheck } from "lucide-react";
-import { GoogleLogin, useGoogleLogin } from "@react-oauth/google";
+import {
+  Eye,
+  EyeOff,
+  X,
+  Sparkles,
+  CheckCircle2,
+  AlertCircle,
+  ShieldCheck,
+  Mail,
+  ArrowLeft,
+} from "lucide-react";
+import { GoogleLogin } from "@react-oauth/google";
 import { useAuth, UserProfile } from "@/context/AuthContext";
 import styles from "./AuthModal.module.css";
 
-// Helper function to decode Google ID Token JWT
-function parseJwt(token: string): any {
-  try {
-    const base64Url = token.split(".")[1];
-    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-    const jsonPayload = decodeURIComponent(
-      atob(base64)
-        .split("")
-        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
-        .join("")
-    );
-    return JSON.parse(jsonPayload);
-  } catch {
-    return null;
-  }
-}
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface PasswordFieldProps {
   placeholder?: string;
@@ -38,7 +33,6 @@ const PasswordField: React.FC<PasswordFieldProps> = ({
   required = true,
 }) => {
   const [show, setShow] = useState(false);
-
   return (
     <div className={styles.passwordField}>
       <input
@@ -81,6 +75,142 @@ const Hero: React.FC<HeroProps> = ({ variant, title, text, buttonLabel, onSwitch
   </div>
 );
 
+// ─── OTP Verification View Component ──────────────────────────────────────────
+
+interface OtpVerificationViewProps {
+  email: string;
+  code: string;
+  onChangeCode: (val: string) => void;
+  onSubmit: (e: React.FormEvent) => void;
+  onResend: () => void;
+  onBack: () => void;
+  loading: boolean;
+  resending: boolean;
+  cooldown: number;
+  error: string | null;
+  successMsg: string | null;
+  devOtp?: string | null;
+}
+
+const OtpVerificationView: React.FC<OtpVerificationViewProps> = ({
+  email,
+  code,
+  onChangeCode,
+  onSubmit,
+  onResend,
+  onBack,
+  loading,
+  resending,
+  cooldown,
+  error,
+  successMsg,
+  devOtp,
+}) => (
+  <div>
+    <div className={styles.formHeader}>
+      <button
+        type="button"
+        className={styles.backBtn}
+        onClick={onBack}
+        aria-label="Back"
+      >
+        <ArrowLeft size={14} /> Back
+      </button>
+      <h3 className={`${styles.formTitle} mt-2`}>Verify Your Email</h3>
+      <p className={styles.formSubtitle}>
+        Enter the 6-digit code sent to <strong>{email}</strong>
+      </p>
+    </div>
+
+    {error && (
+      <div className="mb-3 p-2.5 rounded-lg bg-red-50 border border-red-200 text-xs text-red-700 flex items-start gap-1.5 leading-snug">
+        <AlertCircle size={14} className="shrink-0 mt-0.5" />
+        <span>{error}</span>
+      </div>
+    )}
+
+    {successMsg && (
+      <div className="mb-3 p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-xs text-emerald-700 flex items-start gap-1.5 leading-snug">
+        <CheckCircle2 size={14} className="shrink-0 mt-0.5" />
+        <span>{successMsg}</span>
+      </div>
+    )}
+
+    {devOtp && (
+      <div className="mb-3 p-2.5 rounded-xl bg-blue-50/80 border border-blue-200 text-xs text-blue-900 flex items-center justify-between shadow-sm">
+        <div className="flex flex-col">
+          <span className="font-semibold text-blue-950 flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+            Dev Mode Code
+          </span>
+          <span className="text-[12px] text-blue-700 font-mono font-bold tracking-widest mt-0.5">
+            {devOtp}
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={() => onChangeCode(devOtp)}
+          className="px-2.5 py-1 text-[11px] font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
+        >
+          Auto-fill
+        </button>
+      </div>
+    )}
+
+    <form onSubmit={onSubmit}>
+      <div className={styles.otpInfoBox}>
+        <Mail size={18} className="text-[#0071E3] shrink-0" />
+        <span className="text-xs text-[#6E6E73] leading-relaxed">
+          Verification code expires in 10 minutes. If using local development, codes are also printed directly in your backend terminal console.
+        </span>
+      </div>
+
+      <div className={styles.inputGroup}>
+        <label className={styles.label}>6-Digit Verification Code</label>
+        <input
+          type="text"
+          inputMode="numeric"
+          autoComplete="one-time-code"
+          pattern="[0-9]*"
+          maxLength={6}
+          className={styles.otpInput}
+          placeholder="123456"
+          value={code}
+          onChange={(e) => {
+            const val = e.target.value.replace(/\D/g, "").slice(0, 6);
+            onChangeCode(val);
+          }}
+          autoFocus
+          disabled={loading}
+          required
+        />
+      </div>
+
+      <button
+        type="submit"
+        className={styles.submitBtn}
+        disabled={loading || code.length !== 6}
+      >
+        {loading ? "Verifying Code…" : "Verify Email"}
+      </button>
+
+      <div className={styles.otpResendRow}>
+        <span>Didn't receive the code?</span>
+        <button
+          type="button"
+          className={styles.resendBtn}
+          onClick={onResend}
+          disabled={cooldown > 0 || resending}
+        >
+          {resending ? "Sending…" : cooldown > 0 ? `Resend in ${cooldown}s` : "Resend Code"}
+        </button>
+      </div>
+    </form>
+  </div>
+);
+
+// ─── Auth Modal ───────────────────────────────────────────────────────────────
+
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -94,26 +224,50 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 }) => {
   const router = useRouter();
   const { loginWithGoogleSuccess } = useAuth();
+
   const [isRegister, setIsRegister] = useState(initialMode === "register");
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [activeUserProfile, setActiveUserProfile] = useState<UserProfile | null>(null);
 
-  // Login form state
+  // OTP Verification state
+  const [otpMode, setOtpMode] = useState(false);
+  const [otpEmail, setOtpEmail] = useState("");
+  const [otpCode, setOtpCode] = useState("");
+  const [otpCooldown, setOtpCooldown] = useState(0);
+  const [otpSuccessMsg, setOtpSuccessMsg] = useState<string | null>(null);
+  const [devOtp, setDevOtp] = useState<string | null>(null);
+  const [verifying, setVerifying] = useState(false);
+  const [resending, setResending] = useState(false);
+
+  // Login form
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
 
-  // Register form state
+  // Register form
   const [regName, setRegName] = useState("");
   const [regEmail, setRegEmail] = useState("");
   const [regPassword, setRegPassword] = useState("");
 
+  // Cooldown countdown timer for OTP resend
+  useEffect(() => {
+    if (otpCooldown <= 0) return;
+    const timer = setInterval(() => {
+      setOtpCooldown((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [otpCooldown]);
+
   useEffect(() => {
     setIsRegister(initialMode === "register");
     setAuthError(null);
+    setOtpMode(false);
+    setOtpCode("");
+    setDevOtp(null);
+    setOtpSuccessMsg(null);
   }, [initialMode, isOpen]);
 
-  // Handle ESC key to close
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -130,72 +284,289 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   if (!isOpen) return null;
 
-  // Handle Official Google Sign-In Success (JWT ID Token)
-  const handleGoogleSuccess = (credentialResponse: any) => {
+  // ── Shared success handler ────────────────────────────────────────────────
+
+  const handleAuthSuccess = (profile: UserProfile) => {
+    setActiveUserProfile(profile);
+    loginWithGoogleSuccess(profile);
+    setSubmitted(true);
+    setTimeout(() => {
+      setSubmitted(false);
+      onClose();
+      const redirectTarget = localStorage.getItem("reloop_redirect") || "/assess-device";
+      localStorage.removeItem("reloop_redirect");
+      router.push(redirectTarget);
+    }, 1200);
+  };
+
+  // ── Google Sign-In / Sign-Up ──────────────────────────────────────────────
+
+  /**
+   * Called by the GoogleLogin component when the user picks a Google account.
+   * The credential is a signed Google JWT (ID token).
+   * We send it to our backend which:
+   *  1. Verifies email_verified=true
+   *  2. If mode=login: rejects if user is not already registered (404)
+   *  3. If mode=register: creates the account, or logs in if already exists
+   */
+  const handleGoogleSuccess = async (credentialResponse: any) => {
     setAuthError(null);
-    if (credentialResponse.credential) {
-      const payload = parseJwt(credentialResponse.credential);
-      if (payload) {
-        const userObj: UserProfile = {
-          name: payload.name || payload.email.split("@")[0],
-          email: payload.email,
-          picture: payload.picture,
-          provider: "google",
-        };
-        setActiveUserProfile(userObj);
-        loginWithGoogleSuccess(userObj);
-        setSubmitted(true);
-        setTimeout(() => {
-          setSubmitted(false);
-          onClose();
-          const redirectTarget = localStorage.getItem("reloop_redirect") || "/assess-device";
-          localStorage.removeItem("reloop_redirect");
-          router.push(redirectTarget);
-        }, 1000);
+    if (!credentialResponse.credential) {
+      setAuthError("Failed to receive Google credential.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const mode = isRegister ? "register" : "login";
+      const res = await fetch("/api/auth/google", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          credential: credentialResponse.credential,
+          mode,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        // 404 = not registered yet
+        if (res.status === 404) {
+          setAuthError(
+            "No account found with this Google email. Please sign up first using the 'Sign Up' tab."
+          );
+        } else {
+          setAuthError(data.error || "Google sign-in failed.");
+        }
         return;
       }
+
+      handleAuthSuccess({
+        name: data.name,
+        email: data.email,
+        picture: data.picture,
+        provider: "google",
+      });
+    } catch {
+      setAuthError("Could not connect to the server. Is the backend running?");
+    } finally {
+      setLoading(false);
     }
-    setAuthError("Failed to parse Google credentials.");
   };
 
-  // Instant Demo Sign-In (For rapid verification of UI and Navbar state)
-  const handleDemoLogin = () => {
-    const demoUser: UserProfile = {
-      name: "Alex Rivera",
-      email: "alex.reloop@gmail.com",
-      picture: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-      provider: "google",
-    };
-    setActiveUserProfile(demoUser);
-    loginWithGoogleSuccess(demoUser);
-    setSubmitted(true);
-    setTimeout(() => {
-      setSubmitted(false);
-      onClose();
-      const redirectTarget = localStorage.getItem("reloop_redirect") || "/assess-device";
-      localStorage.removeItem("reloop_redirect");
-      router.push(redirectTarget);
-    }, 1000);
+  const handleGoogleError = () => {
+    setAuthError(
+      "Google Sign-In failed. Ensure 'http://localhost:3000' is in Authorized JavaScript Origins."
+    );
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  // ── Email Registration ────────────────────────────────────────────────────
+
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const userObj: UserProfile = {
-      name: isRegister ? regName : loginEmail.split("@")[0],
-      email: isRegister ? regEmail : loginEmail,
-      provider: "email",
-    };
-    setActiveUserProfile(userObj);
-    loginWithGoogleSuccess(userObj);
-    setSubmitted(true);
-    setTimeout(() => {
-      setSubmitted(false);
-      onClose();
-      const redirectTarget = localStorage.getItem("reloop_redirect") || "/assess-device";
-      localStorage.removeItem("reloop_redirect");
-      router.push(redirectTarget);
-    }, 1000);
+    setAuthError(null);
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: regName,
+          email: regEmail,
+          password: regPassword,
+          provider: "email",
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        // 409 = already registered
+        if (res.status === 409) {
+          setAuthError(
+            "An account with this email already exists. Please sign in instead."
+          );
+          setTimeout(() => {
+            setIsRegister(false);
+            setAuthError(null);
+          }, 2500);
+        } else {
+          setAuthError(data.error || "Registration failed.");
+        }
+        return;
+      }
+
+      // Check if email verification (OTP) is required
+      if (data.provider === "email" && !data.is_email_verified) {
+        setOtpMode(true);
+        setOtpEmail(regEmail.toLowerCase().trim());
+        setOtpCode("");
+        setOtpCooldown(60);
+        setAuthError(null);
+        setOtpSuccessMsg("A 6-digit verification code was sent to your email!");
+        return;
+      }
+
+      handleAuthSuccess({
+        name: data.name,
+        email: data.email,
+        picture: data.picture,
+        provider: "email",
+        is_email_verified: data.is_email_verified,
+      });
+    } catch {
+      setAuthError("Could not connect to the server. Is the backend running?");
+    } finally {
+      setLoading(false);
+    }
   };
+
+  // ── Email Login ───────────────────────────────────────────────────────────
+
+  const handleLoginSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError(null);
+    setLoading(true);
+
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: loginEmail, password: loginPassword }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        // 404 = not registered
+        if (res.status === 404) {
+          setAuthError(
+            "No account found with this email. Please sign up first."
+          );
+          setTimeout(() => {
+            setIsRegister(true);
+            setRegEmail(loginEmail);
+            setAuthError(null);
+          }, 2500);
+        } else if (res.status === 401) {
+          setAuthError("Incorrect password. Please try again.");
+        } else if (res.status === 400) {
+          setAuthError(data.error || "Sign-in error.");
+        } else {
+          setAuthError(data.error || "Login failed.");
+        }
+        return;
+      }
+
+      // If user registered with email and hasn't verified OTP yet:
+      if (data.provider === "email" && !data.is_email_verified) {
+        setOtpMode(true);
+        setOtpEmail(data.email.toLowerCase().trim());
+        setOtpCode("");
+        setOtpCooldown(60);
+        setAuthError(null);
+        if (data.dev_otp) {
+          setDevOtp(data.dev_otp);
+        }
+        setOtpSuccessMsg("Please enter the verification code sent to your email.");
+        return;
+      }
+
+      handleAuthSuccess({
+        name: data.name,
+        email: data.email,
+        picture: data.picture,
+        provider: data.provider as "google" | "email",
+        is_email_verified: data.is_email_verified,
+      });
+    } catch {
+      setAuthError("Could not connect to the server. Is the backend running?");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ── OTP Verification & Resend Handlers ────────────────────────────────────
+
+  const handleVerifyOtpSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (otpCode.length !== 6) {
+      setAuthError("Please enter the complete 6-digit verification code.");
+      return;
+    }
+    setAuthError(null);
+    setOtpSuccessMsg(null);
+    setVerifying(true);
+
+    try {
+      const res = await fetch("/api/auth/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: otpEmail,
+          code: otpCode.trim(),
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setAuthError(
+          data.error || "Incorrect verification code. Please check and try again."
+        );
+        return;
+      }
+
+      setOtpMode(false);
+      handleAuthSuccess({
+        name: data.name,
+        email: data.email,
+        picture: data.picture,
+        provider: "email",
+        is_email_verified: true,
+      });
+    } catch {
+      setAuthError("Could not connect to the server. Is the backend running?");
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (otpCooldown > 0 || resending) return;
+    setAuthError(null);
+    setOtpSuccessMsg(null);
+    setResending(true);
+
+    try {
+      const res = await fetch("/api/auth/resend-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: otpEmail }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setAuthError(data.error || "Failed to resend verification code.");
+        return;
+      }
+
+      setOtpCooldown(data.cooldown_seconds || 60);
+      if (data.dev_otp) {
+        setDevOtp(data.dev_otp);
+      }
+      setOtpSuccessMsg("A fresh 6-digit verification code has been issued!");
+    } catch {
+      setAuthError("Could not connect to the server. Is the backend running?");
+    } finally {
+      setResending(false);
+    }
+  };
+
+  // ── JSX ───────────────────────────────────────────────────────────────────
 
   return (
     <div className={styles.backdrop} onClick={onClose} role="dialog" aria-modal="true">
@@ -218,41 +589,47 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         {/* Hero panels */}
         <Hero
           variant="register"
-          title="Welcome back"
-          text="Access your saved product condition reports and optimization history."
-          buttonLabel="Sign In"
+          title={otpMode ? "Check your inbox" : "Welcome back"}
+          text={
+            otpMode
+              ? "We've sent a 6-digit verification code to your email to verify your identity."
+              : "Access your saved product condition reports and optimization history."
+          }
+          buttonLabel={otpMode ? "Change Email" : "Sign In"}
           onSwitch={() => {
-            setIsRegister(false);
-            setAuthError(null);
+            if (otpMode) {
+              setOtpMode(false);
+              setAuthError(null);
+              setOtpSuccessMsg(null);
+            } else {
+              setIsRegister(false);
+              setAuthError(null);
+            }
           }}
         />
-
         <Hero
           variant="login"
-          title="Hello there"
-          text="Join ReLoop to assess hardware health, recover value, and extend product lifecycles."
-          buttonLabel="Sign Up"
+          title={otpMode ? "Verify Email" : "Hello there"}
+          text={
+            otpMode
+              ? "Please verify your email address with the code we sent to your inbox."
+              : "Join ReLoop to assess hardware health, recover value, and extend product lifecycles."
+          }
+          buttonLabel={otpMode ? "Back" : "Sign Up"}
           onSwitch={() => {
-            setIsRegister(true);
-            setAuthError(null);
+            if (otpMode) {
+              setOtpMode(false);
+              setAuthError(null);
+              setOtpSuccessMsg(null);
+            } else {
+              setIsRegister(true);
+              setAuthError(null);
+            }
           }}
         />
 
-        {/* Forms */}
-        {/* Register Form */}
+        {/* ── Register Form ── */}
         <div className={`${styles.form} ${styles.formRegister}`}>
-          <div className={styles.formHeader}>
-            <h3 className={styles.formTitle}>Create account</h3>
-            <p className={styles.formSubtitle}>Sign up with Google or Email</p>
-          </div>
-
-          {authError && (
-            <div className="mb-3 p-2.5 rounded-lg bg-red-50 border border-red-200 text-xs text-red-700 flex items-start gap-1.5 leading-snug">
-              <AlertCircle size={14} className="shrink-0 mt-0.5" />
-              <span>{authError}</span>
-            </div>
-          )}
-
           {submitted ? (
             <div className="flex flex-col items-center justify-center py-10 text-center">
               <CheckCircle2 className="w-12 h-12 text-[#34C759] mb-3 animate-bounce" />
@@ -262,43 +639,61 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <p className="text-xs text-[#6E6E73] mt-1">{activeUserProfile?.email}</p>
               <span className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-[#0071E3]">
                 <ShieldCheck size={13} />
-                Signed in with Google
+                Email verified &amp; signed in
               </span>
             </div>
+          ) : otpMode ? (
+            <OtpVerificationView
+              email={otpEmail}
+              code={otpCode}
+              onChangeCode={setOtpCode}
+              onSubmit={handleVerifyOtpSubmit}
+              onResend={handleResendOtp}
+              onBack={() => {
+                setOtpMode(false);
+                setAuthError(null);
+                setOtpSuccessMsg(null);
+              }}
+              loading={verifying}
+              resending={resending}
+              cooldown={otpCooldown}
+              error={authError}
+              successMsg={otpSuccessMsg}
+              devOtp={devOtp}
+            />
           ) : (
             <div>
-              {/* Google Native One-Tap & Button */}
-              <div className="flex justify-center mb-3">
-                <GoogleLogin
-                  onSuccess={handleGoogleSuccess}
-                  onError={() => {
-                    setAuthError(
-                      "Google Sign-In requires 'http://localhost:3000' in Authorized JavaScript Origins in Google Console."
-                    );
-                  }}
-                  theme="outline"
-                  shape="pill"
-                  text="signup_with"
-                  size="large"
-                />
+              <div className={styles.formHeader}>
+                <h3 className={styles.formTitle}>Create account</h3>
+                <p className={styles.formSubtitle}>Sign up with your Google account</p>
               </div>
 
-              {/* Instant Test Mode Helper */}
-              <div className="text-center mb-2">
-                <button
-                  type="button"
-                  onClick={handleDemoLogin}
-                  className="text-[11px] text-[#0071E3] hover:underline font-medium cursor-pointer"
-                >
-                  ⚡ Test Google Sign-In with Demo Profile
-                </button>
+              {authError && (
+                <div className="mb-3 p-2.5 rounded-lg bg-red-50 border border-red-200 text-xs text-red-700 flex items-start gap-1.5 leading-snug">
+                  <AlertCircle size={14} className="shrink-0 mt-0.5" />
+                  <span>{authError}</span>
+                </div>
+              )}
+
+              {/* Google Sign Up */}
+              <div className="flex justify-center mb-3">
+                {isRegister && (
+                  <GoogleLogin
+                    onSuccess={handleGoogleSuccess}
+                    onError={handleGoogleError}
+                    theme="outline"
+                    shape="pill"
+                    text="signup_with"
+                    size="large"
+                  />
+                )}
               </div>
 
               <div className={styles.divider}>
                 <span>or sign up with email</span>
               </div>
 
-              <form onSubmit={handleSubmit}>
+              <form onSubmit={handleRegisterSubmit}>
                 <div className={styles.inputGroup}>
                   <label className={styles.label}>Full Name</label>
                   <input
@@ -308,18 +703,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     value={regName}
                     onChange={(e) => setRegName(e.target.value)}
                     required
+                    disabled={loading}
                   />
                 </div>
 
                 <div className={styles.inputGroup}>
-                  <label className={styles.label}>Work or Personal Email</label>
+                  <label className={styles.label}>Email Address</label>
                   <input
                     type="email"
                     className={styles.input}
-                    placeholder="alex@reloop.ai"
+                    placeholder="alex@example.com"
                     value={regEmail}
                     onChange={(e) => setRegEmail(e.target.value)}
                     required
+                    disabled={loading}
                   />
                 </div>
 
@@ -331,28 +728,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   />
                 </div>
 
-                <button type="submit" className={styles.submitBtn}>
-                  Create Account
+                <button
+                  type="submit"
+                  className={styles.submitBtn}
+                  disabled={loading}
+                >
+                  {loading ? "Creating account…" : "Create Account"}
                 </button>
               </form>
             </div>
           )}
         </div>
 
-        {/* Login Form */}
+        {/* ── Login Form ── */}
         <div className={`${styles.form} ${styles.formLogin}`}>
-          <div className={styles.formHeader}>
-            <h3 className={styles.formTitle}>Sign in to ReLoop</h3>
-            <p className={styles.formSubtitle}>Access your device decision dashboard</p>
-          </div>
-
-          {authError && (
-            <div className="mb-3 p-2.5 rounded-lg bg-red-50 border border-red-200 text-xs text-red-700 flex items-start gap-1.5 leading-snug">
-              <AlertCircle size={14} className="shrink-0 mt-0.5" />
-              <span>{authError}</span>
-            </div>
-          )}
-
           {submitted ? (
             <div className="flex flex-col items-center justify-center py-10 text-center">
               <CheckCircle2 className="w-12 h-12 text-[#34C759] mb-3 animate-bounce" />
@@ -362,43 +751,67 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <p className="text-xs text-[#6E6E73] mt-1">{activeUserProfile?.email}</p>
               <span className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-[#0071E3]">
                 <ShieldCheck size={13} />
-                Signed in with Google
+                Signed in successfully
               </span>
             </div>
+          ) : otpMode ? (
+            <OtpVerificationView
+              email={otpEmail}
+              code={otpCode}
+              onChangeCode={setOtpCode}
+              onSubmit={handleVerifyOtpSubmit}
+              onResend={handleResendOtp}
+              onBack={() => {
+                setOtpMode(false);
+                setAuthError(null);
+                setOtpSuccessMsg(null);
+              }}
+              loading={verifying}
+              resending={resending}
+              cooldown={otpCooldown}
+              error={authError}
+              successMsg={otpSuccessMsg}
+              devOtp={devOtp}
+            />
           ) : (
             <div>
-              {/* Google Native One-Tap & Button */}
-              <div className="flex justify-center mb-3">
-                <GoogleLogin
-                  onSuccess={handleGoogleSuccess}
-                  onError={() => {
-                    setAuthError(
-                      "Google Sign-In requires 'http://localhost:3000' in Authorized JavaScript Origins in Google Console."
-                    );
-                  }}
-                  theme="outline"
-                  shape="pill"
-                  text="signin_with"
-                  size="large"
-                />
+              <div className={styles.formHeader}>
+                <h3 className={styles.formTitle}>Sign in to ReLoop</h3>
+                <p className={styles.formSubtitle}>
+                  Use your Google account or email &amp; password
+                </p>
               </div>
 
-              {/* Instant Test Mode Helper */}
-              <div className="text-center mb-2">
-                <button
-                  type="button"
-                  onClick={handleDemoLogin}
-                  className="text-[11px] text-[#0071E3] hover:underline font-medium cursor-pointer"
-                >
-                  ⚡ Test Google Sign-In with Demo Profile
-                </button>
+              {authError && (
+                <div className="mb-3 p-2.5 rounded-lg bg-red-50 border border-red-200 text-xs text-red-700 flex items-start gap-1.5 leading-snug">
+                  <AlertCircle size={14} className="shrink-0 mt-0.5" />
+                  <span>{authError}</span>
+                </div>
+              )}
+
+              {/* Google Sign In — only valid Google emails accepted */}
+              <div className="flex justify-center mb-3">
+                {!isRegister && (
+                  <GoogleLogin
+                    onSuccess={handleGoogleSuccess}
+                    onError={handleGoogleError}
+                    theme="outline"
+                    shape="pill"
+                    text="signin_with"
+                    size="large"
+                  />
+                )}
               </div>
+
+              <p className="text-center text-[10px] text-[#6E6E73] mb-3">
+                Google login only accepts verified Google email accounts.
+              </p>
 
               <div className={styles.divider}>
                 <span>or continue with email</span>
               </div>
 
-              <form onSubmit={handleSubmit}>
+              <form onSubmit={handleLoginSubmit}>
                 <div className={styles.inputGroup}>
                   <label className={styles.label}>Email Address</label>
                   <input
@@ -408,6 +821,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     value={loginEmail}
                     onChange={(e) => setLoginEmail(e.target.value)}
                     required
+                    disabled={loading}
                   />
                 </div>
 
@@ -424,8 +838,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   />
                 </div>
 
-                <button type="submit" className={styles.submitBtn}>
-                  Sign In
+                <button
+                  type="submit"
+                  className={styles.submitBtn}
+                  disabled={loading}
+                >
+                  {loading ? "Signing in…" : "Sign In"}
                 </button>
               </form>
             </div>

@@ -54,6 +54,7 @@ def get_db() -> Generator[Session, None, None]:
 def create_all_tables():
     """
     Initializes all database tables registered with Base metadata.
+    Includes backward-compatible column checks for development databases.
     """
     global engine, SessionLocal
     import app.models.entities  # Ensure all model tables are registered
@@ -67,3 +68,14 @@ def create_all_tables():
         )
         SessionLocal.configure(bind=engine)
         Base.metadata.create_all(bind=engine)
+
+    # Ensure is_email_verified column exists if database was created previously
+    try:
+        with engine.begin() as conn:
+            res = conn.execute(text("PRAGMA table_info(users)")).fetchall()
+            col_names = [r[1] for r in res]
+            if col_names and "is_email_verified" not in col_names:
+                conn.execute(text("ALTER TABLE users ADD COLUMN is_email_verified BOOLEAN DEFAULT 0 NOT NULL"))
+                logger.info("Auto-migrated 'users' table: added 'is_email_verified' column.")
+    except Exception as ex:
+        logger.debug(f"Column verification check skipped: {ex}")

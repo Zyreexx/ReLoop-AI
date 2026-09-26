@@ -2,9 +2,17 @@
 Configuration settings for ReLoop AI Backend.
 """
 import os
+from pathlib import Path
 from typing import List
 from dotenv import load_dotenv
 
+# Load backend/.env and root .env so configurations in either location are resolved
+backend_env = Path(__file__).resolve().parent.parent / ".env"
+root_env = Path(__file__).resolve().parent.parent.parent / ".env"
+if backend_env.exists():
+    load_dotenv(backend_env, override=True)
+if root_env.exists():
+    load_dotenv(root_env, override=True)
 load_dotenv()
 
 
@@ -38,6 +46,16 @@ class Settings:
         "1",
         "yes",
     )
+
+    # Resend
+    RESEND_API_KEY: str = os.getenv("RESEND_API_KEY", "")
+    EMAIL_FROM: str = os.getenv("EMAIL_FROM", "onboarding@resend.dev")
+
+    # Optional SMTP (e.g. Gmail App Password for sending to any email address)
+    SMTP_HOST: str = os.getenv("SMTP_HOST", "")
+    SMTP_PORT: int = int(os.getenv("SMTP_PORT", "587"))
+    SMTP_USER: str = os.getenv("SMTP_USER", "")
+    SMTP_PASS: str = os.getenv("SMTP_PASS", "")
 
 
 settings = Settings()
