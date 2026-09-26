@@ -70,7 +70,7 @@ def generate_all_pathways(
         estimated_cost=RangeEstimate(
             min_val=cost_min,
             max_val=cost_max,
-            unit="USD",
+            unit="INR",
             display_range=f"${int(cost_min)}–${int(cost_max)}",
             basis="DATABASE_ESTIMATE",
             assumptions=[
@@ -155,7 +155,7 @@ def generate_all_pathways(
         estimated_cost=RangeEstimate(
             min_val=up_cost_min,
             max_val=up_cost_max,
-            unit="USD",
+            unit="INR",
             display_range=f"${int(up_cost_min)}–${int(up_cost_max)}" if up_cost_max > 0 else "N/A",
             basis="DATABASE_ESTIMATE",
             assumptions=[
@@ -212,7 +212,7 @@ def generate_all_pathways(
         estimated_cost=RangeEstimate(
             min_val=refurb_cost_min,
             max_val=refurb_cost_max,
-            unit="USD",
+            unit="INR",
             display_range=f"${int(refurb_cost_min)}–${int(refurb_cost_max)}",
             basis="DATABASE_ESTIMATE",
             assumptions=[
@@ -269,7 +269,7 @@ def generate_all_pathways(
         estimated_cost=RangeEstimate(
             min_val=0.0,
             max_val=20.0,
-            unit="USD",
+            unit="INR",
             display_range="$0–$20",
             basis="DATABASE_ESTIMATE",
             assumptions=[
@@ -325,7 +325,7 @@ def generate_all_pathways(
         estimated_cost=RangeEstimate(
             min_val=15.0,
             max_val=35.0,
-            unit="USD",
+            unit="INR",
             display_range="$15–$35 (Disassembly & Testing)",
             basis="DATABASE_ESTIMATE",
             assumptions=[
@@ -388,7 +388,7 @@ def generate_all_pathways(
         estimated_cost=RangeEstimate(
             min_val=0.0,
             max_val=15.0,
-            unit="USD",
+            unit="INR",
             display_range="$0–$15",
             basis="DATABASE_ESTIMATE",
             assumptions=[
