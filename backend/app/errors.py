@@ -31,6 +31,10 @@ class ErrorCode(str, Enum):
     NOT_FOUND = "NOT_FOUND"
     INTERNAL_ERROR = "INTERNAL_ERROR"
     VALIDATION_ERROR = "VALIDATION_ERROR"
+    OTP_EXPIRED = "OTP_EXPIRED"
+    OTP_INVALID = "OTP_INVALID"
+    OTP_ATTEMPTS_EXCEEDED = "OTP_ATTEMPTS_EXCEEDED"
+    RATE_LIMITED = "RATE_LIMITED"
 
 
 # Convenience constants
@@ -43,6 +47,10 @@ INVALID_PATHWAY_CALC = ErrorCode.INVALID_PATHWAY_CALC.value
 NOT_FOUND = ErrorCode.NOT_FOUND.value
 INTERNAL_ERROR = ErrorCode.INTERNAL_ERROR.value
 VALIDATION_ERROR = ErrorCode.VALIDATION_ERROR.value
+OTP_EXPIRED = ErrorCode.OTP_EXPIRED.value
+OTP_INVALID = ErrorCode.OTP_INVALID.value
+OTP_ATTEMPTS_EXCEEDED = ErrorCode.OTP_ATTEMPTS_EXCEEDED.value
+RATE_LIMITED = ErrorCode.RATE_LIMITED.value
 
 
 class ErrorDetail(BaseModel):
@@ -133,9 +141,13 @@ def register_error_handlers(app: FastAPI) -> None:
             ErrorCode.NOT_FOUND.value
             if exc.status_code == 404
             else (
-                ErrorCode.INVALID_INPUT.value
-                if exc.status_code in [400, 422]
-                else ErrorCode.INTERNAL_ERROR.value
+                ErrorCode.RATE_LIMITED.value
+                if exc.status_code == 429
+                else (
+                    ErrorCode.INVALID_INPUT.value
+                    if exc.status_code in [400, 422]
+                    else ErrorCode.INTERNAL_ERROR.value
+                )
             )
         )
         return JSONResponse(
