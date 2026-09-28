@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { GoogleLogin } from "@react-oauth/google";
 import { useAuth, UserProfile } from "@/context/AuthContext";
+import { useLanguage } from "@/context/LanguageContext";
 import styles from "./AuthModal.module.css";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -105,109 +106,120 @@ const OtpVerificationView: React.FC<OtpVerificationViewProps> = ({
   error,
   successMsg,
   devOtp,
-}) => (
-  <div>
-    <div className={styles.formHeader}>
-      <button
-        type="button"
-        className={styles.backBtn}
-        onClick={onBack}
-        aria-label="Back"
-      >
-        <ArrowLeft size={14} /> Back
-      </button>
-      <h3 className={`${styles.formTitle} mt-2`}>Verify Your Email</h3>
-      <p className={styles.formSubtitle}>
-        Enter the 6-digit code sent to <strong>{email}</strong>
-      </p>
-    </div>
+}) => {
+  const { t } = useLanguage();
 
-    {error && (
-      <div className="mb-3 p-2.5 rounded-lg bg-red-50 border border-red-200 text-xs text-red-700 flex items-start gap-1.5 leading-snug">
-        <AlertCircle size={14} className="shrink-0 mt-0.5" />
-        <span>{error}</span>
+  return (
+    <div>
+      <div className={styles.formHeader}>
+        <button
+          type="button"
+          className={styles.backBtn}
+          onClick={onBack}
+          aria-label={t("common.back", "Back")}
+        >
+          <ArrowLeft size={14} /> {t("common.back", "Back")}
+        </button>
+        <h3 className={`${styles.formTitle} mt-2`}>{t("auth.verifyTitle", "Verify Your Email")}</h3>
+        <p className={styles.formSubtitle}>
+          {t("auth.verifyDesc", "Enter the 6-digit code sent to")} <strong>{email}</strong>
+        </p>
       </div>
-    )}
 
-    {successMsg && (
-      <div className="mb-3 p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-xs text-emerald-700 flex items-start gap-1.5 leading-snug">
-        <CheckCircle2 size={14} className="shrink-0 mt-0.5" />
-        <span>{successMsg}</span>
-      </div>
-    )}
+      {error && (
+        <div className="mb-3 p-2.5 rounded-lg bg-red-50 border border-red-200 text-xs text-red-700 flex items-start gap-1.5 leading-snug">
+          <AlertCircle size={14} className="shrink-0 mt-0.5" />
+          <span>{error}</span>
+        </div>
+      )}
 
-    {devOtp && (
-      <div className="mb-3 p-2.5 rounded-xl bg-blue-50/80 border border-blue-200 text-xs text-blue-900 flex items-center justify-between shadow-sm">
-        <div className="flex flex-col">
-          <span className="font-semibold text-blue-950 flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-            Dev Mode Code
-          </span>
-          <span className="text-[12px] text-blue-700 font-mono font-bold tracking-widest mt-0.5">
-            {devOtp}
+      {successMsg && (
+        <div className="mb-3 p-2.5 rounded-lg bg-emerald-50 border border-emerald-200 text-xs text-emerald-700 flex items-start gap-1.5 leading-snug">
+          <CheckCircle2 size={14} className="shrink-0 mt-0.5" />
+          <span>{successMsg}</span>
+        </div>
+      )}
+
+      {devOtp && (
+        <div className="mb-3 p-2.5 rounded-xl bg-blue-50/80 border border-blue-200 text-xs text-blue-900 flex items-center justify-between shadow-sm">
+          <div className="flex flex-col">
+            <span className="font-semibold text-blue-950 flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+              Dev Mode Code
+            </span>
+            <span className="text-[12px] text-blue-700 font-mono font-bold tracking-widest mt-0.5">
+              {devOtp}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => onChangeCode(devOtp)}
+            className="px-2.5 py-1 text-[11px] font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
+          >
+            Auto-fill
+          </button>
+        </div>
+      )}
+
+      <form onSubmit={onSubmit}>
+        <div className={styles.otpInfoBox}>
+          <Mail size={18} className="text-[#0071E3] shrink-0" />
+          <span className="text-xs text-[#6E6E73] leading-relaxed">
+            {t(
+              "auth.otpExpires",
+              "Verification code expires in 10 minutes. If using local development, codes are also printed directly in your backend terminal console."
+            )}
           </span>
         </div>
+
+        <div className={styles.inputGroup}>
+          <label className={styles.label}>{t("auth.otpCodeLabel", "6-Digit Verification Code")}</label>
+          <input
+            type="text"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            pattern="[0-9]*"
+            maxLength={6}
+            className={styles.otpInput}
+            placeholder={t("auth.otpPlaceholder", "123456")}
+            value={code}
+            onChange={(e) => {
+              const val = e.target.value.replace(/\D/g, "").slice(0, 6);
+              onChangeCode(val);
+            }}
+            autoFocus
+            disabled={loading}
+            required
+          />
+        </div>
+
         <button
-          type="button"
-          onClick={() => onChangeCode(devOtp)}
-          className="px-2.5 py-1 text-[11px] font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
+          type="submit"
+          className={styles.submitBtn}
+          disabled={loading || code.length !== 6}
         >
-          Auto-fill
+          {loading ? t("auth.verifyingBtn", "Verifying Code…") : t("auth.verifyBtn", "Verify Email")}
         </button>
-      </div>
-    )}
 
-    <form onSubmit={onSubmit}>
-      <div className={styles.otpInfoBox}>
-        <Mail size={18} className="text-[#0071E3] shrink-0" />
-        <span className="text-xs text-[#6E6E73] leading-relaxed">
-          Verification code expires in 10 minutes. If using local development, codes are also printed directly in your backend terminal console.
-        </span>
-      </div>
-
-      <div className={styles.inputGroup}>
-        <label className={styles.label}>6-Digit Verification Code</label>
-        <input
-          type="text"
-          inputMode="numeric"
-          autoComplete="one-time-code"
-          pattern="[0-9]*"
-          maxLength={6}
-          className={styles.otpInput}
-          placeholder="123456"
-          value={code}
-          onChange={(e) => {
-            const val = e.target.value.replace(/\D/g, "").slice(0, 6);
-            onChangeCode(val);
-          }}
-          autoFocus
-          disabled={loading}
-          required
-        />
-      </div>
-
-      <button
-        type="submit"
-        className={styles.submitBtn}
-        disabled={loading || code.length !== 6}
-      >
-        {loading ? "Verifying Code…" : "Verify Email"}
-      </button>
-
-      <div className={styles.otpResendRow}>
-        <span>Didn't receive the code?</span>
-        <button
-          type="button"
-          className={styles.resendBtn}
-          onClick={onResend}
-          disabled={cooldown > 0 || resending}
-        >
-          {resending ? "Sending…" : cooldown > 0 ? `Resend in ${cooldown}s` : "Resend Code"}
-        </button>
-      </div>
-    </form>
-  </div>
-);
+        <div className={styles.otpResendRow}>
+          <span>{t("auth.didntReceive", "Didn't receive the code?")}</span>
+          <button
+            type="button"
+            className={styles.resendBtn}
+            onClick={onResend}
+            disabled={cooldown > 0 || resending}
+          >
+            {resending
+              ? t("auth.resending", "Sending…")
+              : cooldown > 0
+              ? `${t("auth.resendIn", "Resend in")} ${cooldown}s`
+              : t("auth.resendCode", "Resend Code")}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+};
 
 // ─── Auth Modal ───────────────────────────────────────────────────────────────
 
@@ -224,6 +236,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 }) => {
   const router = useRouter();
   const { loginWithGoogleSuccess } = useAuth();
+  const { t } = useLanguage();
 
   const [isRegister, setIsRegister] = useState(initialMode === "register");
   const [submitted, setSubmitted] = useState(false);
@@ -589,13 +602,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         {/* Hero panels */}
         <Hero
           variant="register"
-          title={otpMode ? "Check your inbox" : "Welcome back"}
+          title={otpMode ? t("auth.checkInbox", "Check your inbox") : t("auth.welcomeBack", "Welcome back")}
           text={
             otpMode
-              ? "We've sent a 6-digit verification code to your email to verify your identity."
-              : "Access your saved product condition reports and optimization history."
+              ? t(
+                  "auth.checkInboxDesc",
+                  "We've sent a 6-digit verification code to your email to verify your identity."
+                )
+              : t(
+                  "auth.welcomeText",
+                  "Access your saved product condition reports and optimization history."
+                )
           }
-          buttonLabel={otpMode ? "Change Email" : "Sign In"}
+          buttonLabel={otpMode ? t("auth.changeEmail", "Change Email") : t("auth.signIn", "Sign In")}
           onSwitch={() => {
             if (otpMode) {
               setOtpMode(false);
@@ -609,13 +628,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         />
         <Hero
           variant="login"
-          title={otpMode ? "Verify Email" : "Hello there"}
+          title={otpMode ? t("auth.verifyTitle", "Verify Email") : t("auth.helloThere", "Hello there")}
           text={
             otpMode
-              ? "Please verify your email address with the code we sent to your inbox."
-              : "Join ReLoop to assess hardware health, recover value, and extend product lifecycles."
+              ? t(
+                  "auth.checkInboxDesc",
+                  "Please verify your email address with the code we sent to your inbox."
+                )
+              : t(
+                  "auth.joinReLoop",
+                  "Join ReLoop to assess hardware health, recover value, and extend product lifecycles."
+                )
           }
-          buttonLabel={otpMode ? "Back" : "Sign Up"}
+          buttonLabel={otpMode ? t("common.back", "Back") : t("auth.signUp", "Sign Up")}
           onSwitch={() => {
             if (otpMode) {
               setOtpMode(false);
@@ -639,7 +664,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <p className="text-xs text-[#6E6E73] mt-1">{activeUserProfile?.email}</p>
               <span className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-[#0071E3]">
                 <ShieldCheck size={13} />
-                Email verified &amp; signed in
+                {t("auth.emailVerified", "Email verified & signed in")}
               </span>
             </div>
           ) : otpMode ? (
@@ -664,8 +689,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           ) : (
             <div>
               <div className={styles.formHeader}>
-                <h3 className={styles.formTitle}>Create account</h3>
-                <p className={styles.formSubtitle}>Sign up with your Google account</p>
+                <h3 className={styles.formTitle}>{t("auth.createAccount", "Create account")}</h3>
+                <p className={styles.formSubtitle}>{t("auth.googleSignIn", "Sign up with your Google account")}</p>
               </div>
 
               {authError && (
@@ -690,12 +715,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </div>
 
               <div className={styles.divider}>
-                <span>or sign up with email</span>
+                <span>{t("auth.orEmail", "or sign up with email")}</span>
               </div>
 
               <form onSubmit={handleRegisterSubmit}>
                 <div className={styles.inputGroup}>
-                  <label className={styles.label}>Full Name</label>
+                  <label className={styles.label}>{t("auth.fullName", "Full Name")}</label>
                   <input
                     type="text"
                     className={styles.input}
@@ -708,7 +733,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </div>
 
                 <div className={styles.inputGroup}>
-                  <label className={styles.label}>Email Address</label>
+                  <label className={styles.label}>{t("auth.email", "Email Address")}</label>
                   <input
                     type="email"
                     className={styles.input}
@@ -721,7 +746,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </div>
 
                 <div className={styles.inputGroup}>
-                  <label className={styles.label}>Password</label>
+                  <label className={styles.label}>{t("auth.password", "Password")}</label>
                   <PasswordField
                     value={regPassword}
                     onChange={(e) => setRegPassword(e.target.value)}
@@ -733,7 +758,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   className={styles.submitBtn}
                   disabled={loading}
                 >
-                  {loading ? "Creating account…" : "Create Account"}
+                  {loading ? t("auth.creatingAccount", "Creating account…") : t("auth.register", "Create Account")}
                 </button>
               </form>
             </div>
@@ -751,7 +776,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <p className="text-xs text-[#6E6E73] mt-1">{activeUserProfile?.email}</p>
               <span className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-[#0071E3]">
                 <ShieldCheck size={13} />
-                Signed in successfully
+                {t("auth.signedInSuccess", "Signed in successfully")}
               </span>
             </div>
           ) : otpMode ? (
@@ -776,9 +801,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           ) : (
             <div>
               <div className={styles.formHeader}>
-                <h3 className={styles.formTitle}>Sign in to ReLoop</h3>
+                <h3 className={styles.formTitle}>{t("auth.googleLoginTitle", "Sign in to ReLoop")}</h3>
                 <p className={styles.formSubtitle}>
-                  Use your Google account or email &amp; password
+                  {t("auth.googleLoginSub", "Use your Google account or email & password")}
                 </p>
               </div>
 
@@ -804,16 +829,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </div>
 
               <p className="text-center text-[10px] text-[#6E6E73] mb-3">
-                Google login only accepts verified Google email accounts.
+                {t("auth.googleLoginNote", "Google login only accepts verified Google email accounts.")}
               </p>
 
               <div className={styles.divider}>
-                <span>or continue with email</span>
+                <span>{t("auth.orEmailLogin", "or continue with email")}</span>
               </div>
 
               <form onSubmit={handleLoginSubmit}>
                 <div className={styles.inputGroup}>
-                  <label className={styles.label}>Email Address</label>
+                  <label className={styles.label}>{t("auth.email", "Email Address")}</label>
                   <input
                     type="email"
                     className={styles.input}
@@ -827,9 +852,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
                 <div className={styles.inputGroup}>
                   <div className="flex justify-between items-center mb-1">
-                    <label className={styles.label}>Password</label>
+                    <label className={styles.label}>{t("auth.password", "Password")}</label>
                     <a href="#forgot" className="text-xs text-[#0071E3] hover:underline">
-                      Forgot?
+                      {t("auth.forgotPassword", "Forgot?")}
                     </a>
                   </div>
                   <PasswordField
@@ -843,7 +868,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   className={styles.submitBtn}
                   disabled={loading}
                 >
-                  {loading ? "Signing in…" : "Sign In"}
+                  {loading ? t("auth.signingIn", "Signing in…") : t("auth.signIn", "Sign In")}
                 </button>
               </form>
             </div>

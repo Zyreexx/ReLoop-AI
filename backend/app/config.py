@@ -9,10 +9,10 @@ from dotenv import load_dotenv
 # Load backend/.env and root .env so configurations in either location are resolved
 backend_env = Path(__file__).resolve().parent.parent / ".env"
 root_env = Path(__file__).resolve().parent.parent.parent / ".env"
-if backend_env.exists():
-    load_dotenv(backend_env, override=True)
 if root_env.exists():
     load_dotenv(root_env, override=True)
+if backend_env.exists():
+    load_dotenv(backend_env, override=True)
 load_dotenv()
 
 

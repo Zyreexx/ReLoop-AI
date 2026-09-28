@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { useLanguage } from "@/context/LanguageContext";
 import {
   ArrowRight,
   BatteryCharging,
@@ -36,6 +37,7 @@ interface MarqueeLaptop {
 
 export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenAuth }) => {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"dell" | "mac" | "thinkpad">("dell");
 
@@ -194,57 +196,66 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenAuth }) => {
   const devices = {
     dell: {
       name: "Dell Latitude 5420",
-      age: "4.5 years old",
-      status: "Repair & Upgrade Recommended",
-      lifeExtension: "+2.8 Years Useful Life",
-      savings: "86% Cost Savings vs New",
-      co2Saved: "142 kg CO₂ avoided",
+      age: t("hero.dell.age", "4.5 years old"),
+      status: t("hero.dell.status", "Repair & Upgrade Recommended"),
+      lifeExtension: t("hero.dell.life", "+2.8 Years Useful Life"),
+      savings: t("hero.dell.savings", "86% Cost Savings vs New"),
+      co2Saved: t("hero.dell.co2", "142 kg CO₂ avoided"),
       components: [
-        { name: "Battery Health", value: "73% capacity", state: "warning", source: "DIAGNOSTIC", icon: BatteryCharging, note: "Degraded, replacement recommended" },
-        { name: "NVMe SSD", value: "91% life remaining", state: "good", source: "DIAGNOSTIC", icon: HardDrive, note: "SMART verified healthy" },
-        { name: "Memory (RAM)", value: "16 GB DDR4", state: "good", source: "DIAGNOSTIC", icon: Cpu, note: "Passed memory stress test" },
-        { name: "Thermals", value: "88°C under load", state: "warning", source: "DIAGNOSTIC", icon: Flame, note: "Thermal throttling; repaste needed" },
-        { name: "Keyboard / Keys", value: "2 loose keys", state: "warning", source: "USER REPORTED", icon: Layers, note: "Key mechanism replacement" },
-        { name: "Display Panel", value: "FHD IPS (Flawless)", state: "good", source: "VISUAL", icon: ShieldCheck, note: "Zero dead pixels, no cracks" },
+        { name: t("hero.comp.battery", "Battery Health"), value: t("hero.val.dellBatt", "73% capacity"), state: "warning", source: "DIAGNOSTIC", icon: BatteryCharging, note: t("hero.note.dellBatt", "Degraded, replacement recommended") },
+        { name: t("hero.comp.ssd", "NVMe SSD"), value: t("hero.val.dellSsd", "91% life remaining"), state: "good", source: "DIAGNOSTIC", icon: HardDrive, note: t("hero.note.dellSsd", "SMART verified healthy") },
+        { name: t("hero.comp.ram", "Memory (RAM)"), value: "16 GB DDR4", state: "good", source: "DIAGNOSTIC", icon: Cpu, note: t("hero.note.dellRam", "Passed memory stress test") },
+        { name: t("hero.comp.thermals", "Thermals"), value: t("hero.val.dellTherm", "88°C under load"), state: "warning", source: "DIAGNOSTIC", icon: Flame, note: t("hero.note.dellTherm", "Thermal throttling; repaste needed") },
+        { name: t("hero.comp.keyboard", "Keyboard / Keys"), value: t("hero.val.dellKeys", "2 loose keys"), state: "warning", source: "USER REPORTED", icon: Layers, note: t("hero.note.dellKeys", "Key mechanism replacement") },
+        { name: t("hero.comp.display", "Display Panel"), value: t("hero.val.dellDisp", "FHD IPS (Flawless)"), state: "good", source: "VISUAL", icon: ShieldCheck, note: t("hero.note.dellDisp", "Zero dead pixels, no cracks") },
       ],
-      pathway: "REPAIR + UPGRADE",
-      reason: "Healthy motherboard, display, and memory make whole-system replacement wasteful. Replacing battery and servicing thermal paste restores 100% daily capability.",
+      pathway: t("hero.dell.pathway", "REPAIR + UPGRADE"),
+      reason: t(
+        "hero.dell.reason",
+        "Healthy motherboard, display, and memory make whole-system replacement wasteful. Replacing battery and servicing thermal paste restores 100% daily capability."
+      ),
     },
     mac: {
       name: "MacBook Air M1 (2020)",
-      age: "3.5 years old",
-      status: "Reuse / Redeploy Recommended",
-      lifeExtension: "+3.5 Years Useful Life",
-      savings: "92% Value Retained",
-      co2Saved: "185 kg CO₂ avoided",
+      age: t("hero.mac.age", "3.5 years old"),
+      status: t("hero.mac.status", "Reuse / Redeploy Recommended"),
+      lifeExtension: t("hero.mac.life", "+3.5 Years Useful Life"),
+      savings: t("hero.mac.savings", "92% Value Retained"),
+      co2Saved: t("hero.mac.co2", "185 kg CO₂ avoided"),
       components: [
-        { name: "Battery Health", value: "84% (412 cycles)", state: "good", source: "DIAGNOSTIC", icon: BatteryCharging, note: "Normal service condition" },
-        { name: "SSD Health", value: "96% TBW written", state: "good", source: "DIAGNOSTIC", icon: HardDrive, note: "Apple SMART passed" },
-        { name: "Apple M1 SoC", value: "100% functional", state: "good", source: "DIAGNOSTIC", icon: Cpu, note: "Stress benchmark passed" },
-        { name: "Chassis", value: "Minor corner scuff", state: "good", source: "VISUAL", icon: ShieldCheck, note: "Exterior cosmetic only" },
-        { name: "Thermals", value: "Silent / 42°C", state: "good", source: "DIAGNOSTIC", icon: Flame, note: "Fanless architecture healthy" },
-        { name: "Retina Display", value: "TrueTone Active", state: "good", source: "VISUAL", icon: ShieldCheck, note: "No coating delamination" },
+        { name: t("hero.comp.battery", "Battery Health"), value: t("hero.val.macBatt", "84% (412 cycles)"), state: "good", source: "DIAGNOSTIC", icon: BatteryCharging, note: t("hero.note.macBatt", "Normal service condition") },
+        { name: t("hero.comp.ssd", "NVMe SSD"), value: "96% TBW written", state: "good", source: "DIAGNOSTIC", icon: HardDrive, note: t("hero.note.macSsd", "Apple SMART passed") },
+        { name: t("hero.comp.m1", "Apple M1 SoC"), value: t("hero.val.macM1", "100% functional"), state: "good", source: "DIAGNOSTIC", icon: Cpu, note: t("hero.note.macM1", "Stress benchmark passed") },
+        { name: t("hero.comp.chassis", "Chassis"), value: t("hero.val.macChassis", "Minor corner scuff"), state: "good", source: "VISUAL", icon: ShieldCheck, note: t("hero.note.macChassis", "Exterior cosmetic only") },
+        { name: t("hero.comp.thermals", "Thermals"), value: t("hero.val.macTherm", "Silent / 42°C"), state: "good", source: "DIAGNOSTIC", icon: Flame, note: t("hero.note.macTherm", "Fanless architecture healthy") },
+        { name: t("hero.comp.retina", "Retina Display"), value: "TrueTone Active", state: "good", source: "VISUAL", icon: ShieldCheck, note: t("hero.note.macRetina", "No coating delamination") },
       ],
-      pathway: "REUSE / REDEPLOY",
-      reason: "Hardware integrity is exceptionally high. Optimal next-life is redeployment to students or secondary light-office workflows without hardware changes.",
+      pathway: t("hero.mac.pathway", "REUSE / REDEPLOY"),
+      reason: t(
+        "hero.mac.reason",
+        "Hardware integrity is exceptionally high. Optimal next-life is redeployment to students or secondary light-office workflows without hardware changes."
+      ),
     },
     thinkpad: {
       name: "Lenovo ThinkPad T480",
-      age: "6.2 years old",
-      status: "Component Recovery Recommended",
-      lifeExtension: "Sub-components Reused",
-      savings: "₹8,400 Salvage Value",
-      co2Saved: "68 kg CO₂ recovered",
+      age: t("hero.thinkpad.age", "6.2 years old"),
+      status: t("hero.thinkpad.status", "Component Recovery Recommended"),
+      lifeExtension: t("hero.thinkpad.life", "Sub-components Reused"),
+      savings: t("hero.thinkpad.savings", "₹8,400 Salvage Value"),
+      co2Saved: t("hero.thinkpad.co2", "68 kg CO₂ recovered"),
       components: [
-        { name: "Motherboard", value: "Power rail fault", state: "bad", source: "DIAGNOSTIC", icon: Cpu, note: "Critical board-level short" },
-        { name: "Display Panel", value: "Cracked matrix", state: "bad", source: "VISUAL", icon: ShieldCheck, note: "Physical impact crack" },
-        { name: "NVMe 512GB SSD", value: "98% health", state: "good", source: "DIAGNOSTIC", icon: HardDrive, note: "Fully salvageable for external drive" },
-        { name: "DDR4 16GB SO-DIMM", value: "PASS", state: "good", source: "DIAGNOSTIC", icon: Layers, note: "Directly reusable in other laptops" },
-        { name: "Battery (Bridge)", value: "Dead internal cell", state: "bad", source: "DIAGNOSTIC", icon: BatteryCharging, note: "0Wh held; recycle cell" },
-        { name: "Chassis Magnesium", value: "Intact bottom plate", state: "good", source: "VISUAL", icon: Wrench, note: "Salvageable structural parts" },
+        { name: t("hero.comp.motherboard", "Motherboard"), value: t("hero.val.tpMobo", "Power rail fault"), state: "bad", source: "DIAGNOSTIC", icon: Cpu, note: t("hero.note.tpMobo", "Critical board-level short") },
+        { name: t("hero.comp.display", "Display Panel"), value: t("hero.val.tpDisp", "Cracked matrix"), state: "bad", source: "VISUAL", icon: ShieldCheck, note: t("hero.note.tpDisp", "Physical impact crack") },
+        { name: t("hero.comp.ssd", "NVMe 512GB SSD"), value: "98% health", state: "good", source: "DIAGNOSTIC", icon: HardDrive, note: t("hero.note.tpSsd", "Fully salvageable for external drive") },
+        { name: t("hero.comp.ram", "DDR4 16GB SO-DIMM"), value: "PASS", state: "good", source: "DIAGNOSTIC", icon: Layers, note: t("hero.note.tpRam", "Directly reusable in other laptops") },
+        { name: t("hero.comp.bridgeBattery", "Battery (Bridge)"), value: t("hero.val.tpBatt", "Dead internal cell"), state: "bad", source: "DIAGNOSTIC", icon: BatteryCharging, note: t("hero.note.tpBatt", "0Wh held; recycle cell") },
+        { name: t("hero.comp.chassisMag", "Chassis Magnesium"), value: t("hero.val.tpMag", "Intact bottom plate"), state: "good", source: "VISUAL", icon: Wrench, note: t("hero.note.tpMag", "Salvageable structural parts") },
       ],
-      pathway: "COMPONENT RECOVERY",
-      reason: "Repairing both motherboard and display exceeds fair market value. Harvesting healthy SSD, RAM, and structural magnesium prevents premature shredding.",
+      pathway: t("hero.thinkpad.pathway", "COMPONENT RECOVERY"),
+      reason: t(
+        "hero.thinkpad.reason",
+        "Repairing both motherboard and display exceeds fair market value. Harvesting healthy SSD, RAM, and structural magnesium prevents premature shredding."
+      ),
     },
   };
 
@@ -362,24 +373,20 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenAuth }) => {
           <div className="flex justify-center mb-6">
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#E8E8ED]/90 backdrop-blur-md text-[#1D1D1F] text-[12px] font-medium tracking-wide shadow-xs border border-white/60">
               <span className="w-2 h-2 rounded-full bg-[#34C759] animate-pulse" />
-              <span>PCCoE International Grand Challenge 2026</span>
-              <span className="text-[#86868B]">•</span>
-              <span className="text-[#0071E3] font-semibold">Circular Economy</span>
+              <span>{t("hero.badge")}</span>
             </div>
           </div>
 
           {/* Hero Headline */}
           <h1 className="text-[42px] sm:text-[56px] md:text-[68px] font-bold text-[#1D1D1F] tracking-tight leading-[1.06] mb-6 drop-shadow-2xs">
-            Don&apos;t replace the whole machine.
+            {t("hero.title1")}
             <br />
-            <span className="text-[#0071E3]">Give it a next life.</span>
+            <span className="text-[#0071E3]">{t("hero.titleHighlight")}</span>
           </h1>
 
           {/* Hero Subtitle */}
           <p className="text-[18px] sm:text-[21px] text-[#1D1D1F] font-semibold max-w-2xl mx-auto leading-relaxed mb-10">
-            Laptops are routinely discarded when just one component slows down.
-            ReLoop AI blends photos, hardware diagnostics, and reported symptoms
-            to calculate the highest-value circular pathway.
+            {t("hero.subtitle")}
           </p>
 
           {/* CTAs */}
@@ -389,7 +396,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenAuth }) => {
               onClick={handleAssessClick}
               className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-[#0071E3] hover:bg-[#0077ED] text-white text-[15px] font-semibold transition-all duration-200 shadow-md hover:shadow-lg cursor-pointer"
             >
-              <span>Assess Your Laptop</span>
+              <span>{t("hero.assessBtn")}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
 
@@ -397,14 +404,14 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenAuth }) => {
               href="#live-engine"
               className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-white hover:bg-[#FBFBFD] text-[#1D1D1F] border border-[#D2D2D7] text-[15px] font-medium transition-all duration-200 cursor-pointer shadow-xs hover:border-[#1D1D1F]"
             >
-              <span>Test Decision Engine</span>
+              <span>{t("portals.engineBtn")}</span>
             </a>
 
             <a
               href="#pathways"
               className="inline-flex items-center gap-1.5 text-[14px] font-medium text-[#0071E3] hover:underline px-3 py-2"
             >
-              <span>See the 6 pathways</span>
+              <span>{t("hero.exploreBtn")}</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </a>
           </div>
@@ -418,22 +425,25 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenAuth }) => {
         {/* Section title */}
         <div className="text-center max-w-xl mx-auto mb-8">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#E8E8ED] text-[11px] font-mono font-bold text-[#6E6E73] mb-3">
-            <span>LIVE BENCHMARK</span>
+            <span>{t("hero.liveBenchmark", "LIVE BENCHMARK")}</span>
             <span>•</span>
-            <span className="text-[#0071E3]">CONDITION PROFILE</span>
+            <span className="text-[#0071E3]">{t("hero.conditionProfile", "CONDITION PROFILE")}</span>
           </div>
           <h3 className="text-2xl sm:text-3xl font-bold text-[#1D1D1F] tracking-tight">
-            Component-Level Evidence Inspection
+            {t("hero.inspectionTitle", "Component-Level Evidence Inspection")}
           </h3>
           <p className="text-xs sm:text-sm text-[#6E6E73] mt-2">
-            Switch between real-world laptop conditions to inspect evidence provenance before calculating circular pathways.
+            {t(
+              "hero.inspectionSubtitle",
+              "Switch between real-world laptop conditions to inspect evidence provenance before calculating circular pathways."
+            )}
           </p>
         </div>
 
         {/* Device Switcher Pills */}
         <div className="flex items-center justify-center gap-2 mb-6">
           <span className="text-xs font-semibold text-[#86868B] uppercase tracking-wider mr-2">
-            Inspect Hardware:
+            {t("hero.inspectHardware", "Inspect Hardware:")}
           </span>
           {(["dell", "mac", "thinkpad"] as const).map((key) => (
             <button
@@ -464,7 +474,10 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenAuth }) => {
                 </span>
               </div>
               <p className="text-sm text-[#6E6E73] mt-1">
-                Deterministic Next-Life Condition Profile & Evidence Provenance
+                {t(
+                  "hero.profileSubtitle",
+                  "Deterministic Next-Life Condition Profile & Evidence Provenance"
+                )}
               </p>
             </div>
 
@@ -507,7 +520,11 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenAuth }) => {
                             : "bg-amber-50 text-amber-700 border border-amber-200"
                         }`}
                     >
-                      {comp.source}
+                      {comp.source === "DIAGNOSTIC"
+                        ? t("provenance.diagnostic", "DIAGNOSTIC")
+                        : comp.source === "VISUAL"
+                          ? t("provenance.visual", "VISUAL")
+                          : t("provenance.userReported", "USER REPORTED")}
                     </span>
                   </div>
 
@@ -526,7 +543,11 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenAuth }) => {
                       {comp.state === "good" && <CheckCircle className="w-3 h-3" />}
                       {comp.state === "warning" && <AlertTriangle className="w-3 h-3" />}
                       {comp.state === "bad" && <AlertTriangle className="w-3 h-3" />}
-                      {comp.state === "good" ? "Operational" : comp.state === "warning" ? "Attention" : "Fault"}
+                      {comp.state === "good"
+                        ? t("hero.operational", "Operational")
+                        : comp.state === "warning"
+                          ? t("hero.attention", "Attention")
+                          : t("hero.fault", "Fault")}
                     </span>
                   </div>
                   <p className="text-[11px] text-[#86868B] mt-1 truncate">
@@ -541,7 +562,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenAuth }) => {
           <div className="p-4 sm:p-5 rounded-2xl bg-[#F5F5F7] border border-[#E5E5E7] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="max-w-xl">
               <span className="text-[11px] font-bold uppercase tracking-wider text-[#6E6E73] block mb-1">
-                Deterministic Decision Rationale
+                {t("hero.decisionRationale", "Deterministic Decision Rationale")}
               </span>
               <p className="text-xs sm:text-sm text-[#1D1D1F] leading-relaxed">
                 {current.reason}
@@ -549,7 +570,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenAuth }) => {
             </div>
             <div className="flex items-center gap-4 border-t sm:border-t-0 sm:border-l border-[#D2D2D7] pt-3 sm:pt-0 sm:pl-6 w-full sm:w-auto shrink-0">
               <div>
-                <span className="text-[11px] text-[#86868B] block">Estimated Impact</span>
+                <span className="text-[11px] text-[#86868B] block">{t("hero.estimatedImpact", "Estimated Impact")}</span>
                 <span className="text-sm font-bold text-[#1D1D1F]">{current.savings}</span>
                 <span className="text-[11px] text-[#34C759] block font-medium">{current.co2Saved}</span>
               </div>

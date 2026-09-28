@@ -39,7 +39,7 @@ from app.knowledge.sample_data import (
 from app.schemas.enums import ComponentName, ComponentStatus, ConfidenceLevel, EvidenceType
 from app.schemas.evidence import Evidence
 from app.schemas.product import ProductCandidate, ProductIdentifyResponse, ProductSpecs
-from app.schemas.vision import VisibleFinding, VisionAnalyzeResponse
+from app.schemas.vision import VisibleFinding, VisionAnalyzeResponse, VisionAnalyzeRequest
 
 logger = logging.getLogger(__name__)
 

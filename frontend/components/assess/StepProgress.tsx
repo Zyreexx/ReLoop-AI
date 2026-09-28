@@ -2,6 +2,7 @@
 
 import React from "react";
 import { Check } from "lucide-react";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface StepProgressProps {
   currentStep: number;
@@ -9,12 +10,13 @@ interface StepProgressProps {
 }
 
 export const StepProgress: React.FC<StepProgressProps> = ({ currentStep, onStepClick }) => {
+  const { t } = useLanguage();
   const steps = [
-    { num: 1, label: "Visual Inspection", tag: "VISUAL" },
-    { num: 2, label: "Diagnostics", tag: "DIAGNOSTIC" },
-    { num: 3, label: "User Symptoms", tag: "USER REPORTED" },
-    { num: 4, label: "Review", tag: "SUMMARY" },
-    { num: 5, label: "Condition Profile", tag: "PROFILE" },
+    { num: 1, label: t("assess.stepVisualName", "Visual Inspection"), tag: "VISUAL" },
+    { num: 2, label: t("assess.stepDiagName", "Diagnostics"), tag: "DIAGNOSTIC" },
+    { num: 3, label: t("assess.stepSymptomsName", "User Symptoms"), tag: "USER REPORTED" },
+    { num: 4, label: t("assess.stepReviewName", "Review"), tag: "SUMMARY" },
+    { num: 5, label: t("assess.stepProfileName", "Condition Profile"), tag: "PROFILE" },
   ];
 
   return (

@@ -12,12 +12,15 @@ import httpx
 from pathlib import Path
 from dotenv import load_dotenv
 
-backend_env = Path(__file__).resolve().parent.parent / ".env"
-root_env = Path(__file__).resolve().parent.parent.parent / ".env"
-if backend_env.exists():
-    load_dotenv(backend_env, override=True)
+backend_dir = Path(__file__).resolve().parent.parent.parent
+project_root = backend_dir.parent
+root_env = project_root / ".env"
+backend_env = backend_dir / ".env"
+
 if root_env.exists():
     load_dotenv(root_env, override=True)
+if backend_env.exists():
+    load_dotenv(backend_env, override=True)
 load_dotenv()
 
 from app.config import settings
@@ -25,6 +28,7 @@ from app.config import settings
 logger = logging.getLogger(__name__)
 
 import smtplib
+import ssl
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
@@ -52,28 +56,41 @@ def send_email(
 
     smtp_host = (os.getenv("SMTP_HOST") or getattr(settings, "SMTP_HOST", "")).strip()
     smtp_user = (os.getenv("SMTP_USER") or getattr(settings, "SMTP_USER", "")).strip()
-    smtp_pass = (os.getenv("SMTP_PASS") or getattr(settings, "SMTP_PASS", "")).strip()
+    smtp_pass = (os.getenv("SMTP_PASS") or getattr(settings, "SMTP_PASS", "")).strip().strip('"').strip("'")
+    if "gmail.com" in smtp_host.lower():
+        smtp_pass = smtp_pass.replace(" ", "")
     smtp_port = int(os.getenv("SMTP_PORT") or getattr(settings, "SMTP_PORT", 587))
 
     # Priority 1: SMTP (e.g. Gmail) — sends to ANY email without custom domain verification
     if smtp_host and smtp_user and smtp_pass:
         try:
+            context = ssl.create_default_context()
+            sender = smtp_user if (not from_address or "resend.dev" in from_address) else from_address
             msg = MIMEMultipart("alternative")
             msg["Subject"] = subject
-            msg["From"] = from_address or smtp_user
+            msg["From"] = f"ReLoop AI <{sender}>"
             msg["To"] = to
             if text_content:
                 msg.attach(MIMEText(text_content, "plain"))
             msg.attach(MIMEText(html_content, "html"))
 
-            with smtplib.SMTP(smtp_host, smtp_port, timeout=12.0) as server:
-                server.starttls()
-                server.login(smtp_user, smtp_pass)
-                server.sendmail(from_address or smtp_user, [to], msg.as_string())
+            print(f" [SMTP] Connecting to {smtp_host}:{smtp_port} as {smtp_user}...", flush=True)
+            if smtp_port == 465:
+                with smtplib.SMTP_SSL(smtp_host, smtp_port, context=context, timeout=15.0) as server:
+                    server.login(smtp_user, smtp_pass)
+                    server.sendmail(sender, [to], msg.as_string())
+            else:
+                with smtplib.SMTP(smtp_host, smtp_port, timeout=15.0) as server:
+                    server.starttls(context=context)
+                    server.login(smtp_user, smtp_pass)
+                    server.sendmail(sender, [to], msg.as_string())
+
             logger.info(f"Email sent successfully to {to} via SMTP ({smtp_host})")
+            print(f" [SMTP SUCCESS] OTP email dispatched successfully to {to} via {smtp_host}!", flush=True)
             return {"id": "smtp_email_id", "status": "sent", "to": to}
         except Exception as e:
             logger.error(f"Failed to send email via SMTP to {to}: {e}", exc_info=True)
+            print(f"\n [SMTP ERROR] Failed to send email to {to} via SMTP: {e}\n", flush=True)
             raise
 
     # Sandbox / Test Mode fallback when no API key is configured

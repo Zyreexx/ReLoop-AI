@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { useLanguage } from "@/context/LanguageContext";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { AuthModal } from "@/components/auth/AuthModal";
@@ -12,6 +13,7 @@ import { ArrowRight, Wrench, ShieldCheck, Cpu, RefreshCw } from "lucide-react";
 
 export default function Home() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const router = useRouter();
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
@@ -34,40 +36,40 @@ export default function Home() {
 
   const featurePortals = [
     {
-      badge: "CIRCULAR HIERARCHY",
-      title: "Six Pathways. One Optimal Life.",
-      desc: "Repair, Upgrade, Refurbish, Reuse, Component Recovery, and Recycling. We evaluate high-value loops first before disposal is ever considered.",
+      badge: t("portals.badgePathways", "CIRCULAR HIERARCHY"),
+      title: t("portals.pathwaysTitle"),
+      desc: t("portals.pathwaysDesc"),
       link: "/pathways",
-      linkText: "Explore 6 Circular Pathways",
+      linkText: t("portals.pathwaysBtn"),
       icon: Wrench,
-      highlight: "Up to 94% Value Retained",
+      highlight: t("portals.highlightPathways", "Up to 94% Value Retained"),
     },
     {
-      badge: "EVIDENCE SYSTEM",
-      title: "Zero Guesswork. Full Provenance.",
-      desc: "Vision AI identifies make & cosmetic condition. Real diagnostic reports measure battery & SSD health. Never conflating visual photos with invisible silicon health.",
+      badge: t("portals.badgeIntake", "EVIDENCE SYSTEM"),
+      title: t("portals.howItWorksTitle"),
+      desc: t("portals.howItWorksDesc"),
       link: "/how-it-works",
-      linkText: "See 3-Step Evidence Intake",
+      linkText: t("portals.howItWorksBtn"),
       icon: ShieldCheck,
-      highlight: "Traceable Provenance Badges",
+      highlight: t("portals.highlightIntake", "Traceable Provenance Badges"),
     },
     {
-      badge: "SCORING ALGORITHM",
-      title: "Deterministic Decision Engine",
-      desc: "A reproducible Python optimization model that calculates circular ROI based on cost, life extension, material retention, and carbon savings.",
+      badge: t("portals.badgeEngine", "SCORING ALGORITHM"),
+      title: t("portals.engineTitle"),
+      desc: t("portals.engineDesc"),
       link: "/engine",
-      linkText: "Launch Interactive Simulator",
+      linkText: t("portals.engineBtn"),
       icon: Cpu,
-      highlight: "Mathematical Scoring Model",
+      highlight: t("portals.highlightEngine", "Mathematical Scoring Model"),
     },
     {
-      badge: "CIRCULAR PRINCIPLE",
-      title: "Upstream Product Life Management",
-      desc: "We do not manage waste — we manage the life of products. Keeping functioning laptops and healthy silicon modules out of premature shredders.",
+      badge: t("portals.badgePhilosophy", "CIRCULAR PRINCIPLE"),
+      title: t("portals.philosophyTitle"),
+      desc: t("portals.philosophyDesc"),
       link: "/philosophy",
-      linkText: "Read Circular Philosophy",
+      linkText: t("portals.philosophyBtn"),
       icon: RefreshCw,
-      highlight: "Preventing Embodied Carbon Loss",
+      highlight: t("portals.highlightPhilosophy", "Preventing Embodied Carbon Loss"),
     },
   ];
 
@@ -93,13 +95,13 @@ export default function Home() {
           <div className="max-w-6xl mx-auto px-6">
             <div className="text-center max-w-3xl mx-auto mb-16">
               <span className="text-xs font-semibold uppercase tracking-wider text-[#0071E3] block mb-2">
-                Lifecycle Intelligence
+                {t("portals.tagline")}
               </span>
               <h2 className="text-[34px] sm:text-[46px] font-bold text-[#1D1D1F] tracking-tight leading-tight mb-4">
-                Explore the ReLoop Engine.
+                {t("portals.title")}
               </h2>
               <p className="text-[17px] text-[#6E6E73] leading-relaxed">
-                Dedicated tools designed to retain maximum electronics value, provide certified diagnostic proof, and eliminate premature e-waste.
+                {t("portals.subtitle")}
               </p>
             </div>
 
@@ -154,17 +156,20 @@ export default function Home() {
           <div className="max-w-4xl mx-auto px-6">
             <div className="p-8 sm:p-12 rounded-3xl bg-[#1D1D1F] text-white text-center shadow-xl">
               <h3 className="text-2xl sm:text-3xl font-bold tracking-tight mb-3">
-                Ready to assess your hardware?
+                {t("portals.ctaTitle", "Ready to assess your hardware?")}
               </h3>
               <p className="text-sm text-gray-300 max-w-xl mx-auto mb-6">
-                Calculate the highest-value next life for your device in seconds.
+                {t(
+                  "portals.ctaSubtitle",
+                  "Calculate the highest-value next life for your device in seconds."
+                )}
               </p>
               <button
                 type="button"
                 onClick={handleAssessClick}
                 className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-[#0071E3] hover:bg-[#0077ED] text-white text-sm font-semibold transition-all duration-200 shadow-md cursor-pointer"
               >
-                <span>Assess Your Laptop</span>
+                <span>{t("portals.ctaBtn", "Assess Your Laptop")}</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>

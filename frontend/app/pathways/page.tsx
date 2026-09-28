@@ -24,7 +24,7 @@ export default function PathwaysPage() {
       />
       <Navbar onOpenAuth={handleOpenAuth} />
       <main className="flex-1">
-        <PathwaysSection />
+        <PathwaysSection onOpenAuth={handleOpenAuth} />
       </main>
       <Footer />
     </div>

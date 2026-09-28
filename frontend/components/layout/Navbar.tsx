@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { RefreshCw, ArrowRight, Menu, X } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { useLanguage } from "@/context/LanguageContext";
+import { LanguageSelector } from "@/components/ui/LanguageSelector";
 
 interface NavbarProps {
   onOpenAuth: (mode: "login" | "register") => void;
@@ -12,6 +14,7 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth }) => {
   const { user, logout } = useAuth();
+  const { t } = useLanguage();
   const router = useRouter();
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -38,8 +41,11 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth }) => {
   return (
     <>
       <header
-        className={`sticky top-0 z-50 transition-all duration-300 ${scrolled ? "apple-nav-blur py-3 shadow-xs" : "bg-[#F5F5F7]/90 backdrop-blur-md py-4"
-          }`}
+        className={`sticky top-0 z-50 transition-all duration-300 ${
+          scrolled
+            ? "apple-nav-blur py-3 shadow-xs"
+            : "bg-[#F5F5F7]/90 backdrop-blur-md py-4"
+        }`}
       >
         <div className="max-w-6xl mx-auto px-6 flex items-center justify-between">
           {/* Brand Logo */}
@@ -60,24 +66,27 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth }) => {
           {/* Desktop Navigation Links */}
           <nav className="hidden md:flex items-center gap-7 text-[13px] font-medium text-[#6E6E73]">
             <Link href="/" className="hover:text-[#1D1D1F] transition-colors">
-              Home
+              {t("nav.home")}
             </Link>
             <Link href="/pathways" className="hover:text-[#1D1D1F] transition-colors">
-              6 Pathways
+              {t("nav.pathways")}
             </Link>
             <Link href="/how-it-works" className="hover:text-[#1D1D1F] transition-colors">
-              How It Works
+              {t("nav.howItWorks")}
             </Link>
             <Link href="/engine" className="hover:text-[#1D1D1F] transition-colors">
-              Decision Engine
+              {t("nav.engine")}
             </Link>
             <Link href="/philosophy" className="hover:text-[#1D1D1F] transition-colors">
-              Philosophy
+              {t("nav.philosophy")}
             </Link>
           </nav>
 
           {/* Actions */}
-          <div className="hidden md:flex items-center gap-3">
+          <div className="hidden md:flex items-center gap-2.5">
+            {/* Language Selector Dropdown */}
+            <LanguageSelector variant="navbar" />
+
             {user ? (
               <div className="flex items-center gap-3 pl-2">
                 <div className="flex items-center gap-2">
@@ -101,7 +110,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth }) => {
                   onClick={logout}
                   className="text-[12px] text-[#6E6E73] hover:text-[#FF3B30] px-2 py-1 transition-colors cursor-pointer"
                 >
-                  Sign Out
+                  {t("nav.signOut")}
                 </button>
               </div>
             ) : (
@@ -110,16 +119,16 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth }) => {
                 onClick={() => onOpenAuth("login")}
                 className="text-[13px] font-medium text-[#1D1D1F] hover:text-[#0071E3] px-3.5 py-1.5 transition-colors cursor-pointer"
               >
-                Sign In
+                {t("nav.signIn")}
               </button>
             )}
 
             <button
               type="button"
               onClick={handleAssessDeviceClick}
-              className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-white bg-[#0071E3] hover:bg-[#0077ED] px-4 py-2 rounded-full transition-all duration-200 cursor-pointer shadow-xs hover:shadow-sm"
+              className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-white bg-[#0071E3] hover:bg-[#0077ED] px-4 py-2 rounded-full transition-all duration-200 cursor-pointer shadow-xs hover:shadow-sm ml-1"
             >
-              <span>Assess Device</span>
+              <span>{t("nav.assessDevice")}</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
@@ -143,36 +152,42 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth }) => {
               onClick={() => setMobileMenuOpen(false)}
               className="text-[15px] font-medium text-[#1D1D1F] py-1.5"
             >
-              Overview
+              {t("nav.home")}
             </Link>
             <Link
               href="/pathways"
               onClick={() => setMobileMenuOpen(false)}
               className="text-[15px] font-medium text-[#1D1D1F] py-1.5"
             >
-              6 Circular Pathways
+              {t("nav.pathways")}
             </Link>
             <Link
               href="/how-it-works"
               onClick={() => setMobileMenuOpen(false)}
               className="text-[15px] font-medium text-[#1D1D1F] py-1.5"
             >
-              How It Works
+              {t("nav.howItWorks")}
             </Link>
             <Link
               href="/engine"
               onClick={() => setMobileMenuOpen(false)}
               className="text-[15px] font-medium text-[#1D1D1F] py-1.5"
             >
-              Decision Engine
+              {t("nav.engine")}
             </Link>
             <Link
               href="/philosophy"
               onClick={() => setMobileMenuOpen(false)}
               className="text-[15px] font-medium text-[#1D1D1F] py-1.5"
             >
-              Philosophy
+              {t("nav.philosophy")}
             </Link>
+
+            {/* Mobile Language Selector */}
+            <div className="pt-2 border-t border-[#E5E5E7]">
+              <LanguageSelector variant="mobile" />
+            </div>
+
             <div className="pt-3 border-t border-[#E5E5E7] flex flex-col gap-2">
               {user ? (
                 <div className="flex items-center justify-between py-2">
@@ -200,7 +215,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth }) => {
                     }}
                     className="text-xs text-[#FF3B30] font-medium"
                   >
-                    Sign Out
+                    {t("nav.signOut")}
                   </button>
                 </div>
               ) : (
@@ -212,7 +227,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth }) => {
                   }}
                   className="w-full text-center py-2.5 rounded-xl border border-[#D2D2D7] font-semibold text-sm text-[#1D1D1F]"
                 >
-                  Sign In
+                  {t("nav.signIn")}
                 </button>
               )}
               <button
@@ -223,7 +238,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth }) => {
                 }}
                 className="w-full text-center py-2.5 rounded-xl bg-[#0071E3] font-semibold text-sm text-white"
               >
-                Assess Device
+                {t("nav.assessDevice")}
               </button>
             </div>
           </div>
