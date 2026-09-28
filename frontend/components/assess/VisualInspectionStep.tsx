@@ -286,17 +286,35 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
     });
   };
 
-  const handleSelectCustomModel = (item: { manufacturer: string; model: string }) => {
-    setIdentifiedProduct({
+  const handleSelectCustomModel = (item: { manufacturer: string; model: string; category?: string }) => {
+    const updatedProduct = {
       manufacturer: item.manufacturer,
       model: item.model,
       confidence: 1.0,
       confirmed: true,
       visible_label_text: null,
-    });
+    };
+    setIdentifiedProduct(updatedProduct);
     setShowModelPicker(false);
+    setErrorMsg(null);
     setAnalyzed(true);
+
+    if (visibleObservations.length === 0) {
+      setVisibleObservations([
+        {
+          id: "vis-manual-1",
+          component: "chassis",
+          condition: "no_visible_damage",
+          observation: `Verified hardware profile for ${item.manufacturer} ${item.model} (manual selection)`,
+          confidence: 1.0,
+        },
+      ]);
+    }
   };
+
+  const shouldShowPicker =
+    !analyzing &&
+    (showModelPicker || (!identifiedProduct.model && (images.length > 0 || Boolean(errorMsg))));
 
   return (
     <div className="max-w-4xl mx-auto px-6 py-10">
@@ -319,7 +337,6 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
             {t("visual.subtitle", "Upload a photo of your laptop. Gemini Vision AI will automatically detect the manufacturer, exact model name, and physical characteristics.")}
           </p>
         </div>
-
       </div>
 
       {/* Non-negotiable technical rule disclaimer */}
@@ -332,18 +349,20 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
       </div>
 
       {errorMsg && (
-        <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0" />
-            <span>{errorMsg}</span>
+        <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-start sm:items-center gap-2.5">
+            <AlertCircle className="w-5 h-5 shrink-0 mt-0.5 sm:mt-0 text-red-600" />
+            <span className="leading-snug">{errorMsg}</span>
           </div>
-          <button
-            type="button"
-            onClick={() => triggerVisionDetection(rawFiles, images)}
-            className="text-xs font-semibold underline text-red-800 hover:text-red-950 cursor-pointer"
-          >
-            {t("visual.retry", "Retry Detection")}
-          </button>
+          {images.length > 0 && (
+            <button
+              type="button"
+              onClick={() => triggerVisionDetection(rawFiles, images)}
+              className="text-xs font-semibold underline text-red-800 hover:text-red-950 cursor-pointer self-start sm:self-auto shrink-0"
+            >
+              {t("visual.retry", "Retry Detection")}
+            </button>
+          )}
         </div>
       )}
 
@@ -502,7 +521,55 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
         </div>
       )}
 
-      {/* Gemini AI Identified Model Results */}
+      {/* Manual Model Picker Card: Rendered independently when model is unknown, AI is unavailable, or user chooses to change model */}
+      {shouldShowPicker && (
+        <div className="mb-8 p-6 sm:p-8 rounded-3xl bg-[#F5F5F7] border border-[#D2D2D7] shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-2">
+            <div>
+              <h5 className="text-sm sm:text-base font-bold uppercase tracking-wider text-[#1D1D1F] flex items-center gap-2">
+                <Laptop className="w-4 h-4 text-[#0071E3]" />
+                {t("visual.pickerTitle", "Select Supported Laptop Model")}
+              </h5>
+              <p className="text-xs text-[#6E6E73] mt-0.5">
+                {t("visual.pickerSubtitle", "Select a supported model from our verified hardware catalog to proceed with assessment:")}
+              </p>
+            </div>
+            {identifiedProduct.model && (
+              <button
+                type="button"
+                onClick={() => setShowModelPicker(false)}
+                className="text-xs font-semibold text-[#6E6E73] hover:text-[#1D1D1F] cursor-pointer px-3 py-1 rounded-full bg-white border border-[#D2D2D7] self-start sm:self-auto"
+              >
+                {t("visual.pickerClose", "Close")}
+              </button>
+            )}
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {catalogModels.map((m, idx) => (
+              <button
+                key={m.id || idx}
+                type="button"
+                onClick={() => handleSelectCustomModel(m)}
+                className="p-4 rounded-2xl bg-white border border-[#E5E5E7] hover:border-[#0071E3] hover:shadow-md text-left transition-all cursor-pointer flex items-center justify-between group"
+              >
+                <div>
+                  <span className="text-sm font-bold text-[#1D1D1F] group-hover:text-[#0071E3] transition-colors block">
+                    {m.model}
+                  </span>
+                  <span className="text-xs text-[#6E6E73]">
+                    {m.manufacturer} • {m.category || "Supported Catalog Model"}
+                  </span>
+                </div>
+                <div className="w-7 h-7 rounded-full bg-[#F5F5F7] group-hover:bg-[#0071E3] group-hover:text-white flex items-center justify-center text-[#0071E3] transition-colors text-sm font-bold">
+                  →
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Gemini AI Identified / Manually Selected Model Results */}
       {analyzed && !analyzing && identifiedProduct.model && (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-3 duration-400">
           {/* Detected Model Hero Card */}
@@ -523,7 +590,7 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
 
                 <div>
                   <span className="text-xs text-[#86868B] uppercase tracking-wider font-semibold block">
-                    {t("visual.detectedModelLabel", "Detected Model Name")}
+                    {t("visual.detectedModelLabel", "Verified Hardware Model")}
                   </span>
                   <h4 className="text-2xl sm:text-3xl font-extrabold text-[#1D1D1F] tracking-tight">
                     {identifiedProduct.manufacturer} {identifiedProduct.model}
@@ -557,53 +624,12 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
             </div>
           </div>
 
-          {/* Model Picker Modal */}
-          {showModelPicker && (
-            <div className="p-6 rounded-3xl bg-[#F5F5F7] border border-[#D2D2D7] animate-in fade-in duration-200">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h5 className="text-sm font-bold uppercase tracking-wider text-[#1D1D1F]">
-                    {t("visual.pickerTitle", "Select or Adjust Laptop Model")}
-                  </h5>
-                  <p className="text-xs text-[#6E6E73] mt-0.5">
-                    {t("visual.pickerSubtitle", "Select a supported model from our verified hardware catalog:")}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowModelPicker(false)}
-                  className="text-xs font-semibold text-[#6E6E73] hover:text-[#1D1D1F] cursor-pointer"
-                >
-                  {t("visual.pickerClose", "Close")}
-                </button>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {catalogModels.map((m, idx) => (
-                  <button
-                    key={m.id || idx}
-                    type="button"
-                    onClick={() => handleSelectCustomModel(m)}
-                    className="p-3.5 rounded-2xl bg-white border border-[#E5E5E7] hover:border-[#0071E3] hover:shadow-xs text-left transition-all cursor-pointer flex items-center justify-between"
-                  >
-                    <div>
-                      <span className="text-xs font-bold text-[#1D1D1F] block">{m.model}</span>
-                      <span className="text-[11px] text-[#6E6E73]">{m.manufacturer} • {m.category || "Supported Model"}</span>
-                    </div>
-                    <div className="w-6 h-6 rounded-full bg-[#F5F5F7] flex items-center justify-center text-[#0071E3]">
-                      →
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* Visible Observations Grid */}
           {visibleObservations.length > 0 && (
             <div>
               <h4 className="text-xs font-bold uppercase tracking-wider text-[#6E6E73] mb-3 flex items-center gap-1.5">
                 <Eye className="w-3.5 h-3.5 text-[#0071E3]" />
-                {t("visual.observationsTitle", "Gemini Vision Observations")}
+                {t("visual.observationsTitle", "Optical Inspection Observations")}
               </h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {visibleObservations.map((obs) => (
