@@ -5,6 +5,12 @@ import Link from "next/link";
 import { ComponentConditionRecord } from "@/types/assessment";
 import { useLanguage } from "@/context/LanguageContext";
 import {
+  localizeComponentName,
+  localizeConditionHeadline,
+  localizeConditionSummary,
+  localizeEvidenceText,
+} from "@/lib/dynamicLocalization";
+import {
   CheckCircle2,
   AlertTriangle,
   ArrowRight,
@@ -42,7 +48,7 @@ export const ConditionProfileView: React.FC<ConditionProfileViewProps> = ({
   manufacturer,
   assessmentId,
 }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   // Support state fallback if loaded from direct navigation or storage
   const [deviceModel, setDeviceModel] = useState<string>(confirmedModelName || "");
   const [deviceMfr, setDeviceMfr] = useState<string>(manufacturer || "");
@@ -73,12 +79,12 @@ export const ConditionProfileView: React.FC<ConditionProfileViewProps> = ({
   const fullDeviceName = useMemo(() => {
     const m = (deviceMfr || "").trim();
     const mod = (deviceModel || "").trim();
-    if (!m && !mod) return "Assessed Laptop";
+    if (!m && !mod) return language === "gu" ? "તપાસેલ લેપટોપ" : language === "hi" ? "આંકલિત લેપટોપ" : "Assessed Laptop";
     if (!m) return mod;
     if (!mod) return m;
     if (mod.toLowerCase().startsWith(m.toLowerCase())) return mod;
     return `${m} ${mod}`;
-  }, [deviceMfr, deviceModel]);
+  }, [deviceMfr, deviceModel, language]);
 
   const getComponentIcon = (name: string) => {
     switch (name.toLowerCase()) {
@@ -235,7 +241,7 @@ export const ConditionProfileView: React.FC<ConditionProfileViewProps> = ({
                       <Icon size={18} />
                     </div>
                     <span className="text-base font-bold text-[#1D1D1F] truncate">
-                      {record.component}
+                      {localizeComponentName(record.component, language)}
                     </span>
                   </div>
 
@@ -258,13 +264,13 @@ export const ConditionProfileView: React.FC<ConditionProfileViewProps> = ({
                 {/* Metric / Condition Headline */}
                 <div className="mb-2">
                   <span className="text-sm font-semibold text-[#1D1D1F]">
-                    {headline}
+                    {localizeConditionHeadline(headline, language)}
                   </span>
                 </div>
 
                 {/* Primary Observation / Summary */}
                 <p className="text-[13px] text-[#515154] leading-relaxed mb-4">
-                  {cleanedSummary}
+                  {localizeConditionSummary(cleanedSummary, language)}
                 </p>
 
                 {/* Human-readable observations if available */}
@@ -276,7 +282,7 @@ export const ConditionProfileView: React.FC<ConditionProfileViewProps> = ({
                         className="text-xs text-[#6E6E73] flex items-start gap-1.5"
                       >
                         <span className="text-[#0071E3] font-bold mt-0.5">•</span>
-                        <span>{ev.text}</span>
+                        <span>{localizeEvidenceText(ev.text, language)}</span>
                       </div>
                     ))}
                   </div>

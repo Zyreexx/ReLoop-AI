@@ -717,7 +717,9 @@ export const translations: Record<Language, Record<string, string>> = {
     "engine.readyExecuteTitle": "Ready to execute this next-life pathway?",
     "engine.readyExecuteDesc": "Download the certified repair & lifecycle plan for your device, or share it with your local repair technician.",
     "engine.savePdf": "Save as PDF",
+    "engine.savePdfTooltip": "Save report as a printable PDF certificate",
     "engine.exportExcel": "Export Excel",
+    "engine.exportExcelTooltip": "Export complete decision matrix and telemetry to Excel / CSV",
     "engine.assessAnother": "Assess Another Device",
 
     // Common Actions & Labels
@@ -1442,7 +1444,9 @@ export const translations: Record<Language, Record<string, string>> = {
     "engine.readyExecuteTitle": "આ આગામી-જીવન માર્ગ અમલમાં મૂકવા તૈયાર છો?",
     "engine.readyExecuteDesc": "તમારા ડિવાઇસ માટે પ્રમાણિત રિપેર અને લાઇફસાઇકલ પ્લાન ડાઉનલોડ કરો અથવા લોકલ ટેકનિશિયન સાથે શેર કરો.",
     "engine.savePdf": "PDF તરીકે સાચવો",
+    "engine.savePdfTooltip": "રિપોર્ટને છાપવાયોગ્ય PDF પ્રમાણપત્ર તરીકે સાચવો",
     "engine.exportExcel": "Excel માં નિકાસ કરો",
+    "engine.exportExcelTooltip": "સંપૂર્ણ નિર્ણય મેટ્રિક્સ અને ટેલિમેટ્રીને Excel / CSV માં નિકાસ કરો",
     "engine.assessAnother": "અન્ય ડિવાઇસ તપાસો",
 
     // Common Actions & Labels
@@ -2167,7 +2171,9 @@ export const translations: Record<Language, Record<string, string>> = {
     "engine.readyExecuteTitle": "इस अगले-जीवन मार्ग को निष्पादित करने के लिए तैयार हैं?",
     "engine.readyExecuteDesc": "अपने डिवाइस के लिए प्रमाणित मरम्मत और जीवनचक्र योजना डाउनलोड करें, या इसे अपने स्थानीय तकनीशियन के साथ साझा करें।",
     "engine.savePdf": "PDF के रूप में सहेजें",
+    "engine.savePdfTooltip": "रिपोर्ट को प्रिंट करने योग्य PDF प्रमाणपत्र के रूप में सहेजें",
     "engine.exportExcel": "Excel में निर्यात करें",
+    "engine.exportExcelTooltip": "पूर्ण निर्णय मैट्रिक्स और टेलीमेट्री को Excel / CSV में निर्यात करें",
     "engine.assessAnother": "अन्य डिवाइस जांचें",
 
     // Common Actions & Labels
