@@ -96,3 +96,75 @@ def get_all_models() -> List[ProductCandidate]:
     Returns all supported models as ProductCandidate list.
     """
     return get_supported_product_candidates()
+
+
+def get_catalog_candidates_with_ids() -> List[dict]:
+    """
+    Returns the supported-model catalog sorted deterministically,
+    with stable candidate IDs (C1, C2, C3, ...) generated from the sorted list.
+    """
+    raw_products = load_all_products()
+    sorted_items = sorted(
+        raw_products.values(),
+        key=lambda item: (
+            item.get("manufacturer", "").strip().lower(),
+            item.get("model", "").strip().lower(),
+            item.get("slug", "").strip().lower(),
+        ),
+    )
+    candidates_with_ids = []
+    for idx, item in enumerate(sorted_items, start=1):
+        cid = f"C{idx}"
+        specs_data = item.get("specs", {})
+        specs = ProductSpecs(**specs_data) if isinstance(specs_data, dict) else ProductSpecs()
+        candidate = ProductCandidate(
+            manufacturer=item.get("manufacturer", "Generic"),
+            model=item.get("model", "Laptop"),
+            model_year=item.get("model_year", 2020),
+            confidence=ConfidenceLevel.HIGH,
+            specs=specs,
+        )
+        candidates_with_ids.append({
+            "candidate_id": cid,
+            "candidate": candidate,
+            "raw_data": item,
+            "slug": item.get("slug", ""),
+            "manufacturer": item.get("manufacturer", "Generic"),
+            "model": item.get("model", "Laptop"),
+            "model_year": item.get("model_year", 2020),
+            "specs": specs,
+        })
+    return candidates_with_ids
+
+
+def get_candidate_by_id(candidate_id: str) -> Optional[dict]:
+    """
+    Look up a catalog candidate item by its stable candidate ID (e.g. 'C1', 'C2').
+    """
+    if not candidate_id or candidate_id.strip().upper() == "UNKNOWN":
+        return None
+    clean_id = candidate_id.strip().upper()
+    candidates = get_catalog_candidates_with_ids()
+    for item in candidates:
+        if item["candidate_id"].upper() == clean_id:
+            return item
+    # Also support prefix matching like 'C2: Dell Latitude' -> 'C2'
+    if clean_id.startswith("C") and len(clean_id) > 1:
+        first_token = clean_id.split()[0].split(":")[0].split("-")[0].strip()
+        for item in candidates:
+            if item["candidate_id"].upper() == first_token:
+                return item
+    return None
+
+
+def format_candidates_for_prompt() -> str:
+    """
+    Formats the stable candidate list for injection into Gemini prompt:
+    - C1: Apple MacBook Air (M1, 2020) (2020)
+    - C2: Dell Latitude 5420 (2021)
+    ...
+    """
+    lines = []
+    for c in get_catalog_candidates_with_ids():
+        lines.append(f"- {c['candidate_id']}: {c['manufacturer']} {c['model']} ({c['model_year']})")
+    return "\n".join(lines)

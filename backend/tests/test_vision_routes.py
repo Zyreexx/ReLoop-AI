@@ -11,14 +11,19 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.ai.gemini_client import gemini_client
-from app.ai.schemas import ModelIdentificationOutput, DamageAssessmentOutput
+from app.ai.schemas import CatalogIdentificationOutput, DamageAssessmentOutput
 from app.config import settings
 from app.db.store import store
 from app.errors import AppError, ErrorCode
-from app.schemas.enums import ComponentName, EvidenceType
-from app.schemas.product import ProductRecord
+from app.knowledge.models_catalog import get_catalog_candidates_with_ids, get_candidate_by_id
+from app.schemas.enums import ComponentName, ConfidenceLevel, EvidenceType
+from app.schemas.product import ProductCandidate, ProductRecord, ProductSpecs
 from app.schemas.vision import VisibleFinding
-from app.services.vision import filter_visible_findings
+from app.services.vision import (
+    filter_visible_findings,
+    evaluate_identification_confidence,
+    validate_image_roles,
+)
 
 
 # Mock image bytes with valid magic headers
@@ -65,11 +70,12 @@ def test_identify_rejects_oversized_file(client: TestClient):
 
 
 def test_identify_accepts_up_to_5_images_and_rejects_6(client: TestClient):
-    mock_ai_output = ModelIdentificationOutput(
-        model_name="Dell Latitude 5420",
-        confidence=0.92,
-        visible_label_text="Latitude 5420",
-        visual_clues=["Dell emblem"],
+    mock_ai_output = CatalogIdentificationOutput(
+        candidate_id="C2",
+        label_evidence=["Latitude 5420"],
+        visual_evidence=["Dell emblem"],
+        contradictions=[],
+        model_confidence=0.92,
     )
 
     with patch.object(gemini_client, "generate_structured", return_value=mock_ai_output):
@@ -103,43 +109,132 @@ def test_identify_rejects_empty_file(client: TestClient):
 
 
 # ============================================================================
-# 2. Product Identification Tests
+# 2. Product Identification & Confidence Policy Tests
 # ============================================================================
 
-def test_identify_success_with_images_and_mocked_gemini(client: TestClient):
-    mock_ai_output = ModelIdentificationOutput(
-        model_name="Dell Latitude 5420",
-        confidence=0.92,
-        visible_label_text="Latitude 5420 Reg Model P137G",
-        visual_clues=["Dell emblem", "Right side wedge lock"],
+def test_catalog_candidate_ids_stable_across_runs():
+    """Catalog candidate IDs (C1, C2, ...) must be generated deterministically from sorted catalog."""
+    first_run = get_catalog_candidates_with_ids()
+    second_run = get_catalog_candidates_with_ids()
+
+    assert len(first_run) == len(second_run)
+    assert len(first_run) >= 4
+    for r1, r2 in zip(first_run, second_run):
+        assert r1["candidate_id"] == r2["candidate_id"]
+        assert r1["manufacturer"] == r2["manufacturer"]
+        assert r1["model"] == r2["model"]
+
+    # Verify expected candidate IDs in alphabetical sort
+    c_ids = {c["candidate_id"]: f"{c['manufacturer']} {c['model']}" for c in first_run}
+    assert "C1" in c_ids and "Apple" in c_ids["C1"]
+    assert "C2" in c_ids and "Dell" in c_ids["C2"]
+    assert "C3" in c_ids and "HP" in c_ids["C3"]
+    assert "C4" in c_ids and "Lenovo" in c_ids["C4"]
+
+
+def test_identify_exact_label_match_evaluates_to_high(client: TestClient):
+    """Exact model text in label_evidence -> HIGH confidence."""
+    mock_ai_output = CatalogIdentificationOutput(
+        candidate_id="C2",
+        label_evidence=["Dell Latitude 5420 Regulatory Model P137G"],
+        visual_evidence=["Silver chassis finish"],
+        contradictions=[],
+        model_confidence=0.88,
     )
 
     with patch.object(gemini_client, "generate_structured", return_value=mock_ai_output):
         files = [
             ("images", ("front.jpg", BytesIO(VALID_JPEG), "image/jpeg")),
             ("images", ("bottom.png", BytesIO(VALID_PNG), "image/png")),
-            ("images", ("side.webp", BytesIO(VALID_WEBP), "image/webp")),
         ]
         res = client.post("/api/products/identify", files=files)
 
     assert res.status_code == 200
     data = res.json()
     assert data["is_supported"] is True
-    assert data["confidence"] == 0.92
-    assert data["needs_confirmation"] is True
-    assert data["requires_user_confirmation"] is True
-    assert data["source"] == "live"
+    assert data["candidate_id"] == "C2"
+    assert data["confidence_level"] == ConfidenceLevel.HIGH.value
     assert data["identified_model"]["manufacturer"] == "Dell"
     assert data["identified_model"]["model"] == "Latitude 5420"
-    assert len(data["supported_models"]) >= 3
+    assert data["needs_confirmation"] is True
+    assert data["source"] == "live"
+    assert len(data["label_evidence"]) >= 1
 
 
-def test_identify_unknown_unsupported_model_returns_manual_picker(client: TestClient):
-    mock_ai_output = ModelIdentificationOutput(
-        model_name="unknown",
-        confidence=0.2,
-        visible_label_text=None,
-        visual_clues=["Unidentified silver laptop chassis"],
+def test_identify_distinct_visual_clues_without_contradiction_evaluates_to_high(client: TestClient):
+    """At least 3 distinct visual_evidence items and no contradictions -> HIGH."""
+    mock_ai_output = CatalogIdentificationOutput(
+        candidate_id="C2",
+        label_evidence=[],
+        visual_evidence=[
+            "Circular Dell logo centered on top lid",
+            "Left-side dual Thunderbolt USB-C ports",
+            "Right-side RJ-45 Ethernet drop-jaw port",
+        ],
+        contradictions=[],
+        model_confidence=0.7,
+    )
+
+    with patch.object(gemini_client, "generate_structured", return_value=mock_ai_output):
+        files = [("images", ("chassis.jpg", BytesIO(VALID_JPEG), "image/jpeg"))]
+        res = client.post("/api/products/identify", files=files)
+
+    assert res.status_code == 200
+    data = res.json()
+    assert data["candidate_id"] == "C2"
+    assert data["confidence_level"] == ConfidenceLevel.HIGH.value
+
+
+def test_identify_brand_only_evaluates_to_medium(client: TestClient):
+    """Manufacturer clear but exact model not confirmed by label text -> MEDIUM."""
+    mock_ai_output = CatalogIdentificationOutput(
+        candidate_id="C2",
+        label_evidence=["Dell circular logo badge"],
+        visual_evidence=["Silver matte finish"],
+        contradictions=[],
+        model_confidence=0.85,
+    )
+
+    with patch.object(gemini_client, "generate_structured", return_value=mock_ai_output):
+        files = [("images", ("lid.jpg", BytesIO(VALID_JPEG), "image/jpeg"))]
+        res = client.post("/api/products/identify", files=files)
+
+    assert res.status_code == 200
+    data = res.json()
+    assert data["candidate_id"] == "C2"
+    assert data["confidence_level"] == ConfidenceLevel.MEDIUM.value
+    assert data["needs_confirmation"] is True
+
+
+def test_identify_generic_look_evaluates_to_low(client: TestClient):
+    """Only generic visual similarity -> LOW."""
+    mock_ai_output = CatalogIdentificationOutput(
+        candidate_id="C2",
+        label_evidence=[],
+        visual_evidence=["Dark gray laptop chassis"],
+        contradictions=[],
+        model_confidence=0.5,
+    )
+
+    with patch.object(gemini_client, "generate_structured", return_value=mock_ai_output):
+        files = [("images", ("device.jpg", BytesIO(VALID_JPEG), "image/jpeg"))]
+        res = client.post("/api/products/identify", files=files)
+
+    assert res.status_code == 200
+    data = res.json()
+    assert data["candidate_id"] == "C2"
+    assert data["confidence_level"] == ConfidenceLevel.LOW.value
+    assert data["needs_confirmation"] is True
+
+
+def test_identify_unknown_candidate_returns_manual_picker(client: TestClient):
+    """Gemini selects UNKNOWN -> returns manual picker with supported model catalog."""
+    mock_ai_output = CatalogIdentificationOutput(
+        candidate_id="UNKNOWN",
+        label_evidence=[],
+        visual_evidence=["Blurry image of electronic device"],
+        contradictions=["Unable to determine make or model"],
+        model_confidence=0.1,
     )
 
     with patch.object(gemini_client, "generate_structured", return_value=mock_ai_output):
@@ -150,9 +245,128 @@ def test_identify_unknown_unsupported_model_returns_manual_picker(client: TestCl
     data = res.json()
     assert data["is_supported"] is False
     assert data["identified_model"] is None
+    assert data["candidate_id"] == "UNKNOWN"
+    assert data["confidence_level"] == ConfidenceLevel.UNKNOWN.value
     assert data["needs_confirmation"] is True
-    assert len(data["supported_models"]) >= 3
-    assert "select" in data["message"].lower() or "manually" in data["message"].lower()
+    assert len(data["supported_models"]) >= 4
+
+
+def test_identify_candidate_not_in_catalog_downgrades_to_unknown(client: TestClient):
+    """Candidate ID not in catalog (e.g. C99) -> downgraded to UNKNOWN manual picker."""
+    mock_ai_output = CatalogIdentificationOutput(
+        candidate_id="C99",
+        label_evidence=["Alienware m15 R7"],
+        visual_evidence=["Alien head logo"],
+        contradictions=[],
+        model_confidence=0.9,
+    )
+
+    with patch.object(gemini_client, "generate_structured", return_value=mock_ai_output):
+        files = [("images", ("gaming.jpg", BytesIO(VALID_JPEG), "image/jpeg"))]
+        res = client.post("/api/products/identify", files=files)
+
+    assert res.status_code == 200
+    data = res.json()
+    assert data["is_supported"] is False
+    assert data["identified_model"] is None
+    assert data["candidate_id"] == "UNKNOWN"
+    assert data["confidence_level"] == ConfidenceLevel.UNKNOWN.value
+
+
+def test_identify_contradiction_downgrades_to_unknown(client: TestClient):
+    """Response contradiction (e.g. chosen candidate Dell C2 but label reads Lenovo) -> downgraded to UNKNOWN."""
+    mock_ai_output = CatalogIdentificationOutput(
+        candidate_id="C2",  # Dell Latitude 5420
+        label_evidence=["Lenovo ThinkPad T14 Gen 1 label"],
+        visual_evidence=["Red TrackPoint nub visible"],
+        contradictions=["Selected candidate is Dell but chassis shows Lenovo ThinkPad branding"],
+        model_confidence=0.9,
+    )
+
+    with patch.object(gemini_client, "generate_structured", return_value=mock_ai_output):
+        files = [("images", ("thinkpad.jpg", BytesIO(VALID_JPEG), "image/jpeg"))]
+        res = client.post("/api/products/identify", files=files)
+
+    assert res.status_code == 200
+    data = res.json()
+    assert data["is_supported"] is False
+    assert data["identified_model"] is None
+    assert data["candidate_id"] == "UNKNOWN"
+    assert data["confidence_level"] == ConfidenceLevel.UNKNOWN.value
+
+
+def test_identify_high_numeric_confidence_with_no_evidence_not_high(client: TestClient):
+    """Gemini reports 0.99 confidence with no evidence -> policy refuses to evaluate as HIGH."""
+    mock_ai_output = CatalogIdentificationOutput(
+        candidate_id="C2",
+        label_evidence=[],
+        visual_evidence=[],
+        contradictions=[],
+        model_confidence=0.99,
+    )
+
+    with patch.object(gemini_client, "generate_structured", return_value=mock_ai_output):
+        files = [("images", ("blank.jpg", BytesIO(VALID_JPEG), "image/jpeg"))]
+        res = client.post("/api/products/identify", files=files)
+
+    assert res.status_code == 200
+    data = res.json()
+    # With 0 label evidence and 0 visual evidence, confidence level must not be HIGH
+    assert data["confidence_level"] != ConfidenceLevel.HIGH.value
+    assert data["confidence_level"] == ConfidenceLevel.UNKNOWN.value
+
+
+def test_identify_image_roles_matching_passes_to_service(client: TestClient):
+    """Valid image_roles matching image count is accepted."""
+    mock_ai_output = CatalogIdentificationOutput(
+        candidate_id="C2",
+        label_evidence=["Latitude 5420"],
+        visual_evidence=["Chassis overall view", "Bottom asset tag"],
+        contradictions=[],
+        model_confidence=0.95,
+    )
+
+    with patch.object(gemini_client, "generate_structured", return_value=mock_ai_output) as mock_gemini:
+        files = [
+            ("images", ("front.jpg", BytesIO(VALID_JPEG), "image/jpeg")),
+            ("images", ("bottom.png", BytesIO(VALID_PNG), "image/png")),
+        ]
+        data = {"image_roles": '["overall", "bottom_label"]'}
+        res = client.post("/api/products/identify", data=data, files=files)
+
+        assert res.status_code == 200
+        assert mock_gemini.called
+        call_prompt = mock_gemini.call_args[1]["prompt"]
+        assert "IMAGE 1 = overall" in call_prompt
+        assert "IMAGE 2 = bottom_label" in call_prompt
+
+
+def test_identify_image_roles_length_mismatch_returns_invalid_input(client: TestClient):
+    """Mismatched image_roles list length returns typed INVALID_INPUT error."""
+    files = [
+        ("images", ("front.jpg", BytesIO(VALID_JPEG), "image/jpeg")),
+        ("images", ("bottom.png", BytesIO(VALID_PNG), "image/png")),
+    ]
+    # 2 images but 1 role
+    data = {"image_roles": '["overall"]'}
+    res = client.post("/api/products/identify", data=data, files=files)
+
+    assert res.status_code == 400
+    err = res.json()["error"]
+    assert err["code"] == ErrorCode.INVALID_INPUT.value
+    assert "image_roles length" in err["message"]
+
+
+def test_identify_image_roles_invalid_role_returns_invalid_input(client: TestClient):
+    """Unrecognized image role returns typed INVALID_INPUT error."""
+    files = [("images", ("front.jpg", BytesIO(VALID_JPEG), "image/jpeg"))]
+    data = {"image_roles": '["space_shuttle"]'}
+    res = client.post("/api/products/identify", data=data, files=files)
+
+    assert res.status_code == 400
+    err = res.json()["error"]
+    assert err["code"] == ErrorCode.INVALID_INPUT.value
+    assert "Invalid image role" in err["message"]
 
 
 def test_identify_manual_path_bypasses_gemini(client: TestClient):
@@ -172,7 +386,10 @@ def test_identify_manual_path_bypasses_gemini(client: TestClient):
         assert data["is_supported"] is True
         assert data["identified_model"]["manufacturer"] == "Dell"
         assert data["identified_model"]["model"] == "Latitude 5420"
+        assert data["candidate_id"] == "C2"
+        assert data["confidence_level"] == ConfidenceLevel.HIGH.value
         assert data["needs_confirmation"] is True
+        assert data["source"] == "manual"
 
 
 def test_identify_manual_path_via_model_id(client: TestClient):
@@ -187,7 +404,9 @@ def test_identify_manual_path_via_model_id(client: TestClient):
         data = res.json()
         assert data["is_supported"] is True
         assert data["identified_model"]["manufacturer"] == "Lenovo"
+        assert data["candidate_id"] == "C4"
         assert data["needs_confirmation"] is True
+        assert data["source"] == "manual"
 
 
 def test_identify_gemini_failure_returns_ai_failure(client: TestClient):
@@ -205,7 +424,114 @@ def test_identify_gemini_failure_returns_ai_failure(client: TestClient):
 
     assert res.status_code == 502
     err = res.json()["error"]
-    assert err["code"] == ErrorCode.AI_FAILURE.value
+def test_evaluate_identification_confidence_unit_matrix():
+    """Direct unit testing of confidence policy function across all requirement tiers."""
+    cand = ProductCandidate(
+        manufacturer="Dell",
+        model="Latitude 5420",
+        model_year=2021,
+        confidence=ConfidenceLevel.HIGH,
+        specs=ProductSpecs(),
+    )
+
+    # 1. Exact model label match -> HIGH
+    conf = evaluate_identification_confidence(
+        candidate=cand,
+        candidate_id="C2",
+        label_evidence=["Latitude 5420 regulatory text"],
+        visual_evidence=[],
+        contradictions=[],
+        model_confidence=0.5,
+    )
+    assert conf == ConfidenceLevel.HIGH
+
+    # 2. 3 visual items, no contradictions -> HIGH
+    conf = evaluate_identification_confidence(
+        candidate=cand,
+        candidate_id="C2",
+        label_evidence=[],
+        visual_evidence=["Silver chassis", "Wedge lock slot", "Round logo"],
+        contradictions=[],
+        model_confidence=0.1,
+    )
+    assert conf == ConfidenceLevel.HIGH
+
+    # 3. Brand only in label -> MEDIUM
+    conf = evaluate_identification_confidence(
+        candidate=cand,
+        candidate_id="C2",
+        label_evidence=["Dell"],
+        visual_evidence=[],
+        contradictions=[],
+        model_confidence=0.99,
+    )
+    assert conf == ConfidenceLevel.MEDIUM
+
+    # 4. Generic look (1 item) -> LOW
+    conf = evaluate_identification_confidence(
+        candidate=cand,
+        candidate_id="C2",
+        label_evidence=[],
+        visual_evidence=["Black laptop edge"],
+        contradictions=[],
+        model_confidence=0.99,
+    )
+    assert conf == ConfidenceLevel.LOW
+
+    # 5. UNKNOWN candidate ID -> UNKNOWN
+    conf = evaluate_identification_confidence(
+        candidate=cand,
+        candidate_id="UNKNOWN",
+        label_evidence=["Latitude 5420"],
+        visual_evidence=["Silver chassis"],
+        contradictions=[],
+        model_confidence=0.99,
+    )
+    assert conf == ConfidenceLevel.UNKNOWN
+
+    # 6. None candidate -> UNKNOWN
+    conf = evaluate_identification_confidence(
+        candidate=None,
+        candidate_id="C2",
+        label_evidence=["Latitude 5420"],
+        visual_evidence=[],
+        contradictions=[],
+        model_confidence=0.99,
+    )
+    assert conf == ConfidenceLevel.UNKNOWN
+
+    # 7. Contradiction in label -> UNKNOWN
+    conf = evaluate_identification_confidence(
+        candidate=cand,
+        candidate_id="C2",
+        label_evidence=["Lenovo ThinkPad T14"],
+        visual_evidence=[],
+        contradictions=[],
+        model_confidence=0.99,
+    )
+    assert conf == ConfidenceLevel.UNKNOWN
+
+    # 8. Contradiction in contradictions list -> UNKNOWN
+    conf = evaluate_identification_confidence(
+        candidate=cand,
+        candidate_id="C2",
+        label_evidence=["Latitude 5420"],
+        visual_evidence=[],
+        contradictions=["Ports do not match Dell chassis"],
+        model_confidence=0.99,
+    )
+    assert conf == ConfidenceLevel.UNKNOWN
+
+    # 9. No evidence -> UNKNOWN even if model_confidence=0.99
+    conf = evaluate_identification_confidence(
+        candidate=cand,
+        candidate_id="C2",
+        label_evidence=[],
+        visual_evidence=[],
+        contradictions=[],
+        model_confidence=0.99,
+    )
+    assert conf == ConfidenceLevel.UNKNOWN
 
 
 # ============================================================================

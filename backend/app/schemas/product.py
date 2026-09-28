@@ -66,6 +66,7 @@ class ProductCandidate(BaseModel):
 class ProductIdentifyRequest(BaseModel):
     image_names: Optional[List[str]] = Field(default_factory=list)
     image_base64: Optional[List[str]] = Field(default_factory=list)
+    image_roles: Optional[List[str]] = None
     hint: Optional[str] = None
     manual_model: Optional[str] = None
     model_id: Optional[str] = None
@@ -88,10 +89,15 @@ class ProductIdentifyRequest(BaseModel):
 
 class ProductIdentifyResponse(BaseModel):
     identified_model: Optional[ProductCandidate] = None
+    candidate_id: Optional[str] = None
     is_supported: bool = True
     confidence: float = 0.85
+    confidence_level: Optional[ConfidenceLevel] = None
     visible_label_text: Optional[str] = None
     visual_clues: List[str] = Field(default_factory=list)
+    label_evidence: List[str] = Field(default_factory=list)
+    visual_evidence: List[str] = Field(default_factory=list)
+    contradictions: List[str] = Field(default_factory=list)
     needs_confirmation: bool = True
     requires_user_confirmation: bool = True
     alternative_models: List[ProductCandidate] = Field(default_factory=list)

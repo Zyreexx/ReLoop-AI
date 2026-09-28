@@ -12,6 +12,14 @@ class ModelIdentificationOutput(BaseModel):
     visual_clues: List[str] = Field(default_factory=list, description="Visual characteristics observed")
 
 
+class CatalogIdentificationOutput(BaseModel):
+    candidate_id: str = Field(..., description="Selected catalog candidate ID (e.g. C1, C2) or 'UNKNOWN'")
+    label_evidence: List[str] = Field(default_factory=list, description="Text literally read from logos, badges, and labels")
+    visual_evidence: List[str] = Field(default_factory=list, description="Observed visual features and design clues")
+    contradictions: List[str] = Field(default_factory=list, description="Visual contradictions or mismatching indicators")
+    model_confidence: float = Field(0.0, ge=0.0, le=1.0, description="Advisory raw model confidence score")
+
+
 class DamageAssessmentOutput(BaseModel):
     cracks: List[str] = Field(default_factory=list)
     dents: List[str] = Field(default_factory=list)

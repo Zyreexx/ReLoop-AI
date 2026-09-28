@@ -139,12 +139,28 @@ def get_sample_identify_response(query_or_hint: Optional[str] = None) -> Product
         if not (m.manufacturer == candidate.manufacturer and m.model == candidate.model)
     ][:3]
 
+    # Find candidate_id if available
+    cand_id = None
+    try:
+        from app.knowledge.models_catalog import get_catalog_candidates_with_ids
+        for c in get_catalog_candidates_with_ids():
+            if c["manufacturer"].lower() == candidate.manufacturer.lower() and c["model"].lower() == candidate.model.lower():
+                cand_id = c["candidate_id"]
+                break
+    except Exception:
+        cand_id = None
+
     return ProductIdentifyResponse(
         identified_model=candidate,
+        candidate_id=cand_id or "C1",
         is_supported=True,
         confidence=0.95,
+        confidence_level=ConfidenceLevel.HIGH,
         visible_label_text=f"[Sample Data] {candidate.manufacturer} {candidate.model}",
         visual_clues=["Precomputed demo sample profile (source: sample-data)"],
+        label_evidence=[f"[Sample Data] {candidate.manufacturer} {candidate.model} asset label"],
+        visual_evidence=["Reference demo photo profile (source: sample-data)"],
+        contradictions=[],
         needs_confirmation=True,
         requires_user_confirmation=True,
         alternative_models=alternatives,

@@ -38,6 +38,25 @@ async def identify_product(request: Request):
         model_id = form.get("model_id")
         api_key = form.get("api_key") or form.get("gemini_api_key") or api_key_header
 
+        # Parse image_roles if supplied
+        image_roles = None
+        raw_roles_list = form.getlist("image_roles") or form.getlist("image_roles[]")
+        if raw_roles_list:
+            if len(raw_roles_list) == 1:
+                first_val = str(raw_roles_list[0]).strip()
+                if first_val.startswith("[") and first_val.endswith("]"):
+                    import json
+                    try:
+                        image_roles = json.loads(first_val)
+                    except Exception:
+                        image_roles = [r.strip().strip('"').strip("'") for r in first_val.strip("[]").split(",") if r.strip()]
+                elif "," in first_val:
+                    image_roles = [r.strip() for r in first_val.split(",") if r.strip()]
+                else:
+                    image_roles = [first_val]
+            else:
+                image_roles = [str(r).strip() for r in raw_roles_list]
+
         image_bytes = None
         if uploaded_files:
             processed = await validate_and_process_upload_files(uploaded_files, min_files=1, max_files=settings.MAX_IDENTIFY_IMAGES)
@@ -45,6 +64,7 @@ async def identify_product(request: Request):
 
         return vision_service.identify(
             image_bytes_list=image_bytes,
+            image_roles=image_roles,
             manual_model=str(manual_model) if manual_model else None,
             model_id=str(model_id) if model_id else None,
             hint=str(hint) if hint else None,
@@ -57,6 +77,7 @@ async def identify_product(request: Request):
     custom_key = body.get("api_key") or body.get("gemini_api_key") or api_key_header
     return vision_service.identify(
         image_bytes_list=None,
+        image_roles=req.image_roles,
         manual_model=req.manual_model,
         model_id=req.model_id,
         hint=req.hint,
