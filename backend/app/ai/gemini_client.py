@@ -324,11 +324,15 @@ class GeminiClient:
 
         # Offline deterministic fallback
         lowered = (hint_text or "").lower()
-        if "thinkpad" in lowered or "lenovo" in lowered:
-            return {"manufacturer": "Lenovo", "model": "ThinkPad T490", "confidence": "HIGH", "visual_clues": ["TrackPoint nub"]}
-        elif "macbook" in lowered or "apple" in lowered:
-            return {"manufacturer": "Apple", "model": "MacBook Pro 13-inch (2019)", "confidence": "HIGH", "visual_clues": ["Space Gray unibody"]}
-        return {"manufacturer": "Dell", "model": "Latitude 5420", "confidence": "HIGH", "visual_clues": ["Dell logo"]}
+        if "thinkpad" in lowered or ("lenovo" in lowered and "t14" in lowered):
+            return {"manufacturer": "Lenovo", "model": "ThinkPad T14 Gen 1", "confidence": "HIGH", "visual_clues": ["TrackPoint nub"]}
+        elif "macbook air" in lowered or ("apple" in lowered and "m1" in lowered):
+            return {"manufacturer": "Apple", "model": "MacBook Air M1 (2020)", "confidence": "HIGH", "visual_clues": ["Apple logo"]}
+        elif "elitebook" in lowered or ("hp" in lowered and "840" in lowered):
+            return {"manufacturer": "HP", "model": "EliteBook 840 G7", "confidence": "HIGH", "visual_clues": ["HP badge"]}
+        elif "latitude" in lowered or ("dell" in lowered and "5420" in lowered):
+            return {"manufacturer": "Dell", "model": "Latitude 5420", "confidence": "HIGH", "visual_clues": ["Dell logo"]}
+        return {"manufacturer": "Generic", "model": "Unknown", "confidence": "UNKNOWN", "visual_clues": []}
 
     def analyze_visible_damage(self, image_names: List[str] = None, notes: str = "") -> dict:
         """

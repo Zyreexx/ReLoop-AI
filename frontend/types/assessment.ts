@@ -8,6 +8,13 @@ export type SupportedModel = {
 
 export const MVP_SUPPORTED_MODELS: SupportedModel[] = [
   {
+    id: "apple-macbook-air-m1-2020",
+    manufacturer: "Apple",
+    model: "MacBook Air (M1, 2020)",
+    category: "Ultrabook",
+    defaultDesignCapacityMWh: 49900,
+  },
+  {
     id: "dell-latitude-5420",
     manufacturer: "Dell",
     model: "Latitude 5420",
@@ -15,32 +22,18 @@ export const MVP_SUPPORTED_MODELS: SupportedModel[] = [
     defaultDesignCapacityMWh: 51000,
   },
   {
-    id: "apple-macbook-pro-16-m1",
-    manufacturer: "Apple",
-    model: 'MacBook Pro 16" (M1 Max)',
-    category: "Professional Laptop",
-    defaultDesignCapacityMWh: 99600,
-  },
-  {
-    id: "lenovo-thinkpad-x1-gen9",
-    manufacturer: "Lenovo",
-    model: "ThinkPad X1 Carbon Gen 9",
-    category: "Ultrabook",
-    defaultDesignCapacityMWh: 57000,
-  },
-  {
-    id: "apple-macbook-air-m1",
-    manufacturer: "Apple",
-    model: "MacBook Air M1 (2020)",
-    category: "Ultrabook",
-    defaultDesignCapacityMWh: 49900,
-  },
-  {
-    id: "hp-elitebook-840-g8",
+    id: "hp-elitebook-840-g7",
     manufacturer: "HP",
-    model: "EliteBook 840 G8",
+    model: "EliteBook 840 G7",
     category: "Enterprise Laptop",
     defaultDesignCapacityMWh: 53000,
+  },
+  {
+    id: "lenovo-thinkpad-t14-gen-1",
+    manufacturer: "Lenovo",
+    model: "ThinkPad T14 Gen 1",
+    category: "Business Laptop",
+    defaultDesignCapacityMWh: 50000,
   },
 ];
 

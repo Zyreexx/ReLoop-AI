@@ -192,8 +192,8 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
   };
 
   // Extract device characteristics from verified upload
-  const modelName = assessment?.visual?.identifiedProduct?.model || "Victus 16";
-  const manufacturer = assessment?.visual?.identifiedProduct?.manufacturer || "HP";
+  const modelName = assessment?.visual?.identifiedProduct?.model || "Laptop";
+  const manufacturer = assessment?.visual?.identifiedProduct?.manufacturer || "";
   const fullName = React.useMemo(() => {
     const m = (manufacturer || "").trim();
     const mod = (modelName || "").trim();

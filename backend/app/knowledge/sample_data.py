@@ -10,7 +10,7 @@ from typing import Any, Dict, List, Optional
 from app.errors import AppError, ErrorCode
 from app.knowledge.loader import get_demo_data_dir
 from app.knowledge.models_catalog import get_all_models, lookup_model
-from app.schemas.enums import ComponentName, ComponentStatus, ConfidenceLevel, EvidenceType
+from app.schemas.enums import ComponentName, ComponentStatus, ConfidenceLevel, EvidenceType, IdentificationStatus
 from app.schemas.evidence import Evidence
 from app.schemas.product import ProductCandidate, ProductIdentifyResponse, ProductSpecs
 from app.schemas.vision import VisibleFinding, VisionAnalyzeResponse
@@ -53,6 +53,7 @@ def find_demo_case(
 ) -> Optional[dict]:
     """
     Matches query, hint, or product_id to one of the 4 demo cases.
+    Explicitly ignores unsupported model families (e.g. victus, loq, legion, etc.).
     If allow_default is False and no match is found, returns None.
     """
     cases = load_demo_cases()
@@ -75,27 +76,40 @@ def find_demo_case(
             return cases.get("demo-01-healthy") or next(iter(cases.values()), None)
         return None
 
+    # Guard: if the text mentions unsupported lines, do NOT match a supported demo case
+    unsupported_signals = ["victus", "loq", "legion", "omen", "pavilion", "ideapad", "yoga", "inspiron", "vostro", "xps", "alienware", "zenbook", "aspire"]
+    if any(un in combined for un in unsupported_signals):
+        return None
+
     # 2. Check liquid / recovery / component recovery signals
-    if any(w in combined for w in ["recovery", "liquid", "spill", "corrosion", "shorted", "demo-04", "demo_04"]):
+    if any(w in combined for w in ["demo-04", "demo_04", "recovery", "liquid spill", "corrosion"]):
         return cases.get("demo-04-recovery") or cases.get("demo_04_component_recovery")
 
-    # 3. Check borderline / 840 / HP signals
-    if any(w in combined for w in ["borderline", "elitebook", "840", "hp", "demo-03", "demo_03"]):
+    # 3. Check borderline / 840 / HP EliteBook signals
+    if any(w in combined for w in ["demo-03", "demo_03", "elitebook", "840 g7", "840g7", "borderline"]):
         return cases.get("demo-03-borderline")
 
-    # 4. Check repairable / latitude / 5420 / dell signals
-    if any(w in combined for w in ["repairable", "latitude", "5420", "dell", "demo-02", "demo_02"]):
+    # 4. Check repairable / latitude / 5420 / Dell Latitude signals
+    if any(w in combined for w in ["demo-02", "demo_02", "latitude 5420", "latitude5420", "repairable"]):
         return cases.get("demo-02-repairable")
 
-    # 5. Check healthy / thinkpad / lenovo / t14 / t490 signals
-    if any(w in combined for w in ["healthy", "thinkpad", "t14", "t490", "lenovo", "demo-01", "demo_01"]):
+    # 5. Check healthy / thinkpad / t14 / Lenovo ThinkPad signals
+    if any(w in combined for w in ["demo-01", "demo_01", "thinkpad t14", "thinkpad", "t14 gen 1", "t14"]):
         return cases.get("demo-01-healthy")
 
-    # Fallback to matching model name in catalog
+    # 6. Check MacBook Air M1 signals
+    if any(w in combined for w in ["macbook air", "macbook air m1", "a2337", "m1 air"]):
+        for cid, case in cases.items():
+            prod_mod = case.get("product", {}).get("model", "").lower()
+            if "macbook air" in prod_mod:
+                return case
+
+    # Fallback to exact matching model name in demo cases
     for cid, case in cases.items():
         prod_mfg = case.get("product", {}).get("manufacturer", "").lower()
         prod_mod = case.get("product", {}).get("model", "").lower()
-        if (prod_mfg and prod_mfg in combined) or (prod_mod and prod_mod in combined):
+        full_name = f"{prod_mfg} {prod_mod}".strip()
+        if full_name and full_name in combined:
             return case
 
     if allow_default:
@@ -108,31 +122,41 @@ def get_sample_identify_response(query_or_hint: Optional[str] = None) -> Product
     """
     Returns ProductIdentifyResponse built from precomputed sample data.
     Clearly marked with visual clue labeling source: 'sample-data'.
+    Never silently defaults to Dell Latitude 5420 or catalog[0] when demo case is not found.
     """
     demo_case = find_demo_case(query_or_hint)
     all_supported = get_all_models()
 
     if not demo_case:
-        # Fallback to first supported model in catalog
-        first_model = all_supported[0] if all_supported else None
-        if not first_model:
-            raise AppError(
-                code=ErrorCode.AI_FAILURE.value,
-                message="No demo sample data available.",
-                http_status=500,
-            )
-        candidate = first_model
-    else:
-        prod_info = demo_case["product"]
-        catalog_match = lookup_model(f"{prod_info['manufacturer']} {prod_info['model']}")
-        specs = catalog_match["specs"] if catalog_match else ProductSpecs(**prod_info.get("specs", {}))
-        candidate = ProductCandidate(
-            manufacturer=prod_info["manufacturer"],
-            model=prod_info["model"],
-            model_year=prod_info.get("model_year", 2021),
-            confidence=ConfidenceLevel.HIGH,
-            specs=specs,
+        return ProductIdentifyResponse(
+            status=IdentificationStatus.UNKNOWN,
+            identified_model=None,
+            candidate_id="UNKNOWN",
+            is_supported=False,
+            confidence=0.0,
+            confidence_level=ConfidenceLevel.UNKNOWN,
+            visible_label_text=None,
+            visual_clues=["No matching demo case profile found."],
+            label_evidence=[],
+            visual_evidence=[],
+            contradictions=[],
+            needs_confirmation=True,
+            requires_user_confirmation=True,
+            supported_models=all_supported,
+            message="Model could not be identified from demo sample data. Please select your device model manually.",
+            source="sample-data",
         )
+
+    prod_info = demo_case["product"]
+    catalog_match = lookup_model(f"{prod_info['manufacturer']} {prod_info['model']}")
+    specs = catalog_match["specs"] if catalog_match else ProductSpecs(**prod_info.get("specs", {}))
+    candidate = ProductCandidate(
+        manufacturer=prod_info["manufacturer"],
+        model=prod_info["model"],
+        model_year=prod_info.get("model_year", 2021),
+        confidence=ConfidenceLevel.HIGH,
+        specs=specs,
+    )
 
     alternatives = [
         m for m in all_supported
@@ -151,6 +175,7 @@ def get_sample_identify_response(query_or_hint: Optional[str] = None) -> Product
         cand_id = None
 
     return ProductIdentifyResponse(
+        status=IdentificationStatus.IDENTIFIED,
         identified_model=candidate,
         candidate_id=cand_id or "C1",
         is_supported=True,

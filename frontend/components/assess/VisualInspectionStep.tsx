@@ -185,7 +185,7 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
 
       clearInterval(statusTimer);
 
-      if (result.identified_model) {
+      if (result.status === "IDENTIFIED" && result.identified_model) {
         setIdentifiedProduct({
           manufacturer: result.identified_model.manufacturer,
           model: result.identified_model.model,
@@ -216,54 +216,58 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
 
         setVisibleObservations(observations);
         setAnalyzed(true);
-      } else {
-        // Fallback: device unclear
+      } else if (result.status === "AI_UNAVAILABLE") {
         setShowModelPicker(true);
-        setErrorMsg("Gemini could not identify the exact model name. Please select your model from the list below.");
+        setErrorMsg("AI identification is temporarily unavailable. Please select your model manually to continue.");
+        setIdentifiedProduct({
+          manufacturer: "",
+          model: "",
+          confidence: 0,
+          confirmed: false,
+          visible_label_text: null,
+        });
+        setVisibleObservations([]);
+        setAnalyzed(false);
+      } else if (result.status === "INVALID_EVIDENCE") {
+        setShowModelPicker(true);
+        setErrorMsg("Unable to analyze these photos. Please provide clearer, well-lit device photos or select your model manually.");
+        setIdentifiedProduct({
+          manufacturer: "",
+          model: "",
+          confidence: 0,
+          confirmed: false,
+          visible_label_text: null,
+        });
+        setVisibleObservations([]);
+        setAnalyzed(false);
+      } else {
+        // UNKNOWN or unrecognized device
+        setShowModelPicker(true);
+        setErrorMsg("Model could not be identified. Your device may not be in the currently supported catalog. Please select your model manually to continue.");
+        setIdentifiedProduct({
+          manufacturer: "",
+          model: "",
+          confidence: 0,
+          confirmed: false,
+          visible_label_text: null,
+        });
+        setVisibleObservations([]);
+        setAnalyzed(false);
       }
     } catch (backendErr: any) {
-      console.warn("Backend identify error, trying Next.js Gemini route:", backendErr.message);
-
-      // 2. Fallback to Next.js API route with direct Gemini integration
-      try {
-        const activeKey = customApiKey || undefined;
-        const res = await fetch("/api/assessments/visual-inspection", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...(activeKey ? { "X-Gemini-API-Key": activeKey } : {}),
-          },
-          body: JSON.stringify({
-            images: imagesToUse.slice(0, 3),
-            fileNames: filesToUse.map((f) => f.name),
-            hint: fileHint,
-            apiKey: activeKey,
-          }),
-        });
-
-        clearInterval(statusTimer);
-        const data = await res.json();
-
-        if (res.ok && data.success && data.identified_product) {
-          setIdentifiedProduct({
-            manufacturer: data.identified_product.manufacturer,
-            model: data.identified_product.model,
-            confidence: data.identified_product.confidence || 0.9,
-            confirmed: data.identified_product.confirmed || false,
-            visible_label_text: data.identified_product.visible_label_text || null,
-          });
-          setVisibleObservations(data.visible_observations || []);
-          setAnalyzed(true);
-        } else {
-          throw new Error(data.error || "Unable to detect laptop model.");
-        }
-      } catch (fallbackErr: any) {
-        clearInterval(statusTimer);
-        setErrorMsg(
-          fallbackErr.message ||
-            "Unable to analyze image with Gemini API right now. Please ensure your API key is valid or select model manually."
-        );
-      }
+      console.warn("Backend identify error:", backendErr?.message || backendErr);
+      clearInterval(statusTimer);
+      setShowModelPicker(true);
+      setErrorMsg("AI identification is temporarily unavailable. Please select your model manually to continue.");
+      setIdentifiedProduct({
+        manufacturer: "",
+        model: "",
+        confidence: 0,
+        confirmed: false,
+        visible_label_text: null,
+      });
+      setVisibleObservations([]);
+      setAnalyzed(false);
     } finally {
       clearInterval(statusTimer);
       setAnalyzing(false);

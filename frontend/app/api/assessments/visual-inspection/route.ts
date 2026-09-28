@@ -159,7 +159,7 @@ If it is one of these or any other laptop, output pure JSON in this format:
       images.filter((img: any) => typeof img === "string" && !img.startsWith("data:")).join(" "),
     ].join(" ").toLowerCase();
 
-    // Model selection with intelligent keyword matching across supported models
+    // Manual selection with exact selectedModelId matching across supported models
     let matchedModel: any = null;
     let confidence = 0.85;
 
@@ -169,33 +169,18 @@ If it is one of these or any other laptop, output pure JSON in this format:
         matchedModel = found;
         confidence = 1.0;
       }
-    } else if (cluesText.includes("loq") || cluesText.includes("legion")) {
-      matchedModel = {
-        id: "lenovo-loq",
-        manufacturer: "Lenovo",
-        model: cluesText.includes("loq") ? "LOQ Gaming Laptop" : "Legion Gaming Laptop",
-        category: "Gaming Laptop",
-      };
-      confidence = 0.93;
-    } else if (cluesText.includes("macbook") || cluesText.includes("apple") || cluesText.includes("retina") || cluesText.includes("macos")) {
-      matchedModel = MVP_SUPPORTED_MODELS.find((m) => m.manufacturer === "Apple") || MVP_SUPPORTED_MODELS[3];
-      confidence = 0.94;
-    } else if (cluesText.includes("thinkpad") || cluesText.includes("lenovo") || cluesText.includes("t14") || cluesText.includes("x1")) {
-      matchedModel = MVP_SUPPORTED_MODELS.find((m) => m.manufacturer === "Lenovo") || MVP_SUPPORTED_MODELS[2];
-      confidence = 0.93;
-    } else if (cluesText.includes("elitebook") || cluesText.includes("hp") || cluesText.includes("840")) {
-      matchedModel = MVP_SUPPORTED_MODELS.find((m) => m.manufacturer === "HP") || MVP_SUPPORTED_MODELS[4];
-      confidence = 0.91;
-    } else if (cluesText.includes("dell") || cluesText.includes("latitude") || cluesText.includes("5420")) {
-      matchedModel = MVP_SUPPORTED_MODELS.find((m) => m.manufacturer === "Dell") || MVP_SUPPORTED_MODELS[0];
-      confidence = 0.92;
-    } else {
-      // Generic fallback - keep lower confidence to prompt user confirmation
-      matchedModel = MVP_SUPPORTED_MODELS[0];
-      confidence = 0.70;
     }
 
-    // Mock/Structured Vision AI Observations based on image visual evidence
+    if (!matchedModel) {
+      return NextResponse.json({
+        success: false,
+        status: "UNKNOWN",
+        message: "Model could not be identified. Your device may not be in the currently supported catalog. Please select your model manually to continue.",
+        identified_product: null,
+        visible_observations: [],
+      });
+    }
+
     // Rules: ONLY visible physical characteristics. NO internal health claims!
     const visibleObservations: VisualObservation[] = [
       {
@@ -237,6 +222,7 @@ If it is one of these or any other laptop, output pure JSON in this format:
 
     return NextResponse.json({
       success: true,
+      status: "IDENTIFIED",
       identified_product: {
         manufacturer: matchedModel.manufacturer,
         model: matchedModel.model,
@@ -247,7 +233,7 @@ If it is one of these or any other laptop, output pure JSON in this format:
     });
   } catch (error: any) {
     return NextResponse.json(
-      { error: "Unable to analyze these images right now. Please try again." },
+      { error: "Unable to analyze these images right now. Please try again.", status: "AI_UNAVAILABLE" },
       { status: 500 }
     );
   }

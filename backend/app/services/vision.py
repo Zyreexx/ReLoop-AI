@@ -36,7 +36,7 @@ from app.knowledge.sample_data import (
     get_sample_vision_findings,
     find_demo_case,
 )
-from app.schemas.enums import ComponentName, ComponentStatus, ConfidenceLevel, EvidenceType
+from app.schemas.enums import ComponentName, ComponentStatus, ConfidenceLevel, EvidenceType, IdentificationStatus
 from app.schemas.evidence import Evidence
 from app.schemas.product import ProductCandidate, ProductIdentifyResponse, ProductSpecs
 from app.schemas.vision import VisibleFinding, VisionAnalyzeResponse, VisionAnalyzeRequest
@@ -323,6 +323,7 @@ class VisionService:
                         c_id = item["candidate_id"]
                         break
                 return ProductIdentifyResponse(
+                    status=IdentificationStatus.IDENTIFIED,
                     identified_model=cand,
                     candidate_id=c_id or "C1",
                     is_supported=True,
@@ -340,6 +341,7 @@ class VisionService:
             else:
                 # Unsupported manual model
                 return ProductIdentifyResponse(
+                    status=IdentificationStatus.UNKNOWN,
                     identified_model=None,
                     candidate_id="UNKNOWN",
                     is_supported=False,
@@ -354,6 +356,7 @@ class VisionService:
 
         if not image_bytes_list:
             return ProductIdentifyResponse(
+                status=IdentificationStatus.INVALID_EVIDENCE,
                 identified_model=None,
                 candidate_id="UNKNOWN",
                 is_supported=False,
@@ -396,12 +399,31 @@ class VisionService:
                 media_resolution=settings.GEMINI_MEDIA_RESOLUTION,
             )
         except Exception as e:
-            # Check if this query corresponds to a known/supported demo model
-            demo_match = find_demo_case(target_model or hint)
-            if demo_match:
-                logger.info(f"Gemini API identify call failed ({e}); falling back to precomputed sample data for '{demo_match.get('id')}'.")
-                return get_sample_identify_response(target_model or hint)
-            raise
+            if settings.DEMO_FALLBACK:
+                demo_match = find_demo_case(target_model or hint)
+                if demo_match:
+                    logger.info(f"Gemini API identify call failed ({e}); falling back to precomputed sample data for '{demo_match.get('id')}'.")
+                    return get_sample_identify_response(target_model or hint)
+
+            logger.warning(f"Gemini API identify call failed ({e}); returning structured AI_UNAVAILABLE state.")
+            return ProductIdentifyResponse(
+                status=IdentificationStatus.AI_UNAVAILABLE,
+                identified_model=None,
+                candidate_id="UNKNOWN",
+                is_supported=False,
+                confidence=0.0,
+                confidence_level=ConfidenceLevel.UNKNOWN,
+                visible_label_text=None,
+                visual_clues=[],
+                label_evidence=[],
+                visual_evidence=[],
+                contradictions=[],
+                needs_confirmation=True,
+                requires_user_confirmation=True,
+                supported_models=all_supported,
+                message="AI identification is temporarily unavailable. Please select your model manually to continue.",
+                source="live",
+            )
 
         raw_candidate_id = (ai_res.candidate_id or "").strip().upper()
         candidate_data = get_candidate_by_id(raw_candidate_id)
@@ -426,8 +448,9 @@ class VisionService:
         )
 
         if conf_level == ConfidenceLevel.UNKNOWN or candidate_obj is None:
-            # Downgraded or unknown -> return manual picker
+            # Downgraded or unknown -> return manual picker with UNKNOWN status
             return ProductIdentifyResponse(
+                status=IdentificationStatus.UNKNOWN,
                 identified_model=None,
                 candidate_id="UNKNOWN",
                 is_supported=False,
@@ -441,7 +464,7 @@ class VisionService:
                 needs_confirmation=True,
                 requires_user_confirmation=True,
                 supported_models=all_supported,
-                message="Device model could not be verified from photos. Please select your device model manually.",
+                message="Model could not be identified from photos. Your device may not be in the currently supported catalog. Please select your model manually to continue.",
                 source="live",
             )
 
@@ -454,6 +477,7 @@ class VisionService:
         ][:3]
 
         return ProductIdentifyResponse(
+            status=IdentificationStatus.IDENTIFIED,
             identified_model=candidate_obj,
             candidate_id=raw_candidate_id,
             is_supported=True,

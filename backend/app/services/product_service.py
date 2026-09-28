@@ -22,62 +22,11 @@ from app.schemas.product import (
 
 class ProductService:
     def identify(self, req: ProductIdentificationRequest) -> ProductIdentificationResponse:
-        hint = req.manual_model or ""
-        if not hint and req.image_names:
-            hint = " ".join(req.image_names)
-
-        # 1. First try catalog lookup if manual model given
-        matched_catalog = lookup_model(hint) if hint else None
-
-        if matched_catalog:
-            primary_candidate = ProductCandidate(
-                manufacturer=matched_catalog["manufacturer"],
-                model=matched_catalog["model"],
-                model_year=matched_catalog["model_year"],
-                confidence=ConfidenceLevel.HIGH,
-                specs=matched_catalog["specs"],
-            )
-            clues = [
-                f"Matched against hardware catalog for {matched_catalog['manufacturer']} {matched_catalog['model']}",
-                f"Architecture profile: {'Modular' if matched_catalog['specs'].ram_modular else 'Soldered'} RAM, {'Modular' if matched_catalog['specs'].ssd_modular else 'Soldered'} SSD",
-            ]
-        else:
-            # 2. Use Gemini vision / identification
-            ai_res = gemini_client.identify_product(hint_text=hint)
-            cat_match = lookup_model(ai_res.get("model", "")) or lookup_model(ai_res.get("manufacturer", ""))
-
-            if cat_match:
-                specs = cat_match["specs"]
-                mfg = cat_match["manufacturer"]
-                model = cat_match["model"]
-                year = cat_match["model_year"]
-            else:
-                specs = ProductSpecs()
-                mfg = ai_res.get("manufacturer", "Generic")
-                model = ai_res.get("model", "Laptop")
-                year = ai_res.get("model_year", 2020)
-
-            primary_candidate = ProductCandidate(
-                manufacturer=mfg,
-                model=model,
-                model_year=year,
-                confidence=ConfidenceLevel.HIGH if cat_match else ConfidenceLevel.MEDIUM,
-                specs=specs,
-            )
-            clues = ai_res.get("visual_clues", ["Visible chassis layout", "Brand aesthetic profile"])
-
-        # Prepare alternative models from catalog
-        all_candidates = get_all_models()
-        alternatives = [
-            c for c in all_candidates
-            if not (c.manufacturer == primary_candidate.manufacturer and c.model == primary_candidate.model)
-        ][:3]
-
-        return ProductIdentificationResponse(
-            identified_model=primary_candidate,
-            alternative_models=alternatives,
-            visual_clues=clues,
-            requires_user_confirmation=True,
+        from app.services.vision import vision_service
+        return vision_service.identify(
+            manual_model=req.manual_model,
+            model_id=req.model_id,
+            hint=req.hint or (" ".join(req.image_names) if req.image_names else None),
         )
 
     def create_or_confirm(self, data: ProductCreate, db: Optional[Session] = None) -> ProductRecord:
