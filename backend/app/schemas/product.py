@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 from typing import List, Optional
 from uuid import uuid4
 from pydantic import BaseModel, Field, model_validator
-from app.schemas.enums import DeviceCategory, ConfidenceLevel
+from app.schemas.enums import DeviceCategory, ConfidenceLevel, IdentificationStatus
 
 
 class ProductSpecs(BaseModel):
@@ -88,6 +88,7 @@ class ProductIdentifyRequest(BaseModel):
 
 
 class ProductIdentifyResponse(BaseModel):
+    status: IdentificationStatus = IdentificationStatus.IDENTIFIED
     identified_model: Optional[ProductCandidate] = None
     candidate_id: Optional[str] = None
     is_supported: bool = True

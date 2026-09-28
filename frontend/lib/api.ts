@@ -20,7 +20,15 @@ async function handleResponse<T>(res: Response): Promise<T> {
 
 // ─── Products ─────────────────────────────────────────────────────────────────
 
+export type IdentificationStatus =
+  | "IDENTIFIED"
+  | "UNKNOWN"
+  | "AI_UNAVAILABLE"
+  | "INVALID_EVIDENCE"
+  | "CONFIRMATION_REQUIRED";
+
 export interface ProductIdentifyResponse {
+  status: IdentificationStatus;
   identified_model: {
     manufacturer: string;
     model: string;
@@ -28,6 +36,7 @@ export interface ProductIdentifyResponse {
     confidence: string;
     specs: Record<string, any>;
   } | null;
+  candidate_id?: string | null;
   is_supported: boolean;
   confidence: number;
   visible_label_text: string | null;
@@ -45,6 +54,7 @@ export interface ProductIdentifyResponse {
     model_year: number;
   }>;
   message: string | null;
+  source?: string;
 }
 
 export async function identifyProduct(

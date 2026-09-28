@@ -409,7 +409,8 @@ def test_identify_manual_path_via_model_id(client: TestClient):
         assert data["source"] == "manual"
 
 
-def test_identify_gemini_failure_returns_ai_failure(client: TestClient):
+def test_identify_gemini_failure_returns_ai_unavailable(client: TestClient, monkeypatch):
+    monkeypatch.setattr("app.config.settings.DEMO_FALLBACK", False)
     with patch.object(
         gemini_client,
         "generate_structured",
@@ -422,8 +423,15 @@ def test_identify_gemini_failure_returns_ai_failure(client: TestClient):
         files = [("images", ("front.jpg", BytesIO(VALID_JPEG), "image/jpeg"))]
         res = client.post("/api/products/identify", files=files)
 
-    assert res.status_code == 502
-    err = res.json()["error"]
+    assert res.status_code == 200
+    data = res.json()
+    assert data["status"] == "AI_UNAVAILABLE"
+    assert data["is_supported"] is False
+    assert data["identified_model"] is None
+    assert data["candidate_id"] == "UNKNOWN"
+    assert "temporarily unavailable" in data["message"].lower()
+
+
 def test_evaluate_identification_confidence_unit_matrix():
     """Direct unit testing of confidence policy function across all requirement tiers."""
     cand = ProductCandidate(
@@ -703,7 +711,8 @@ def test_analyze_demo_fallback_flag(client: TestClient, registered_product, monk
     assert len(sample_ev) > 0
 
 
-def test_gemini_failure_fallback_for_demo_model(client: TestClient):
+def test_gemini_failure_fallback_for_demo_model(client: TestClient, monkeypatch):
+    monkeypatch.setattr("app.config.settings.DEMO_FALLBACK", True)
     with patch.object(
         gemini_client,
         "generate_structured",
@@ -718,7 +727,176 @@ def test_gemini_failure_fallback_for_demo_model(client: TestClient):
 
     assert res.status_code == 200
     data = res.json()
+    assert data["status"] == "IDENTIFIED"
     assert data["is_supported"] is True
     assert data["source"] == "sample-data"
     assert data["identified_model"]["manufacturer"] == "Lenovo"
     assert any("sample-data" in clue for clue in data["visual_clues"])
+
+
+# ============================================================================
+# Task 8 Regression & Safety Tests
+# ============================================================================
+
+def test_gemini_429_quota_returns_ai_unavailable_never_dell(client: TestClient, monkeypatch):
+    """Rule 4: Gemini 429 quota exceeded returns AI_UNAVAILABLE, never Dell."""
+    monkeypatch.setattr("app.config.settings.DEMO_FALLBACK", False)
+    with patch.object(
+        gemini_client,
+        "generate_structured",
+        side_effect=AppError(
+            code=ErrorCode.AI_FAILURE.value,
+            message="Resource has been exhausted (e.g. check quota)",
+            http_status=429,
+        ),
+    ):
+        files = [("images", ("laptop.jpg", BytesIO(VALID_JPEG), "image/jpeg"))]
+        res = client.post("/api/products/identify", files=files)
+
+    assert res.status_code == 200
+    data = res.json()
+    assert data["status"] == "AI_UNAVAILABLE"
+    assert data["identified_model"] is None
+    assert data["candidate_id"] == "UNKNOWN"
+    assert data["is_supported"] is False
+
+
+def test_gemini_503_unavailable_returns_ai_unavailable_never_dell(client: TestClient, monkeypatch):
+    """Rule 4: Gemini 503 unavailable returns AI_UNAVAILABLE, never Dell."""
+    monkeypatch.setattr("app.config.settings.DEMO_FALLBACK", False)
+    with patch.object(
+        gemini_client,
+        "generate_structured",
+        side_effect=AppError(
+            code=ErrorCode.AI_FAILURE.value,
+            message="The service is temporarily unavailable",
+            http_status=503,
+        ),
+    ):
+        files = [("images", ("laptop.jpg", BytesIO(VALID_JPEG), "image/jpeg"))]
+        res = client.post("/api/products/identify", files=files)
+
+    assert res.status_code == 200
+    data = res.json()
+    assert data["status"] == "AI_UNAVAILABLE"
+    assert data["identified_model"] is None
+    assert data["candidate_id"] == "UNKNOWN"
+    assert data["is_supported"] is False
+
+
+def test_gemini_timeout_network_failure_returns_ai_unavailable(client: TestClient, monkeypatch):
+    """Rule 4: Gemini network timeout returns AI_UNAVAILABLE."""
+    monkeypatch.setattr("app.config.settings.DEMO_FALLBACK", False)
+    with patch.object(
+        gemini_client,
+        "generate_structured",
+        side_effect=Exception("ReadTimeout: HTTPSConnectionPool(host='generativelanguage.googleapis.com')"),
+    ):
+        files = [("images", ("laptop.jpg", BytesIO(VALID_JPEG), "image/jpeg"))]
+        res = client.post("/api/products/identify", files=files)
+
+    assert res.status_code == 200
+    data = res.json()
+    assert data["status"] == "AI_UNAVAILABLE"
+    assert data["identified_model"] is None
+    assert data["candidate_id"] == "UNKNOWN"
+    assert data["is_supported"] is False
+
+
+def test_filename_victus_never_identifies_dell(client: TestClient, monkeypatch):
+    """Rule 5: Filenames containing 'victus' must NOT identify Dell Latitude 5420."""
+    monkeypatch.setattr("app.config.settings.DEMO_FALLBACK", False)
+    mock_ai_output = CatalogIdentificationOutput(
+        candidate_id="UNKNOWN",
+        label_evidence=["HP Victus 15 gaming logo"],
+        visual_evidence=["V-shaped logo on lid"],
+        contradictions=[],
+        model_confidence=0.9,
+    )
+    with patch.object(gemini_client, "generate_structured", return_value=mock_ai_output):
+        files = [("images", ("HP_Victus.jpg", BytesIO(VALID_JPEG), "image/jpeg"))]
+        res = client.post("/api/products/identify", data={"hint": "HP_Victus.jpg"}, files=files)
+
+    assert res.status_code == 200
+    data = res.json()
+    assert data["status"] == "UNKNOWN"
+    assert data["identified_model"] is None
+    assert data["candidate_id"] == "UNKNOWN"
+    assert data["is_supported"] is False
+
+
+def test_filename_loq_never_identifies_dell_or_supported_model(client: TestClient, monkeypatch):
+    """Rule 5: Filenames containing 'loq' must NOT identify Dell or any supported model automatically."""
+    monkeypatch.setattr("app.config.settings.DEMO_FALLBACK", False)
+    mock_ai_output = CatalogIdentificationOutput(
+        candidate_id="UNKNOWN",
+        label_evidence=["Lenovo LOQ 15IRH8"],
+        visual_evidence=["LOQ badge on lid corner"],
+        contradictions=[],
+        model_confidence=0.9,
+    )
+    with patch.object(gemini_client, "generate_structured", return_value=mock_ai_output):
+        files = [("images", ("Lenovo_LOQ.png", BytesIO(VALID_PNG), "image/png"))]
+        res = client.post("/api/products/identify", data={"hint": "loq1.jpg"}, files=files)
+
+    assert res.status_code == 200
+    data = res.json()
+    assert data["status"] == "UNKNOWN"
+    assert data["identified_model"] is None
+    assert data["candidate_id"] == "UNKNOWN"
+    assert data["is_supported"] is False
+
+
+def test_gemini_returns_unknown_gives_unknown_status(client: TestClient):
+    """Rule 2: Gemini returns UNKNOWN -> response status is UNKNOWN."""
+    mock_ai_output = CatalogIdentificationOutput(
+        candidate_id="UNKNOWN",
+        label_evidence=[],
+        visual_evidence=["Unclear dark chassis"],
+        contradictions=[],
+        model_confidence=0.4,
+    )
+    with patch.object(gemini_client, "generate_structured", return_value=mock_ai_output):
+        files = [("images", ("blurry.jpg", BytesIO(VALID_JPEG), "image/jpeg"))]
+        res = client.post("/api/products/identify", files=files)
+
+    assert res.status_code == 200
+    data = res.json()
+    assert data["status"] == "UNKNOWN"
+    assert data["identified_model"] is None
+    assert data["candidate_id"] == "UNKNOWN"
+    assert data["is_supported"] is False
+
+
+def test_demo_fallback_false_on_gemini_failure_never_returns_sample_data(client: TestClient, monkeypatch):
+    """Rule 6: When DEMO_FALLBACK=false, Gemini failure returns AI_UNAVAILABLE, never sample data."""
+    monkeypatch.setattr("app.config.settings.DEMO_FALLBACK", False)
+    with patch.object(
+        gemini_client,
+        "generate_structured",
+        side_effect=Exception("API Error"),
+    ):
+        files = [("images", ("test.jpg", BytesIO(VALID_JPEG), "image/jpeg"))]
+        res = client.post("/api/products/identify", data={"hint": "Dell Latitude 5420"}, files=files)
+
+    assert res.status_code == 200
+    data = res.json()
+    assert data["status"] == "AI_UNAVAILABLE"
+    assert data["source"] != "sample-data"
+    assert data["identified_model"] is None
+
+
+def test_demo_fallback_true_for_unsupported_hint_returns_unknown(client: TestClient, monkeypatch):
+    """Rule 6: When DEMO_FALLBACK=true, unsupported models like Victus or LOQ return UNKNOWN, not Dell."""
+    monkeypatch.setattr("app.config.settings.DEMO_FALLBACK", True)
+    res_victus = client.post("/api/products/identify", json={"hint": "HP Victus 15"})
+    assert res_victus.status_code == 200
+    data_victus = res_victus.json()
+    assert data_victus["status"] == "UNKNOWN"
+    assert data_victus["identified_model"] is None
+
+    res_loq = client.post("/api/products/identify", json={"hint": "Lenovo LOQ 15"})
+    assert res_loq.status_code == 200
+    data_loq = res_loq.json()
+    assert data_loq["status"] == "UNKNOWN"
+    assert data_loq["identified_model"] is None

@@ -105,3 +105,11 @@ class ConfidenceLevel(str, Enum):
     LOW = "LOW"
     UNKNOWN = "UNKNOWN"
 
+
+class IdentificationStatus(str, Enum):
+    IDENTIFIED = "IDENTIFIED"
+    UNKNOWN = "UNKNOWN"
+    AI_UNAVAILABLE = "AI_UNAVAILABLE"
+    INVALID_EVIDENCE = "INVALID_EVIDENCE"
+    CONFIRMATION_REQUIRED = "CONFIRMATION_REQUIRED"
+
