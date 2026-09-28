@@ -94,44 +94,53 @@ body {
 }
 
 /* Dual Inclined Infinite Marquee Animations
-   Pattern: ONE wrapper div contains 2 identical copies of content.
-   Animation shifts wrapper by -50% = exactly 1 copy width.
-   When copy 1 slides out left, copy 2 (identical) seamlessly replaces it. */
+   Pattern: 4 identical copies of content.
+   Each copy represents 25% of the total width.
+   Animating between -25% and -50% ensures there is always 2000px+ of cards
+   overflowing beyond BOTH the left and right screen edges at all times,
+   eliminating empty gaps or edge clipping on all screen sizes. */
 @keyframes marquee-left {
   0% {
-    transform: translateX(0);
+    transform: translate3d(-25%, 0, 0);
   }
   100% {
-    transform: translateX(-50%);
+    transform: translate3d(-50%, 0, 0);
   }
 }
 
 @keyframes marquee-right {
   0% {
-    transform: translateX(-50%);
+    transform: translate3d(-50%, 0, 0);
   }
   100% {
-    transform: translateX(0);
+    transform: translate3d(-25%, 0, 0);
   }
 }
 
 .animate-marquee-left {
   display: flex;
   width: max-content;
-  animation: marquee-left 40s linear infinite;
+  animation: marquee-left 45s linear infinite;
   will-change: transform;
 }
 
 .animate-marquee-right {
   display: flex;
   width: max-content;
-  animation: marquee-right 40s linear infinite;
+  animation: marquee-right 45s linear infinite;
   will-change: transform;
 }
 
 .animate-marquee-left:hover,
 .animate-marquee-right:hover {
   animation-play-state: paused;
+}
+
+/* Smooth edge fade mask: fades cards into transparency at viewport edges
+   without rigid overlay divs that slice through tilted cards. */
+.marquee-mask {
+  mask-image: linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 5%, black 95%, transparent 100%);
 }
 
 /* Gentle Floating Animation */

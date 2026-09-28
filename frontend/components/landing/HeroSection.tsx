@@ -321,28 +321,22 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenAuth }) => {
           HERO BANNER WITH FLOATING LAPTOPS IN THE BACKGROUND
           ───────────────────────────────────────────────────────────── */}
       <div className="relative min-h-[85vh] sm:min-h-[88vh] flex items-center justify-center pt-14 pb-20 overflow-hidden">
-        {/* BACKGROUND LAYER: Dual Inclined Floating Laptop Lines
-            👉 OPACITY CONTROL: You can change 'opacity-95' below (e.g. opacity-90, opacity-100) to adjust overall laptop visibility */}
-        <div className="absolute inset-0 z-0 overflow-hidden flex flex-col justify-center pointer-events-none select-none opacity-50 transition-opacity duration-300">
-          {/* Subtle edge fade masks - only at the browser edges */}
-          <div className="pointer-events-none absolute inset-y-0 left-0 w-16 sm:w-28 bg-gradient-to-r from-[#F5F5F7] to-transparent z-10" />
-          <div className="pointer-events-none absolute inset-y-0 right-0 w-16 sm:w-28 bg-gradient-to-l from-[#F5F5F7] to-transparent z-10" />
-
-          {/* Very gentle central text contrast mask:
-              Kept soft & semi-transparent so laptops remain 100% visible continuously across the center without any white gap */}
+        {/* BACKGROUND LAYER: Dual Inclined Floating Laptop Lines */}
+        <div className="absolute inset-0 z-0 overflow-hidden flex flex-col justify-center pointer-events-none select-none opacity-45 marquee-mask">
+          {/* Gentle central text contrast mask:
+              Kept soft & semi-transparent so laptops remain visible continuously across the center without hard borders */}
           <div
-            className="absolute inset-0 pointer-events-none"
+            className="absolute inset-0 pointer-events-none z-10"
             style={{
               background:
-                "radial-gradient(ellipse 70% 60% at 50% 50%, rgba(245, 245, 247, 0.40) 0%, rgba(245, 245, 247, 0.15) 50%, transparent 100%)",
+                "radial-gradient(ellipse 65% 55% at 50% 50%, rgba(245, 245, 247, 0.70) 0%, rgba(245, 245, 247, 0.35) 45%, transparent 80%)",
             }}
           />
 
-          {/* Tilted / Inclined Container — scale-[1.3] ensures cards are NOT cut off at the screen edges after rotation */}
-          <div className="transform -rotate-3 scale-[1.3] origin-center space-y-6">
-            {/* Top Line: Moving LEFT — ONE wrapper with 2 identical copies inside.
-                The CSS shifts by -50% = exactly 1 copy width, so copy 2 seamlessly replaces copy 1. */}
-            <div className="overflow-hidden w-full">
+          {/* Tilted / Inclined Container — scale-[1.35] ensures cards overflow past screen boundaries comfortably */}
+          <div className="transform -rotate-3 scale-[1.35] origin-center space-y-6">
+            {/* Top Line: Moving LEFT — 4 identical copies for seamless infinite wrap */}
+            <div className="w-full flex">
               <div className="animate-marquee-left">
                 {line1Laptops.map((laptop, idx) =>
                   renderBackgroundLaptopCard(laptop, "line1-a", idx)
@@ -350,17 +344,29 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenAuth }) => {
                 {line1Laptops.map((laptop, idx) =>
                   renderBackgroundLaptopCard(laptop, "line1-b", idx)
                 )}
+                {line1Laptops.map((laptop, idx) =>
+                  renderBackgroundLaptopCard(laptop, "line1-c", idx)
+                )}
+                {line1Laptops.map((laptop, idx) =>
+                  renderBackgroundLaptopCard(laptop, "line1-d", idx)
+                )}
               </div>
             </div>
 
-            {/* Bottom Line: Moving RIGHT — same pattern, opposite direction */}
-            <div className="overflow-hidden w-full">
+            {/* Bottom Line: Moving RIGHT — 4 identical copies for seamless infinite wrap */}
+            <div className="w-full flex">
               <div className="animate-marquee-right">
                 {line2Laptops.map((laptop, idx) =>
                   renderBackgroundLaptopCard(laptop, "line2-a", idx)
                 )}
                 {line2Laptops.map((laptop, idx) =>
                   renderBackgroundLaptopCard(laptop, "line2-b", idx)
+                )}
+                {line2Laptops.map((laptop, idx) =>
+                  renderBackgroundLaptopCard(laptop, "line2-c", idx)
+                )}
+                {line2Laptops.map((laptop, idx) =>
+                  renderBackgroundLaptopCard(laptop, "line2-d", idx)
                 )}
               </div>
             </div>
