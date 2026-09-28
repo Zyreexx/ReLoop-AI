@@ -97,6 +97,7 @@ class ProductIdentifyResponse(BaseModel):
     alternative_models: List[ProductCandidate] = Field(default_factory=list)
     supported_models: List[ProductCandidate] = Field(default_factory=list)
     message: Optional[str] = None
+    source: str = Field("live", description="live | sample-data | manual")
 
 
 

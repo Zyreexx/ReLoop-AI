@@ -160,7 +160,7 @@ def test_timeout_retries_once_then_succeeds(mock_gemini_client):
     """
     call_count = 0
 
-    def mock_call_sdk(contents, timeout):
+    def mock_call_sdk(*args, **kwargs):
         nonlocal call_count
         call_count += 1
         if call_count == 1:
@@ -184,7 +184,7 @@ def test_timeout_exhausted_raises_ai_failure(mock_gemini_client):
     """
     call_count = 0
 
-    def mock_call_sdk(contents, timeout):
+    def mock_call_sdk(*args, **kwargs):
         nonlocal call_count
         call_count += 1
         raise TimeoutError("Deadline exceeded: request timed out")
@@ -219,6 +219,39 @@ def test_multimodal_image_input_building(mock_gemini_client):
     assert len(contents) == 2
     assert contents[0] == "Check image"
     assert hasattr(contents[1], "inline_data") or hasattr(contents[1], "mime_type") or contents[1] is not None
+
+
+def test_webp_image_mime_type_detected(mock_gemini_client):
+    fake_webp = b"RIFF\x24\x00\x00\x00WEBPVP8 " + b"\x00" * 20
+    part = mock_gemini_client._convert_to_part(fake_webp)
+    assert part is not None
+    assert getattr(part, "mime_type", None) == "image/webp" or (hasattr(part, "inline_data") and part.inline_data.mime_type == "image/webp")
+
+
+def test_call_sdk_uses_configured_model_schema_and_resolution(mock_gemini_client):
+    """
+    Asserts that _call_sdk calls generate_content with the single configured model,
+    passes response_schema=response_model, and passes the configured media_resolution.
+    """
+    mock_sdk_models = MagicMock()
+    mock_gen_result = MagicMock()
+    mock_gen_result.text = '{"model_name": "Dell Latitude 5420", "confidence": 0.95}'
+    mock_sdk_models.generate_content.return_value = mock_gen_result
+
+    with patch.object(mock_gemini_client, "_sdk_client", MagicMock(models=mock_sdk_models)):
+        result = mock_gemini_client._call_sdk(
+            contents=["Identify this laptop"],
+            response_model=ModelIdentificationOutput,
+            media_resolution="HIGH",
+        )
+        assert result == mock_gen_result.text
+
+        mock_sdk_models.generate_content.assert_called_once()
+        _, kwargs = mock_sdk_models.generate_content.call_args
+        assert kwargs["model"] == mock_gemini_client.model_name
+        config = kwargs["config"]
+        assert config.response_schema == ModelIdentificationOutput
+        assert "HIGH" in str(config.media_resolution)
 
 
 def test_ai_layer_has_no_scoring_or_optimizer_logic():

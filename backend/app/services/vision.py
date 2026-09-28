@@ -80,7 +80,7 @@ def filter_visible_findings(findings: List[VisibleFinding]) -> List[VisibleFindi
 class VisionService:
     def identify(
         self,
-        image_bytes_list: Optional[List[bytes]] = None,
+        image_bytes_list: Optional[List[Any]] = None,
         manual_model: Optional[str] = None,
         model_id: Optional[str] = None,
         hint: Optional[str] = None,
@@ -117,6 +117,7 @@ class VisionService:
                     requires_user_confirmation=True,
                     visual_clues=["Manually confirmed by user"],
                     supported_models=all_supported,
+                    source="manual",
                 )
             else:
                 # Unsupported manual model
@@ -128,6 +129,7 @@ class VisionService:
                     requires_user_confirmation=True,
                     supported_models=all_supported,
                     message=f"Model '{target_model}' is not in the supported catalog. Please select a supported model.",
+                    source="manual",
                 )
 
         # 3. Vision path with Gemini (with demo fallback on failure)
@@ -144,6 +146,7 @@ class VisionService:
                 prompt=prompt_text,
                 response_model=ModelIdentificationOutput,
                 images=image_bytes_list,
+                media_resolution=settings.GEMINI_MEDIA_RESOLUTION,
             )
         except Exception as e:
             # Check if this query corresponds to a known/supported demo model
@@ -167,6 +170,7 @@ class VisionService:
                 requires_user_confirmation=True,
                 supported_models=all_supported,
                 message="Device model could not be verified from photos. Please select your device model manually.",
+                source="live",
             )
 
         if matched_data:
@@ -273,12 +277,13 @@ class VisionService:
             requires_user_confirmation=True,
             alternative_models=alternatives,
             supported_models=all_supported,
+            source="live",
         )
 
     def analyze(
         self,
         product_id: str,
-        image_bytes_list: Optional[List[bytes]] = None,
+        image_bytes_list: Optional[List[Any]] = None,
         inspection_notes: Optional[str] = None,
         image_names: Optional[List[str]] = None,
         db: Optional[Session] = None,
@@ -394,6 +399,7 @@ class VisionService:
             overall_visual_condition="SERVICE_REQUIRED" if (has_severe or has_moderate) else "GOOD",
             overall_condition=overall_cond,
             evidence_items=evidence_items,
+            source="live" if image_bytes_list else "manual",
         )
 
     def analyze_visible_damage(

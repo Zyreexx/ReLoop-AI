@@ -64,18 +64,34 @@ def test_identify_rejects_oversized_file(client: TestClient):
     assert "exceeds maximum allowed size" in err["message"].lower()
 
 
-def test_identify_rejects_more_than_max_files(client: TestClient):
-    files = [
-        ("images", ("pic1.jpg", BytesIO(VALID_JPEG), "image/jpeg")),
-        ("images", ("pic2.png", BytesIO(VALID_PNG), "image/png")),
-        ("images", ("pic3.webp", BytesIO(VALID_WEBP), "image/webp")),
-        ("images", ("pic4.jpg", BytesIO(VALID_JPEG), "image/jpeg")),
+def test_identify_accepts_up_to_5_images_and_rejects_6(client: TestClient):
+    mock_ai_output = ModelIdentificationOutput(
+        model_name="Dell Latitude 5420",
+        confidence=0.92,
+        visible_label_text="Latitude 5420",
+        visual_clues=["Dell emblem"],
+    )
+
+    with patch.object(gemini_client, "generate_structured", return_value=mock_ai_output):
+        # 5 images should be accepted
+        files_5 = [
+            ("images", (f"pic{i}.jpg", BytesIO(VALID_JPEG), "image/jpeg"))
+            for i in range(5)
+        ]
+        res_5 = client.post("/api/products/identify", files=files_5)
+        assert res_5.status_code == 200
+        assert res_5.json()["source"] == "live"
+
+    # 6 images should be rejected
+    files_6 = [
+        ("images", (f"pic{i}.jpg", BytesIO(VALID_JPEG), "image/jpeg"))
+        for i in range(6)
     ]
-    res = client.post("/api/products/identify", files=files)
-    assert res.status_code == 400
-    err = res.json()["error"]
+    res_6 = client.post("/api/products/identify", files=files_6)
+    assert res_6.status_code == 400
+    err = res_6.json()["error"]
     assert err["code"] == ErrorCode.INVALID_INPUT.value
-    assert "maximum of 3 images" in err["message"].lower()
+    assert "maximum of 5 images" in err["message"].lower()
 
 
 def test_identify_rejects_empty_file(client: TestClient):
@@ -102,6 +118,7 @@ def test_identify_success_with_images_and_mocked_gemini(client: TestClient):
         files = [
             ("images", ("front.jpg", BytesIO(VALID_JPEG), "image/jpeg")),
             ("images", ("bottom.png", BytesIO(VALID_PNG), "image/png")),
+            ("images", ("side.webp", BytesIO(VALID_WEBP), "image/webp")),
         ]
         res = client.post("/api/products/identify", files=files)
 
@@ -111,6 +128,7 @@ def test_identify_success_with_images_and_mocked_gemini(client: TestClient):
     assert data["confidence"] == 0.92
     assert data["needs_confirmation"] is True
     assert data["requires_user_confirmation"] is True
+    assert data["source"] == "live"
     assert data["identified_model"]["manufacturer"] == "Dell"
     assert data["identified_model"]["model"] == "Latitude 5420"
     assert len(data["supported_models"]) >= 3
@@ -289,6 +307,7 @@ def test_analyze_with_mocked_gemini_persists_visual_evidence(client: TestClient,
     assert res.status_code == 200
     data = res.json()
     assert data["product_id"] == registered_product.id
+    assert data["source"] == "live"
     assert len(data["findings"]) > 0
 
     # Verify all findings are strictly VISUAL and exterior
@@ -337,6 +356,7 @@ def test_identify_demo_fallback_flag(client: TestClient, monkeypatch):
     assert res.status_code == 200
     data = res.json()
     assert data["is_supported"] is True
+    assert data["source"] == "sample-data"
     assert data["identified_model"]["manufacturer"] == "Lenovo"
     assert any("sample-data" in clue for clue in data["visual_clues"])
 
@@ -349,6 +369,7 @@ def test_analyze_demo_fallback_flag(client: TestClient, registered_product, monk
     )
     assert res.status_code == 200
     data = res.json()
+    assert data["source"] == "sample-data"
     assert len(data["findings"]) > 0
     # Check that saved evidence is labeled source: "sample-data"
     evidence_list = store.get_evidence(registered_product.id)
@@ -372,5 +393,6 @@ def test_gemini_failure_fallback_for_demo_model(client: TestClient):
     assert res.status_code == 200
     data = res.json()
     assert data["is_supported"] is True
+    assert data["source"] == "sample-data"
     assert data["identified_model"]["manufacturer"] == "Lenovo"
     assert any("sample-data" in clue for clue in data["visual_clues"])

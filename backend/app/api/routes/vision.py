@@ -4,6 +4,7 @@ Optical inspection and visible damage analysis routes.
 from typing import Optional
 from fastapi import APIRouter, Depends, Request, UploadFile
 from sqlalchemy.orm import Session
+from app.config import settings
 from app.db.session import get_db
 from app.errors import AppError, ErrorCode
 from app.schemas.vision import VisionAnalyzeRequest, VisionAnalyzeResponse
@@ -42,8 +43,8 @@ async def analyze_visible_damage(
         image_bytes = None
         image_names = None
         if uploaded_files:
-            processed = await validate_and_process_upload_files(uploaded_files, min_files=1, max_files=6)
-            image_bytes = [img.data for img in processed]
+            processed = await validate_and_process_upload_files(uploaded_files, min_files=1, max_files=settings.MAX_IDENTIFY_IMAGES)
+            image_bytes = [img for img in processed]
             image_names = [img.filename for img in processed]
 
         return vision_service.analyze(

@@ -149,6 +149,7 @@ def get_sample_identify_response(query_or_hint: Optional[str] = None) -> Product
         requires_user_confirmation=True,
         alternative_models=alternatives,
         supported_models=all_supported,
+        source="sample-data",
     )
 
 
@@ -225,4 +226,5 @@ def get_sample_vision_findings(
         overall_visual_condition="SERVICE_REQUIRED" if (has_severe or has_moderate) else "GOOD",
         overall_condition=overall_cond,
         evidence_items=evidence_items,
+        source="sample-data",
     )

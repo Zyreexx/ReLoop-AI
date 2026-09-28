@@ -4,6 +4,7 @@ Product identification, registration, and catalog routes.
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Request, UploadFile
 from sqlalchemy.orm import Session
+from app.config import settings
 from app.db.session import get_db
 from app.knowledge.models_catalog import get_all_models
 from app.schemas.product import (
@@ -39,8 +40,8 @@ async def identify_product(request: Request):
 
         image_bytes = None
         if uploaded_files:
-            processed = await validate_and_process_upload_files(uploaded_files, min_files=1, max_files=3)
-            image_bytes = [img.data for img in processed]
+            processed = await validate_and_process_upload_files(uploaded_files, min_files=1, max_files=settings.MAX_IDENTIFY_IMAGES)
+            image_bytes = [img for img in processed]
 
         return vision_service.identify(
             image_bytes_list=image_bytes,
