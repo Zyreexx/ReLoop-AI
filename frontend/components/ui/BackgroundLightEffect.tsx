@@ -158,10 +158,11 @@ export const BackgroundLightEffect: React.FC = () => {
           mouse.y,
           240
         );
+        const isDarkMode = document.documentElement.classList.contains('dark');
         outerGlow.addColorStop(0, `rgba(0, 113, 227, ${(0.15 * mouse.opacity).toFixed(3)})`);
         outerGlow.addColorStop(0.35, `rgba(0, 198, 255, ${(0.08 * mouse.opacity).toFixed(3)})`);
         outerGlow.addColorStop(0.7, `rgba(52, 199, 89, ${(0.03 * mouse.opacity).toFixed(3)})`);
-        outerGlow.addColorStop(1, "rgba(245, 245, 247, 0)");
+        outerGlow.addColorStop(1, isDarkMode ? "rgba(0, 0, 0, 0)" : "rgba(245, 245, 247, 0)");
 
         ctx.fillStyle = outerGlow;
         ctx.beginPath();

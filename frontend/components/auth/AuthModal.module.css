@@ -444,3 +444,65 @@
   }
 }
 
+:global(html.dark) .card {
+  background: #1c1c1e;
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 20px 80px rgba(0, 0, 0, 0.6);
+}
+
+:global(html.dark) .formTitle {
+  color: #f5f5f7;
+}
+
+:global(html.dark) .formSubtitle,
+:global(html.dark) .label {
+  color: #98989d;
+}
+
+:global(html.dark) .input,
+:global(html.dark) .passwordField input {
+  background: #2c2c2e;
+  border-color: #38383a;
+  color: #f5f5f7;
+}
+
+:global(html.dark) .input:focus,
+:global(html.dark) .passwordField input:focus {
+  background: #1c1c1e;
+}
+
+:global(html.dark) .socialBtn {
+  background: #2c2c2e;
+  border-color: #38383a;
+  color: #f5f5f7;
+}
+
+:global(html.dark) .socialBtn:hover {
+  background: #38383a;
+}
+
+:global(html.dark) .closeButton {
+  background: rgba(255, 255, 255, 0.1);
+  color: #f5f5f7;
+}
+
+:global(html.dark) .closeButton:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+:global(html.dark) .otpInput {
+  background: #2c2c2e;
+  border-color: #38383a;
+  color: #f5f5f7;
+}
+
+:global(html.dark) .otpInput:focus {
+  background: #1c1c1e;
+}
+
+:global(html.dark) .otpInfoBox {
+  background: #2c2c2e;
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+

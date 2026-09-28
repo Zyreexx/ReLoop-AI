@@ -7,6 +7,7 @@ import { RefreshCw, ArrowRight, Menu, X } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { LanguageSelector } from "@/components/ui/LanguageSelector";
+import { ThemeToggle } from "@/components/ui/ThemeToggle";
 
 interface NavbarProps {
   onOpenAuth: (mode: "login" | "register") => void;
@@ -129,8 +130,9 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth }) => {
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
 
-            {/* Language Selector Dropdown - positioned on the far right */}
-            <LanguageSelector variant="navbar" className="ml-1" />
+            {/* Theme Toggle & Language Selector Dropdown */}
+            <ThemeToggle variant="navbar" />
+            <LanguageSelector variant="navbar" className="ml-0.5" />
           </div>
 
           {/* Mobile hamburger */}
@@ -183,8 +185,9 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth }) => {
               {t("nav.philosophy")}
             </Link>
 
-            {/* Mobile Language Selector */}
-            <div className="pt-2 border-t border-[#E5E5E7]">
+            {/* Mobile Theme Toggle & Language Selector */}
+            <div className="pt-2 border-t border-[#E5E5E7] flex flex-col gap-2.5">
+              <ThemeToggle variant="mobile" />
               <LanguageSelector variant="mobile" />
             </div>
 
