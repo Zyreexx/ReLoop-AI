@@ -32,6 +32,7 @@ class VisionAnalyzeResponse(BaseModel):
     overall_visual_condition: str = "GOOD"
     overall_condition: ComponentStatus = ComponentStatus.GOOD
     evidence_items: List[Evidence] = Field(default_factory=list)
+    source: str = Field("live", description="live | sample-data")
 
 
 # Aliases

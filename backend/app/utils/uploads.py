@@ -5,7 +5,7 @@ and sanitizes filenames. Never logs image bytes.
 """
 import re
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 from fastapi import UploadFile
 from app.config import settings
 from app.errors import AppError, ErrorCode
@@ -66,11 +66,12 @@ def sanitize_filename(filename: str) -> str:
 async def validate_and_process_upload_files(
     files: List[UploadFile],
     min_files: int = 1,
-    max_files: int = 3,
+    max_files: Optional[int] = None,
 ) -> List[ProcessedImage]:
     """
     Validates uploaded multipart files for count, size, and real image magic bytes.
     """
+    effective_max = max_files if max_files is not None else getattr(settings, "MAX_IDENTIFY_IMAGES", 5)
     if not files or len(files) < min_files:
         raise AppError(
             code=ErrorCode.INVALID_INPUT.value,
@@ -79,10 +80,10 @@ async def validate_and_process_upload_files(
             http_status=400,
         )
 
-    if len(files) > max_files:
+    if len(files) > effective_max:
         raise AppError(
             code=ErrorCode.INVALID_INPUT.value,
-            message=f"Maximum of {max_files} images allowed per upload.",
+            message=f"Maximum of {effective_max} images allowed per upload.",
             field="images",
             http_status=400,
         )

@@ -65,6 +65,7 @@ class GeminiClient:
         response_model: Type[T],
         images: Optional[List[Any]] = None,
         timeout: Optional[float] = None,
+        media_resolution: Optional[str] = None,
     ) -> T:
         """
         Generates content using Gemini multimodal API, parses JSON, and validates
@@ -81,7 +82,12 @@ class GeminiClient:
         # Attempt up to 2 times (1 initial attempt + 1 retry on transient failure)
         for attempt in range(2):
             try:
-                raw_response_text = self._call_sdk(contents, effective_timeout)
+                raw_response_text = self._call_sdk(
+                    contents=contents,
+                    response_model=response_model,
+                    media_resolution=media_resolution,
+                    timeout=effective_timeout,
+                )
                 break
             except Exception as e:
                 last_exception = e
@@ -109,52 +115,48 @@ class GeminiClient:
         # Parse and validate JSON against Pydantic model
         return self._parse_and_validate(raw_response_text, response_model)
 
-    def _call_sdk(self, contents: List[Any], timeout: float) -> str:
+    def _call_sdk(
+        self,
+        contents: List[Any],
+        response_model: Optional[Type[BaseModel]] = None,
+        media_resolution: Optional[str] = None,
+        timeout: Optional[float] = None,
+    ) -> str:
         """
-        Calls official genai.Client models.generate_content with intelligent fallback
-        across available Gemini flash models if a model is temporarily experiencing high load.
+        Calls official genai.Client models.generate_content for the single configured model.
+        Logs which model was used at INFO level without logging sensitive data or image bytes.
         """
         try:
             from google.genai import types
+
+            res_name = (media_resolution or getattr(settings, "GEMINI_MEDIA_RESOLUTION", "HIGH")).strip().upper()
+            res_enum = getattr(
+                types.MediaResolution,
+                f"MEDIA_RESOLUTION_{res_name}",
+                types.MediaResolution.MEDIA_RESOLUTION_HIGH if res_name == "HIGH" else types.MediaResolution.MEDIA_RESOLUTION_UNSPECIFIED,
+            )
+
             config = types.GenerateContentConfig(
                 response_mime_type="application/json",
+                response_schema=response_model,
+                media_resolution=res_enum,
             )
-            candidate_models = ["gemini-flash-latest", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-3.5-flash", "gemini-3.8-flash"]
-            if self.model_name and self.model_name not in candidate_models:
-                candidate_models.insert(0, self.model_name)
 
-            last_err = None
-            for model_name in candidate_models:
-                try:
-                    response = self.client.models.generate_content(
-                        model=model_name,
-                        contents=contents,
-                        config=config,
-                    )
-                    if response and hasattr(response, "text") and response.text:
-                        return response.text.strip()
-                except Exception as ex:
-                    last_err = ex
-                    err_str = str(ex).lower()
-                    if (
-                        "503" in err_str
-                        or "404" in err_str
-                        or "429" in err_str
-                        or "resource_exhausted" in err_str
-                        or "quota" in err_str
-                        or "high demand" in err_str
-                        or "unavailable" in err_str
-                    ):
-                        logger.warning(f"Gemini model {model_name} unavailable ({ex}); attempting fallback...")
-                        time.sleep(0.3)
-                        continue
-                    raise ex
+            target_model = self.model_name or getattr(settings, "GEMINI_MODEL", "gemini-3.8-flash")
+            logger.info(
+                f"Calling configured Gemini model: '{target_model}' "
+                f"(schema: {getattr(response_model, '__name__', None)}, media_resolution: {res_name})"
+            )
 
-            if last_err:
-                raise last_err
-            raise ValueError("Response contains no valid text.")
+            response = self.client.models.generate_content(
+                model=target_model,
+                contents=contents,
+                config=config,
+            )
+            if not response or not hasattr(response, "text") or not response.text:
+                raise ValueError("Response contains no valid text.")
+            return response.text.strip()
         except Exception as e:
-            # Let caller handle retry logic
             raise e
 
     def _build_contents(self, prompt: str, images: Optional[List[Any]]) -> List[Any]:
@@ -172,12 +174,31 @@ class GeminiClient:
     def _convert_to_part(self, img: Any) -> Any:
         try:
             from google.genai import types
+
+            # 1. ProcessedImage object or duck-typed object with .mime_type and .data
+            if hasattr(img, "mime_type") and hasattr(img, "data"):
+                return types.Part.from_bytes(data=img.data, mime_type=img.mime_type)
+
+            # 2. Tuple of (data, mime_type)
+            if isinstance(img, tuple) and len(img) == 2 and isinstance(img[0], bytes):
+                return types.Part.from_bytes(data=img[0], mime_type=str(img[1]))
+
+            # 3. Raw bytes — detect magic bytes strictly for JPEG, PNG, and WebP
             if isinstance(img, bytes):
-                # Detect MIME type or default to image/jpeg
-                mime = "image/png" if img.startswith(b"\x89PNG") else "image/jpeg"
+                if img.startswith(b"\x89PNG\r\n\x1a\n"):
+                    mime = "image/png"
+                elif img.startswith(b"RIFF") and len(img) >= 12 and img[8:12] == b"WEBP":
+                    mime = "image/webp"
+                elif img.startswith(b"\xff\xd8\xff"):
+                    mime = "image/jpeg"
+                elif b"WEBP" in img[:16]:
+                    mime = "image/webp"
+                else:
+                    mime = "image/jpeg"
                 return types.Part.from_bytes(data=img, mime_type=mime)
+
+            # 4. String format (data URL or base64)
             elif isinstance(img, str):
-                # Check if base64 string
                 if img.startswith("data:image"):
                     header, data = img.split(",", 1)
                     mime = header.split(";")[0].split(":")[1]
@@ -186,7 +207,25 @@ class GeminiClient:
                 elif ";base64," in img:
                     data = img.split(";base64,")[1]
                     raw_bytes = base64.b64decode(data)
-                    return types.Part.from_bytes(data=raw_bytes, mime_type="image/jpeg")
+                    if raw_bytes.startswith(b"\x89PNG"):
+                        mime = "image/png"
+                    elif raw_bytes.startswith(b"RIFF") and len(raw_bytes) >= 12 and raw_bytes[8:12] == b"WEBP":
+                        mime = "image/webp"
+                    else:
+                        mime = "image/jpeg"
+                    return types.Part.from_bytes(data=raw_bytes, mime_type=mime)
+                else:
+                    try:
+                        raw_bytes = base64.b64decode(img)
+                        if raw_bytes.startswith(b"\x89PNG"):
+                            mime = "image/png"
+                        elif raw_bytes.startswith(b"RIFF") and len(raw_bytes) >= 12 and raw_bytes[8:12] == b"WEBP":
+                            mime = "image/webp"
+                        else:
+                            mime = "image/jpeg"
+                        return types.Part.from_bytes(data=raw_bytes, mime_type=mime)
+                    except Exception:
+                        pass
             return None
         except Exception as e:
             logger.warning(f"Failed to convert image to Part: {e}")
