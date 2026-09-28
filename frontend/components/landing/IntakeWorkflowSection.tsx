@@ -1,5 +1,5 @@
 import React from "react";
-import { Camera, Activity, MessageSquareText, Shield, Database, Cpu, CheckCircle2 } from "lucide-react";
+import { Camera, Activity, MessageSquareText, Shield, CheckCircle2 } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 
 export const IntakeWorkflowSection: React.FC = () => {
@@ -7,60 +7,95 @@ export const IntakeWorkflowSection: React.FC = () => {
   const steps = [
     {
       step: "01",
-      title: "Visual Evidence Intake",
+      title: t("intake.step1Title", "Visual Evidence Intake"),
       icon: Camera,
-      badge: "Multimodal Vision AI",
-      evidencePill: "VISUAL",
+      badge: t("intake.step1Badge", "Multimodal Vision AI"),
+      evidencePill: t("provenance.visual", "VISUAL"),
       pillStyle: "bg-purple-50 text-purple-700 border-purple-200",
-      description:
-        "Upload 2–3 photos of the laptop. Vision AI automatically identifies the make, model year, chassis condition, missing keys, and visible port damage.",
-      guardrail: "Strict Boundary: Vision never guesses internal silicon health or battery chemistry from an exterior picture.",
+      description: t(
+        "intake.step1Desc",
+        "Upload 2–3 photos of the laptop. Vision AI automatically identifies the make, model year, chassis condition, missing keys, and visible port damage."
+      ),
+      guardrail: t(
+        "intake.step1Guardrail",
+        "Strict Boundary: Vision never guesses internal silicon health or battery chemistry from an exterior picture."
+      ),
       points: [
-        "Exterior cosmetic condition score",
-        "Screen surface crack detection",
-        "Port wear & hinge alignment verification",
+        t("intake.step1Point1", "Exterior cosmetic condition score"),
+        t("intake.step1Point2", "Screen surface crack detection"),
+        t("intake.step1Point3", "Port wear & hinge alignment verification"),
       ],
     },
     {
       step: "02",
-      title: "Diagnostic Telemetry",
+      title: t("intake.step2Title", "Diagnostic Telemetry"),
       icon: Activity,
-      badge: "System Telemetry",
-      evidencePill: "DIAGNOSTIC",
+      badge: t("intake.step2Badge", "System Telemetry"),
+      evidencePill: t("provenance.diagnostic", "DIAGNOSTIC"),
       pillStyle: "bg-blue-50 text-blue-700 border-blue-200",
-      description:
-        "Upload a battery report, SMART storage log, or enter available diagnostic metrics. Normalized against standard hardware manufacturer baselines.",
-      guardrail: "Deterministic: Validates that full-charge capacity cannot exceed design capacity and flags thermal throttling limits.",
+      description: t(
+        "intake.step2Desc",
+        "Upload a battery report, SMART storage log, or enter available diagnostic metrics. Normalized against standard hardware manufacturer baselines."
+      ),
+      guardrail: t(
+        "intake.step2Guardrail",
+        "Deterministic: Validates that full-charge capacity cannot exceed design capacity and flags thermal throttling limits."
+      ),
       points: [
-        "Battery full-charge capacity & cycle count",
-        "NVMe / SATA SMART health & bad sectors",
-        "RAM pass/fail flags & peak thermal throttle data",
+        t("intake.step2Point1", "Battery full-charge capacity & cycle count"),
+        t("intake.step2Point2", "NVMe / SATA SMART health & bad sectors"),
+        t("intake.step2Point3", "RAM pass/fail flags & peak thermal throttle data"),
       ],
     },
     {
       step: "03",
-      title: "User Symptoms & Goals",
+      title: t("intake.step3Title", "User Symptoms & Goals"),
       icon: MessageSquareText,
-      badge: "Natural Language Parser",
-      evidencePill: "USER REPORTED",
+      badge: t("intake.step3Badge", "Natural Language Parser"),
+      evidencePill: t("provenance.userReported", "USER REPORTED"),
       pillStyle: "bg-amber-50 text-amber-700 border-amber-200",
-      description:
-        "Input user observations and usage goals. ReLoop aligns what the user actually needs (longer battery, school workstation, coding machine) with device realities.",
-      guardrail: "Traceable: User statements are strictly labeled as user-reported so they aren't confused with laboratory measurements.",
+      description: t(
+        "intake.step3Desc",
+        "Input user observations and usage goals. ReLoop aligns what the user actually needs (longer battery, school workstation, coding machine) with device realities."
+      ),
+      guardrail: t(
+        "intake.step3Guardrail",
+        "Traceable: User statements are strictly labeled as user-reported so they aren't confused with laboratory measurements."
+      ),
       points: [
-        "Reported thermal shutdown or intermittent glitch",
-        "Performance lag on modern operating systems",
-        "Desired second-life application requirements",
+        t("intake.step3Point1", "Reported thermal shutdown or intermittent glitch"),
+        t("intake.step3Point2", "Performance lag on modern operating systems"),
+        t("intake.step3Point3", "Desired second-life application requirements"),
       ],
     },
   ];
 
   const provenanceTypes = [
-    { label: "VISUAL", desc: "Detected from camera inspection", bg: "bg-purple-50 text-purple-700 border-purple-200" },
-    { label: "DIAGNOSTIC", desc: "Measured hardware telemetry", bg: "bg-blue-50 text-blue-700 border-blue-200" },
-    { label: "USER REPORTED", desc: "Direct customer observation", bg: "bg-amber-50 text-amber-700 border-amber-200" },
-    { label: "DATABASE", desc: "OEM spec sheets & part catalog", bg: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-    { label: "ESTIMATE", desc: "Mathematical lifecycle model", bg: "bg-slate-100 text-slate-700 border-slate-300" },
+    {
+      label: t("provenance.visual", "VISUAL"),
+      desc: t("provenance.visualDesc", "Detected from camera inspection"),
+      bg: "bg-purple-50 text-purple-700 border-purple-200",
+    },
+    {
+      label: t("provenance.diagnostic", "DIAGNOSTIC"),
+      desc: t("provenance.diagnosticDesc", "Measured hardware telemetry"),
+      bg: "bg-blue-50 text-blue-700 border-blue-200",
+    },
+    {
+      label: t("provenance.userReported", "USER REPORTED"),
+      desc: t("provenance.userReportedDesc", "Direct customer observation"),
+      bg: "bg-amber-50 text-amber-700 border-amber-200",
+    },
+    {
+      label: t("provenance.database", "DATABASE"),
+      desc: t("provenance.databaseDesc", "OEM spec sheets & part catalog"),
+      bg: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    },
+    {
+      label: t("provenance.estimate", "ESTIMATE"),
+      desc: t("provenance.estimateDesc", "Mathematical lifecycle model"),
+      bg: "bg-slate-100 text-slate-700 border-slate-300",
+    },
   ];
 
   return (
@@ -69,7 +104,7 @@ export const IntakeWorkflowSection: React.FC = () => {
         {/* Apple-style Section Header with Index Marker */}
         <div className="text-center max-w-3xl mx-auto mb-16">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-[#E5E5E7] text-[11px] font-mono font-bold text-[#6E6E73] mb-4 shadow-2xs">
-            <span>SECTION 02</span>
+            <span>{t("intake.sectionNum", "SECTION 02")}</span>
             <span>•</span>
             <span className="text-[#0071E3]">{t("intake.badge")}</span>
           </div>
@@ -93,7 +128,7 @@ export const IntakeWorkflowSection: React.FC = () => {
                 <div>
                   <div className="flex items-center justify-between mb-4">
                     <span className="text-xs font-mono font-bold text-[#86868B]">
-                      STEP {item.step}
+                      {t("intake.stepLabel", "STEP")} {item.step}
                     </span>
                     <span
                       className={`text-[10px] font-mono font-semibold px-2 py-0.5 rounded-md border ${item.pillStyle}`}
@@ -137,10 +172,13 @@ export const IntakeWorkflowSection: React.FC = () => {
         <div className="apple-card p-6 sm:p-8 bg-white max-w-4xl mx-auto">
           <div className="text-center max-w-xl mx-auto mb-6">
             <h4 className="text-base font-bold text-[#1D1D1F] mb-1">
-              Zero Guesswork • Verified Provenance Badges
+              {t("intake.provenanceTitle", "Zero Guesswork • Verified Provenance Badges")}
             </h4>
             <p className="text-xs text-[#6E6E73]">
-              Every assessment claim carries its proof source so users and IT asset managers always know what was measured vs modeled.
+              {t(
+                "intake.provenanceSubtitle",
+                "Every assessment claim carries its proof source so users and IT asset managers always know what was measured vs modeled."
+              )}
             </p>
           </div>
 

@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { HelpCircle, AlertCircle, Info, ChevronDown, ChevronUp, CheckCircle2, ArrowLeft } from "lucide-react";
 import { DiagnosticData } from "@/types/assessment";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface DiagnosticsStepProps {
   confirmedModelName: string;
@@ -19,6 +20,7 @@ export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
   onComplete,
   onBack,
 }) => {
+  const { t } = useLanguage();
   const [deviceAge, setDeviceAge] = useState<number>(initialData.deviceAgeYears || 4);
 
   // Battery state
@@ -125,11 +127,11 @@ export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
       {/* Header */}
       <div className="mb-8">
         <span className="text-xs font-mono font-bold uppercase px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 border border-blue-200 mb-2 inline-block">
-          DIAGNOSTIC EVIDENCE
+          {t("diag.badge")}
         </span>
-        <h2 className="text-3xl font-bold text-[#1D1D1F] tracking-tight">2. Diagnostics</h2>
+        <h2 className="text-3xl font-bold text-[#1D1D1F] tracking-tight">{t("diag.title")}</h2>
         <p className="text-[#6E6E73] text-sm sm:text-base mt-1">
-          Provide actual device measurements where available.
+          {t("diag.subtitle")}
         </p>
       </div>
 
@@ -137,8 +139,8 @@ export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
       <div className="mb-8 p-4 rounded-xl bg-blue-50/70 border border-blue-200 text-blue-900 text-xs sm:text-sm flex items-start gap-3">
         <Info className="w-5 h-5 text-[#0071E3] shrink-0 mt-0.5" />
         <div>
-          <span className="font-semibold block mb-0.5">Hardware Measurement Policy:</span>
-          Photos can show visible condition, but internal component health requires actual device diagnostics. Values entered here are used to calculate silicon condition.
+          <span className="font-semibold block mb-0.5">{t("diag.policyTitle")}</span>
+          {t("diag.policyDesc")}
         </div>
       </div>
 
@@ -153,20 +155,20 @@ export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
         {/* 7A Device Confirmation */}
         <div className="apple-card p-6 bg-white">
           <h3 className="text-sm font-bold uppercase tracking-wider text-[#6E6E73] mb-4">
-            Device Information
+            {t("diag.deviceInfo")}
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="p-3 rounded-xl bg-[#F5F5F7]">
-              <span className="text-[11px] text-[#86868B] block font-medium">Manufacturer</span>
+              <span className="text-[11px] text-[#86868B] block font-medium">{t("diag.manufacturer")}</span>
               <span className="text-sm font-bold text-[#1D1D1F]">{manufacturer}</span>
             </div>
             <div className="p-3 rounded-xl bg-[#F5F5F7]">
-              <span className="text-[11px] text-[#86868B] block font-medium">Confirmed Model</span>
+              <span className="text-[11px] text-[#86868B] block font-medium">{t("diag.confirmedModel")}</span>
               <span className="text-sm font-bold text-[#1D1D1F]">{confirmedModelName}</span>
             </div>
             <div className="p-3 rounded-xl bg-[#F5F5F7]">
               <label className="text-[11px] text-[#86868B] block font-medium mb-1">
-                Estimated Age (Years)
+                {t("diag.estimatedAge")}
               </label>
               <input
                 type="number"
@@ -186,19 +188,19 @@ export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
           <div className="flex items-center justify-between mb-4">
             <div>
               <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-blue-50 text-blue-700 font-bold mr-2">
-                DIAGNOSTIC
+                {t("diag.badge")}
               </span>
               <h3 className="text-lg font-bold text-[#1D1D1F] inline-block">
-                Battery Diagnostics
+                {t("diag.batteryTitle")}
               </h3>
             </div>
             <button
               type="button"
               onClick={() => setShowBatteryHelp(!showBatteryHelp)}
-              className="inline-flex items-center gap-1 text-xs text-[#0071E3] font-semibold hover:underline"
+              className="inline-flex items-center gap-1 text-xs text-[#0071E3] font-semibold hover:underline cursor-pointer"
             >
               <HelpCircle size={14} />
-              <span>How to find this (Windows)</span>
+              <span>{t("diag.batteryHelpBtn")}</span>
               {showBatteryHelp ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
             </button>
           </div>
@@ -206,11 +208,11 @@ export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
           {/* Windows Battery Report Expandable Helper */}
           {showBatteryHelp && (
             <div className="mb-6 p-4 rounded-xl bg-[#F5F5F7] border border-[#E5E5E7] text-xs text-[#1D1D1F] leading-relaxed">
-              <span className="font-bold block mb-1">Windows Battery Report Guide:</span>
+              <span className="font-bold block mb-1">{t("diag.batteryHelpTitle")}</span>
               <ol className="list-decimal pl-4 space-y-1">
-                <li>Open Command Prompt or PowerShell.</li>
-                <li>Type: <code className="bg-white px-1.5 py-0.5 rounded font-mono text-[11px]">powercfg /batteryreport</code> and press Enter.</li>
-                <li>Open the generated HTML report in your browser to view Design Capacity and Full Charge Capacity.</li>
+                <li>{t("diag.batteryHelp1")}</li>
+                <li>{t("diag.batteryHelp2")}</li>
+                <li>{t("diag.batteryHelp3")}</li>
               </ol>
             </div>
           )}
@@ -223,7 +225,7 @@ export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
                 onChange={(e) => setNoBatteryInfo(e.target.checked)}
                 className="rounded text-[#0071E3]"
               />
-              <span>I don&apos;t have this battery information</span>
+              <span>{t("diag.noBatteryInfo")}</span>
             </label>
           </div>
 
@@ -232,7 +234,7 @@ export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
                 <div>
                   <label className="text-xs font-semibold text-[#6E6E73] block mb-1">
-                    Design Capacity ({unit})
+                    {t("diag.designCap")} ({unit})
                   </label>
                   <input
                     type="number"
@@ -244,7 +246,7 @@ export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
 
                 <div>
                   <label className="text-xs font-semibold text-[#6E6E73] block mb-1">
-                    Full Charge Capacity ({unit})
+                    {t("diag.fullChargeCap")} ({unit})
                   </label>
                   <input
                     type="number"
@@ -256,7 +258,7 @@ export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
 
                 <div>
                   <label className="text-xs font-semibold text-[#6E6E73] block mb-1">
-                    Cycle Count
+                    {t("diag.cycleCount")}
                   </label>
                   <input
                     type="number"
@@ -267,7 +269,7 @@ export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
                 </div>
 
                 <div>
-                  <label className="text-xs font-semibold text-[#6E6E73] block mb-1">Capacity Unit</label>
+                  <label className="text-xs font-semibold text-[#6E6E73] block mb-1">{t("diag.capUnit")}</label>
                   <select
                     value={unit}
                     onChange={(e) => setUnit(e.target.value as "mWh" | "Wh")}
@@ -282,12 +284,12 @@ export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
               {/* Calculated Output Card */}
               <div className="p-4 rounded-xl bg-[#F5F5F7] border border-[#E5E5E7] flex items-center justify-between">
                 <div>
-                  <span className="text-xs text-[#86868B] block">Calculated Battery Health</span>
+                  <span className="text-xs text-[#86868B] block">{t("diag.calcBatteryHealth")}</span>
                   <span className="text-2xl font-bold text-[#1D1D1F]">
                     {calculatedBatteryHealth}%
                   </span>
                   <span className="text-[11px] text-[#6E6E73] block">
-                    Calculated from device diagnostic data
+                    {t("diag.calcFromDiag")}
                   </span>
                 </div>
                 <span
@@ -300,10 +302,10 @@ export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
                   }`}
                 >
                   {calculatedBatteryHealth >= 80
-                    ? "Good Condition"
+                    ? t("diag.goodCondition")
                     : calculatedBatteryHealth >= 65
-                    ? "Degraded"
-                    : "Service Recommended"}
+                    ? t("diag.degraded")
+                    : t("diag.serviceRecommended")}
                 </span>
               </div>
             </div>
@@ -315,10 +317,10 @@ export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
           <div className="flex items-center justify-between mb-4">
             <div>
               <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-blue-50 text-blue-700 font-bold mr-2">
-                DIAGNOSTIC
+                {t("diag.badge")}
               </span>
               <h3 className="text-lg font-bold text-[#1D1D1F] inline-block">
-                SSD & Storage Health
+                {t("diag.ssdTitle")}
               </h3>
             </div>
           </div>
@@ -331,7 +333,7 @@ export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
                 onChange={(e) => setNoSsdInfo(e.target.checked)}
                 className="rounded text-[#0071E3]"
               />
-              <span>Not provided / Skip SSD diagnostic</span>
+              <span>{t("diag.noSsdInfo")}</span>
             </label>
           </div>
 
@@ -339,7 +341,7 @@ export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label className="text-xs font-semibold text-[#6E6E73] block mb-1">
-                  Drive Health %
+                  {t("diag.driveHealth")}
                 </label>
                 <input
                   type="number"
@@ -353,7 +355,7 @@ export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
 
               <div>
                 <label className="text-xs font-semibold text-[#6E6E73] block mb-1">
-                  Power-On Hours (Approx)
+                  {t("diag.powerHours")}
                 </label>
                 <input
                   type="number"
@@ -365,7 +367,7 @@ export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
 
               <div>
                 <label className="text-xs font-semibold text-[#6E6E73] block mb-1">
-                  SMART Status
+                  {t("diag.smartStatus")}
                 </label>
                 <select
                   value={smartStatus}
@@ -386,16 +388,16 @@ export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
           {/* RAM */}
           <div className="apple-card p-6 bg-white">
             <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-blue-50 text-blue-700 font-bold mr-2">
-              DIAGNOSTIC
+              {t("diag.badge")}
             </span>
             <h3 className="text-base font-bold text-[#1D1D1F] inline-block mb-4">
-              RAM Memory
+              {t("diag.ramTitle")}
             </h3>
 
             <div className="space-y-4">
               <div>
                 <label className="text-xs font-semibold text-[#6E6E73] block mb-1">
-                  Installed RAM Capacity (GB)
+                  {t("diag.ramCapacity")}
                 </label>
                 <select
                   value={ramCapacity}
@@ -412,7 +414,7 @@ export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
 
               <div>
                 <label className="text-xs font-semibold text-[#6E6E73] block mb-1">
-                  Memory Test Result
+                  {t("diag.ramTest")}
                 </label>
                 <select
                   value={ramTest}
@@ -430,17 +432,17 @@ export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
           {/* Thermals */}
           <div className="apple-card p-6 bg-white">
             <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-blue-50 text-blue-700 font-bold mr-2">
-              DIAGNOSTIC
+              {t("diag.badge")}
             </span>
             <h3 className="text-base font-bold text-[#1D1D1F] inline-block mb-4">
-              Thermal Measurements
+              {t("diag.thermalTitle")}
             </h3>
 
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-xs font-semibold text-[#6E6E73] block mb-1">
-                    CPU Temp (°C)
+                    {t("diag.cpuTemp")}
                   </label>
                   <input
                     type="number"
@@ -451,7 +453,7 @@ export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
                 </div>
                 <div>
                   <label className="text-xs font-semibold text-[#6E6E73] block mb-1">
-                    GPU Temp (°C)
+                    {t("diag.gpuTemp")}
                   </label>
                   <input
                     type="number"
@@ -464,16 +466,16 @@ export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
 
               <div>
                 <label className="text-xs font-semibold text-[#6E6E73] block mb-1">
-                  Thermal Throttling
+                  {t("diag.throttling")}
                 </label>
                 <select
                   value={throttling}
                   onChange={(e) => setThrottling(e.target.value as any)}
                   className="w-full p-2 rounded-xl border border-[#D2D2D7] text-sm font-semibold text-[#1D1D1F] bg-white"
                 >
-                  <option value="DETECTED">Detected</option>
-                  <option value="NOT_DETECTED">Not Detected</option>
-                  <option value="UNKNOWN">Unknown</option>
+                  <option value="DETECTED">{t("diag.detected")}</option>
+                  <option value="NOT_DETECTED">{t("diag.notDetected")}</option>
+                  <option value="UNKNOWN">{t("diag.unknown")}</option>
                 </select>
               </div>
             </div>
@@ -483,16 +485,16 @@ export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
         {/* 7F System Diagnostics */}
         <div className="apple-card p-6 bg-white">
           <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-blue-50 text-blue-700 font-bold mr-2">
-            DIAGNOSTIC
+            {t("diag.badge")}
           </span>
           <h3 className="text-lg font-bold text-[#1D1D1F] inline-block mb-4">
-            System Hardware Diagnostics
+            {t("diag.systemTitle")}
           </h3>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="text-xs font-semibold text-[#6E6E73] block mb-1">
-                Diagnostic Result
+                {t("diag.systemResult")}
               </label>
               <select
                 value={hardwareResult}
@@ -507,20 +509,20 @@ export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
 
             <div>
               <label className="text-xs font-semibold text-[#6E6E73] block mb-1">
-                Critical Hardware Faults
+                {t("diag.criticalFaults")}
               </label>
               <input
                 type="text"
                 value={criticalFaults}
                 onChange={(e) => setCriticalFaults(e.target.value)}
-                placeholder="None reported"
+                placeholder={t("diag.criticalFaultsPlaceholder")}
                 className="w-full p-2.5 rounded-xl border border-[#D2D2D7] text-sm font-semibold text-[#1D1D1F]"
               />
             </div>
           </div>
 
           <p className="text-xs text-[#86868B] mt-3">
-            Note: Standard phrasing used for system report is: &quot;No critical faults detected from available diagnostics&quot;.
+            {t("diag.systemNote")}
           </p>
         </div>
 
@@ -533,14 +535,14 @@ export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
               className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full border border-[#D2D2D7] bg-white hover:bg-[#F5F5F7] text-[#1D1D1F] text-sm font-semibold transition-all shadow-xs cursor-pointer"
             >
               <ArrowLeft size={16} />
-              <span>Back to Visual Inspection</span>
+              <span>{t("diag.backToVisual")}</span>
             </button>
           ) : <div />}
           <button
             type="submit"
             className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-[#0071E3] hover:bg-[#0077ED] text-white text-sm font-semibold transition-all shadow-md cursor-pointer ml-auto"
           >
-            <span>Continue to User Symptoms →</span>
+            <span>{t("diag.continueToSymptoms")}</span>
           </button>
         </div>
       </form>

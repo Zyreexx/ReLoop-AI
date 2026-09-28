@@ -36,40 +36,40 @@ export default function Home() {
 
   const featurePortals = [
     {
-      badge: "CIRCULAR HIERARCHY",
+      badge: t("portals.badgePathways", "CIRCULAR HIERARCHY"),
       title: t("portals.pathwaysTitle"),
       desc: t("portals.pathwaysDesc"),
       link: "/pathways",
       linkText: t("portals.pathwaysBtn"),
       icon: Wrench,
-      highlight: "Up to 94% Value Retained",
+      highlight: t("portals.highlightPathways", "Up to 94% Value Retained"),
     },
     {
-      badge: "EVIDENCE SYSTEM",
+      badge: t("portals.badgeIntake", "EVIDENCE SYSTEM"),
       title: t("portals.howItWorksTitle"),
       desc: t("portals.howItWorksDesc"),
       link: "/how-it-works",
       linkText: t("portals.howItWorksBtn"),
       icon: ShieldCheck,
-      highlight: "Traceable Provenance Badges",
+      highlight: t("portals.highlightIntake", "Traceable Provenance Badges"),
     },
     {
-      badge: "SCORING ALGORITHM",
+      badge: t("portals.badgeEngine", "SCORING ALGORITHM"),
       title: t("portals.engineTitle"),
       desc: t("portals.engineDesc"),
       link: "/engine",
       linkText: t("portals.engineBtn"),
       icon: Cpu,
-      highlight: "Mathematical Scoring Model",
+      highlight: t("portals.highlightEngine", "Mathematical Scoring Model"),
     },
     {
-      badge: "CIRCULAR PRINCIPLE",
+      badge: t("portals.badgePhilosophy", "CIRCULAR PRINCIPLE"),
       title: t("portals.philosophyTitle"),
       desc: t("portals.philosophyDesc"),
       link: "/philosophy",
       linkText: t("portals.philosophyBtn"),
       icon: RefreshCw,
-      highlight: "Preventing Embodied Carbon Loss",
+      highlight: t("portals.highlightPhilosophy", "Preventing Embodied Carbon Loss"),
     },
   ];
 
@@ -156,17 +156,20 @@ export default function Home() {
           <div className="max-w-4xl mx-auto px-6">
             <div className="p-8 sm:p-12 rounded-3xl bg-[#1D1D1F] text-white text-center shadow-xl">
               <h3 className="text-2xl sm:text-3xl font-bold tracking-tight mb-3">
-                Ready to assess your hardware?
+                {t("portals.ctaTitle", "Ready to assess your hardware?")}
               </h3>
               <p className="text-sm text-gray-300 max-w-xl mx-auto mb-6">
-                Calculate the highest-value next life for your device in seconds.
+                {t(
+                  "portals.ctaSubtitle",
+                  "Calculate the highest-value next life for your device in seconds."
+                )}
               </p>
               <button
                 type="button"
                 onClick={handleAssessClick}
                 className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-[#0071E3] hover:bg-[#0077ED] text-white text-sm font-semibold transition-all duration-200 shadow-md cursor-pointer"
               >
-                <span>Assess Your Laptop</span>
+                <span>{t("portals.ctaBtn", "Assess Your Laptop")}</span>
                 <ArrowRight className="w-4 h-4" />
               </button>
             </div>

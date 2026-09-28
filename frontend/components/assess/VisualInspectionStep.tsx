@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { MVP_SUPPORTED_MODELS, VisualInspectionData, VisualObservation } from "@/types/assessment";
 import { identifyProduct as backendIdentifyProduct, getProductCatalog } from "@/lib/api";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface VisualInspectionStepProps {
   initialData: VisualInspectionData;
@@ -24,6 +25,7 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
   initialData,
   onComplete,
 }) => {
+  const { t } = useLanguage();
   const [images, setImages] = useState<string[]>(initialData.images || []);
   const [rawFiles, setRawFiles] = useState<File[]>(initialData.rawFiles || []);
   const [analyzing, setAnalyzing] = useState(false);
@@ -299,18 +301,18 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
         <div>
           <div className="flex items-center gap-2 mb-2">
             <span className="text-xs font-mono font-bold uppercase px-2.5 py-1 rounded-md bg-[#0071E3]/10 text-[#0071E3] border border-[#0071E3]/20">
-              STEP 1: VISUAL INSPECTION
+              {t("visual.stepBadge", "STEP 1: VISUAL INSPECTION")}
             </span>
             <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
               <Sparkles className="w-3 h-3 text-emerald-600 animate-pulse" />
-              Gemini Vision AI Powered
+              {t("visual.geminiBadge", "Gemini Vision AI Powered")}
             </span>
           </div>
           <h2 className="text-3xl font-bold text-[#1D1D1F] tracking-tight">
-            Laptop Model Detection
+            {t("visual.title", "Laptop Model Detection")}
           </h2>
           <p className="text-[#6E6E73] text-sm sm:text-base mt-1">
-            Upload a photo of your laptop. Gemini Vision AI will automatically detect the manufacturer, exact model name, and physical characteristics.
+            {t("visual.subtitle", "Upload a photo of your laptop. Gemini Vision AI will automatically detect the manufacturer, exact model name, and physical characteristics.")}
           </p>
         </div>
 
@@ -320,8 +322,8 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
       <div className="mb-6 p-4 rounded-xl bg-amber-50/80 border border-amber-200 text-amber-900 text-xs sm:text-sm flex items-start gap-3">
         <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
         <div>
-          <span className="font-semibold block mb-0.5">Hardware Verification Rule:</span>
-          Gemini Vision identifies laptop model and external casing condition from your photos. Internal battery and SSD health are gathered in Step 2 via diagnostics telemetry.
+          <span className="font-semibold block mb-0.5">{t("visual.ruleTitle", "Hardware Verification Rule:")}</span>
+          {t("visual.ruleDesc", "Gemini Vision identifies laptop model and external casing condition from your photos. Internal battery and SSD health are gathered in Step 2 via diagnostics telemetry.")}
         </div>
       </div>
 
@@ -336,7 +338,7 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
             onClick={() => triggerVisionDetection(rawFiles, images)}
             className="text-xs font-semibold underline text-red-800 hover:text-red-950 cursor-pointer"
           >
-            Retry Detection
+            {t("visual.retry", "Retry Detection")}
           </button>
         </div>
       )}
@@ -347,14 +349,14 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
           <div>
             <h3 className="text-lg font-bold text-[#1D1D1F] flex items-center gap-2">
               <Laptop className="w-5 h-5 text-[#0071E3]" />
-              Upload Laptop Photos
+              {t("visual.uploadTitle", "Upload Laptop Photos")}
             </h3>
             <p className="text-xs text-[#6E6E73] mt-0.5">
-              Upload 1 or more photos (e.g. keyboard view, top lid, or bottom model label). Gemini will detect your laptop automatically!
+              {t("visual.uploadSubtitle", "Upload 1 or more photos (e.g. keyboard view, top lid, or bottom model label). Gemini will detect your laptop automatically!")}
             </p>
           </div>
           <span className="text-xs font-bold px-3 py-1 rounded-full bg-[#0071E3]/10 text-[#0071E3] w-fit">
-            Uploaded: {images.length} / 6
+            {t("visual.uploadedCount", "Uploaded")}: {images.length} / 6
           </span>
         </div>
 
@@ -363,12 +365,12 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
           {[0, 1, 2, 3, 4, 5].map((idx) => {
             const imgSrc = images[idx];
             const slotLabels = [
-              "1. Full Laptop / Keyboard",
-              "2. Bottom Label / Sticker",
-              "3. Top Lid / Brand Logo",
-              "4. Side Ports & Edge",
-              "5. Display / Bezel",
-              "6. Any Visible Scratches",
+              t("visual.slot1", "1. Full Laptop / Keyboard"),
+              t("visual.slot2", "2. Bottom Label / Sticker"),
+              t("visual.slot3", "3. Top Lid / Brand Logo"),
+              t("visual.slot4", "4. Side Ports & Edge"),
+              t("visual.slot5", "5. Display / Bezel"),
+              t("visual.slot6", "6. Any Visible Scratches"),
             ];
 
             return (
@@ -420,7 +422,7 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
                     <span className="text-xs font-semibold text-[#1D1D1F] block">
                       {slotLabels[idx]}
                     </span>
-                    <span className="text-[10px] text-[#86868B] mt-0.5">Click to upload photo</span>
+                    <span className="text-[10px] text-[#86868B] mt-0.5">{t("visual.clickToUpload", "Click to upload photo")}</span>
                   </button>
                 )}
               </div>
@@ -441,7 +443,7 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
         <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-[#E5E5E7]">
           <div className="flex items-center gap-2 text-xs text-[#6E6E73]">
             <Camera className="w-4 h-4 text-[#0071E3]" />
-            <span>Supported: JPG, PNG, WEBP (Max 10MB each) • 1 to 6 photos</span>
+            <span>{t("visual.supportedFormats", "Supported: JPG, PNG, WEBP (Max 10MB each) • 1 to 6 photos")}</span>
           </div>
 
           <div className="flex items-center gap-2">
@@ -450,7 +452,7 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
               onClick={() => fileInputRef.current?.click()}
               className="px-4 py-2.5 rounded-full border border-[#D2D2D7] text-xs font-semibold text-[#1D1D1F] hover:bg-[#F5F5F7] transition-all cursor-pointer"
             >
-              Add Photo
+              {t("visual.addPhoto", "Add Photo")}
             </button>
             <button
               type="button"
@@ -465,12 +467,12 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
               {analyzing ? (
                 <>
                   <RefreshCw className="w-4 h-4 animate-spin" />
-                  <span>Detecting Model...</span>
+                  <span>{t("visual.detecting", "Detecting Model...")}</span>
                 </>
               ) : (
                 <>
                   <Sparkles className="w-4 h-4" />
-                  <span>{analyzed ? "Re-detect with Gemini" : "Detect Model with Gemini AI"}</span>
+                  <span>{analyzed ? t("visual.redetect", "Re-detect with Gemini") : t("visual.detectBtn", "Detect Model with Gemini AI")}</span>
                 </>
               )}
             </button>
@@ -491,7 +493,7 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
             <div className="bg-linear-to-r from-[#0071E3] to-[#34C759] h-full animate-pulse w-3/4 rounded-full" />
           </div>
           <p className="text-xs text-[#6E6E73]">
-            Using Google Gemini multimodal vision to extract brand badges, model markings, and port configuration
+            {t("visual.analyzingDesc", "Using Google Gemini multimodal vision to extract brand badges, model markings, and port configuration")}
           </p>
         </div>
       )}
@@ -511,13 +513,13 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
                   </span>
                   <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
                     <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                    {Math.round((identifiedProduct.confidence || 0.9) * 100)}% Match Confidence
+                    {Math.round((identifiedProduct.confidence || 0.9) * 100)}% {t("visual.matchConfidence", "Match Confidence")}
                   </span>
                 </div>
 
                 <div>
                   <span className="text-xs text-[#86868B] uppercase tracking-wider font-semibold block">
-                    Detected Model Name
+                    {t("visual.detectedModelLabel", "Detected Model Name")}
                   </span>
                   <h4 className="text-2xl sm:text-3xl font-extrabold text-[#1D1D1F] tracking-tight">
                     {identifiedProduct.manufacturer} {identifiedProduct.model}
@@ -526,7 +528,7 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
 
                 {identifiedProduct.visible_label_text && (
                   <p className="text-xs text-[#6E6E73] bg-[#F5F5F7] px-3 py-1.5 rounded-lg inline-block font-mono">
-                    Found on label: &quot;{identifiedProduct.visible_label_text}&quot;
+                    {t("visual.foundOnLabel", "Found on label:")} &quot;{identifiedProduct.visible_label_text}&quot;
                   </p>
                 )}
               </div>
@@ -537,7 +539,7 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
                   onClick={() => setShowModelPicker(true)}
                   className="px-4 py-2.5 rounded-full border border-[#D2D2D7] text-xs font-semibold text-[#1D1D1F] hover:bg-[#F5F5F7] transition-all cursor-pointer"
                 >
-                  Change Model
+                  {t("visual.changeModel", "Change Model")}
                 </button>
                 <button
                   type="button"
@@ -545,7 +547,7 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
                   className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-[#34C759] hover:bg-[#2FB34F] text-white text-xs font-bold transition-all shadow-sm hover:shadow cursor-pointer"
                 >
                   <CheckCircle2 size={16} />
-                  <span>Confirm & Continue</span>
+                  <span>{t("visual.confirmContinue", "Confirm & Continue")}</span>
                 </button>
               </div>
             </div>
@@ -557,10 +559,10 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
               <div className="flex items-center justify-between mb-4">
                 <div>
                   <h5 className="text-sm font-bold uppercase tracking-wider text-[#1D1D1F]">
-                    Select or Adjust Laptop Model
+                    {t("visual.pickerTitle", "Select or Adjust Laptop Model")}
                   </h5>
                   <p className="text-xs text-[#6E6E73] mt-0.5">
-                    Select a supported model from our verified hardware catalog:
+                    {t("visual.pickerSubtitle", "Select a supported model from our verified hardware catalog:")}
                   </p>
                 </div>
                 <button
@@ -568,7 +570,7 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
                   onClick={() => setShowModelPicker(false)}
                   className="text-xs font-semibold text-[#6E6E73] hover:text-[#1D1D1F] cursor-pointer"
                 >
-                  Close
+                  {t("visual.pickerClose", "Close")}
                 </button>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -597,7 +599,7 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
             <div>
               <h4 className="text-xs font-bold uppercase tracking-wider text-[#6E6E73] mb-3 flex items-center gap-1.5">
                 <Eye className="w-3.5 h-3.5 text-[#0071E3]" />
-                Gemini Vision Observations
+                {t("visual.observationsTitle", "Gemini Vision Observations")}
               </h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                 {visibleObservations.map((obs) => (
@@ -629,7 +631,7 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
               onClick={handleConfirmModel}
               className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-[#0071E3] hover:bg-[#0077ED] text-white text-sm font-semibold transition-all shadow-md cursor-pointer"
             >
-              <span>Continue to Diagnostics Telemetry →</span>
+              <span>{t("visual.continueToDiag", "Continue to Diagnostics Telemetry →")}</span>
             </button>
           </div>
         </div>

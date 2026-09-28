@@ -422,7 +422,7 @@ export default function AssessDevicePage() {
                     className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#6E6E73] hover:text-[#0071E3] transition-colors cursor-pointer group"
                   >
                     <ArrowLeft size={14} className="group-hover:-translate-x-0.5 transition-transform" />
-                    <span>Back to Step {currentStep - 1}</span>
+                    <span>{t("common.backToStep", "Back to Step")} {currentStep - 1}</span>
                   </button>
                 </div>
               )}

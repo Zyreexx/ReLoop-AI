@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Sliders, CheckCircle2, TrendingUp, DollarSign, Clock, Leaf, Zap, ShieldAlert, ArrowRight } from "lucide-react";
+import { DollarSign, Clock, Leaf, Zap, ShieldAlert, ArrowRight } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 
 interface DeviceCase {
@@ -31,7 +31,11 @@ export const InteractiveEngineSection: React.FC<{ onOpenAuth: (mode: "login" | "
       name: "Dell Latitude 5420",
       year: 2021,
       specs: "Intel i5-1145G7 • 16GB DDR4 • 512GB NVMe",
-      flaws: ["Battery drops to 0% in 40 mins (73% health)", "CPU thermal throttles at 88°C under load", "2 loose plastic keys"],
+      flaws: [
+        t("engine.dell.flaw1", "Battery drops to 0% in 40 mins (73% health)"),
+        t("engine.dell.flaw2", "CPU thermal throttles at 88°C under load"),
+        t("engine.dell.flaw3", "2 loose plastic keys"),
+      ],
       batteryHealth: 73,
       motherboardOk: true,
       screenOk: true,
@@ -46,7 +50,11 @@ export const InteractiveEngineSection: React.FC<{ onOpenAuth: (mode: "login" | "
       name: "Lenovo ThinkPad T480",
       year: 2018,
       specs: "Intel i5-8250U • 8GB RAM • 256GB SATA",
-      flaws: ["Main motherboard power circuit fault", "Cracked LCD panel", "Internal bridge battery dead"],
+      flaws: [
+        t("engine.thinkpad.flaw1", "Main motherboard power circuit fault"),
+        t("engine.thinkpad.flaw2", "Cracked LCD panel"),
+        t("engine.thinkpad.flaw3", "Internal bridge battery dead"),
+      ],
       batteryHealth: 0,
       motherboardOk: false,
       screenOk: false,
@@ -61,7 +69,10 @@ export const InteractiveEngineSection: React.FC<{ onOpenAuth: (mode: "login" | "
       name: "MacBook Air M1",
       year: 2020,
       specs: "Apple M1 • 8GB Unified • 256GB SSD",
-      flaws: ["Light scratch on lid", "User upgraded to M3 MacBook Pro for 4K video editing"],
+      flaws: [
+        t("engine.mac.flaw1", "Light scratch on lid"),
+        t("engine.mac.flaw2", "User upgraded to M3 MacBook Pro for 4K video editing"),
+      ],
       batteryHealth: 85,
       motherboardOk: true,
       screenOk: true,
@@ -78,68 +89,49 @@ export const InteractiveEngineSection: React.FC<{ onOpenAuth: (mode: "login" | "
   // Deterministic Scoring Calculator according to rules in architecture.md
   // w1*Life + w2*Value + w3*Material + w4*Env - w5*Cost - w6*Logistics
   const calculatePathways = () => {
-    // Weights based on user objective
-    let wLife = 0.3;
-    let wCost = 0.3;
-    let wEnv = 0.2;
-    let wSpeed = 0.2;
-
-    if (objective === "cost") {
-      wCost = 0.55;
-      wLife = 0.2;
-      wEnv = 0.15;
-      wSpeed = 0.1;
-    } else if (objective === "life") {
-      wLife = 0.55;
-      wCost = 0.2;
-      wEnv = 0.15;
-      wSpeed = 0.1;
-    } else if (objective === "carbon") {
-      wEnv = 0.55;
-      wLife = 0.25;
-      wCost = 0.1;
-      wSpeed = 0.1;
-    } else if (objective === "speed") {
-      wSpeed = 0.5;
-      wCost = 0.25;
-      wLife = 0.15;
-      wEnv = 0.1;
-    }
-
     if (!currentDev.motherboardOk) {
       // Motherboard dead and screen dead
       return [
         {
-          name: "Component Recovery",
+          name: t("engine.thinkpad.p1Name", "Component Recovery"),
           eligible: true,
           score: 89,
-          lifeExt: "Harvest 256GB SSD + 8GB RAM",
-          cost: "₹0 (Salvation yield: ₹5,400)",
-          co2: "62 kg CO₂ avoided",
+          lifeExt: t("engine.thinkpad.p1Life", "Harvest 256GB SSD + 8GB RAM"),
+          cost: t("engine.thinkpad.p1Cost", "₹0 (Salvation yield: ₹5,400)"),
+          co2: t("engine.thinkpad.p1Co2", "62 kg CO₂ avoided"),
           turnaround: "24 hours",
-          reason: "Repairing both motherboard & screen exceeds residual laptop value. Recovering operational SSD & RAM maximizes circular material utility.",
+          reason: t(
+            "engine.thinkpad.p1Reason",
+            "Repairing both motherboard & screen exceeds residual laptop value. Recovering operational SSD & RAM maximizes circular material utility."
+          ),
           recommended: true,
         },
         {
-          name: "Recycling (Smelting)",
+          name: t("engine.thinkpad.p2Name", "Recycling (Smelting)"),
           eligible: true,
           score: 58,
-          lifeExt: "Raw Material Only",
-          cost: "Free e-waste dropoff",
-          co2: "22 kg CO₂ avoided",
+          lifeExt: t("engine.thinkpad.p2Life", "Raw Material Only"),
+          cost: t("engine.thinkpad.p2Cost", "Free e-waste dropoff"),
+          co2: t("engine.thinkpad.p2Co2", "22 kg CO₂ avoided"),
           turnaround: "Instant",
-          reason: "Recycles non-harvestable chassis remnants after components are stripped.",
+          reason: t(
+            "engine.thinkpad.p2Reason",
+            "Recycles non-harvestable chassis remnants after components are stripped."
+          ),
           recommended: false,
         },
         {
-          name: "Repair & Overhaul",
+          name: t("engine.thinkpad.p3Name", "Repair & Overhaul"),
           eligible: false,
           score: 18,
-          lifeExt: "+1.5 Years",
-          cost: `₹${currentDev.costRepair.toLocaleString()}`,
-          co2: "85 kg CO₂",
+          lifeExt: t("engine.thinkpad.p3Life", "+1.5 Years"),
+          cost: t("engine.thinkpad.p3Cost", `₹${currentDev.costRepair.toLocaleString()}`),
+          co2: t("engine.thinkpad.p3Co2", "85 kg CO₂"),
           turnaround: "7-10 days",
-          reason: "Ineligible: Motherboard replacement cost exceeds 70% of device market value.",
+          reason: t(
+            "engine.thinkpad.p3Reason",
+            "Ineligible: Motherboard replacement cost exceeds 70% of device market value."
+          ),
           recommended: false,
         },
       ];
@@ -148,36 +140,42 @@ export const InteractiveEngineSection: React.FC<{ onOpenAuth: (mode: "login" | "
     if (selectedDevice === "macbookAir") {
       return [
         {
-          name: "Reuse / Redeploy",
+          name: t("engine.mac.p1Name", "Reuse / Redeploy"),
           eligible: true,
           score: 94,
-          lifeExt: "+3.5 Years",
-          cost: "₹0",
-          co2: "185 kg CO₂ avoided",
+          lifeExt: t("engine.mac.p1Life", "+3.5 Years"),
+          cost: t("engine.mac.p1Cost", "₹0"),
+          co2: t("engine.mac.p1Co2", "185 kg CO₂ avoided"),
           turnaround: "Instant",
-          reason: "Silicon health is 100% and battery is healthy at 85%. Perfect candidate for student or administrative redeployment.",
+          reason: t(
+            "engine.mac.p1Reason",
+            "Silicon health is 100% and battery is healthy at 85%. Perfect candidate for student or administrative redeployment."
+          ),
           recommended: true,
         },
         {
-          name: "Certified Refurbish",
+          name: t("engine.mac.p2Name", "Certified Refurbish"),
           eligible: true,
           score: 82,
-          lifeExt: "+3.5 Years",
-          cost: "₹2,500 (Sanitize + Box)",
-          co2: "180 kg CO₂ avoided",
+          lifeExt: t("engine.mac.p2Life", "+3.5 Years"),
+          cost: t("engine.mac.p2Cost", "₹2,500 (Sanitize + Box)"),
+          co2: t("engine.mac.p2Co2", "180 kg CO₂ avoided"),
           turnaround: "2 days",
-          reason: "Deep clean and recertify for resale at ₹52,000.",
+          reason: t("engine.mac.p2Reason", "Deep clean and recertify for resale at ₹52,000."),
           recommended: false,
         },
         {
-          name: "Component Recovery",
+          name: t("engine.mac.p3Name", "Component Recovery"),
           eligible: false,
           score: 12,
-          lifeExt: "Destructive",
-          cost: "High loss",
-          co2: "Negative",
+          lifeExt: t("engine.mac.p3Life", "Destructive"),
+          cost: t("engine.mac.p3Cost", "High loss"),
+          co2: t("engine.mac.p3Co2", "Negative"),
           turnaround: "N/A",
-          reason: "Ineligible: Functioning MacBook Air should never be scrapped for parts.",
+          reason: t(
+            "engine.mac.p3Reason",
+            "Ineligible: Functioning MacBook Air should never be scrapped for parts."
+          ),
           recommended: false,
         },
       ];
@@ -186,54 +184,65 @@ export const InteractiveEngineSection: React.FC<{ onOpenAuth: (mode: "login" | "
     // Default Dell 5420
     return [
       {
-        name: "Repair (Battery + Thermal Repaste)",
+        name: t("engine.dell.p1Name", "Repair (Battery + Thermal Repaste)"),
         eligible: true,
         score: objective === "cost" ? 95 : 91,
-        lifeExt: "+2.5 Years",
-        cost: "₹3,800",
-        co2: "145 kg CO₂ avoided",
+        lifeExt: t("engine.dell.p1Life", "+2.5 Years"),
+        cost: t("engine.dell.p1Cost", "₹3,800"),
+        co2: t("engine.dell.p1Co2", "145 kg CO₂ avoided"),
         turnaround: "1-2 days",
-        reason: "Eliminates thermal throttling and restores 7-hour battery runtime. Highest ROI pathway.",
+        reason: t(
+          "engine.dell.p1Reason",
+          "Eliminates thermal throttling and restores 7-hour battery runtime. Highest ROI pathway."
+        ),
         recommended: objective !== "life",
       },
       {
-        name: "Repair + Upgrade (Battery + 32GB RAM)",
+        name: t("engine.dell.p2Name", "Repair + Upgrade (Battery + 32GB RAM)"),
         eligible: true,
         score: objective === "life" ? 96 : 88,
-        lifeExt: "+3.5 Years",
-        cost: "₹6,200",
-        co2: "158 kg CO₂ avoided",
+        lifeExt: t("engine.dell.p2Life", "+3.5 Years"),
+        cost: t("engine.dell.p2Cost", "₹6,200"),
+        co2: t("engine.dell.p2Co2", "158 kg CO₂ avoided"),
         turnaround: "2 days",
-        reason: "Extends performance headroom for modern multitasking alongside fresh battery.",
+        reason: t(
+          "engine.dell.p2Reason",
+          "Extends performance headroom for modern multitasking alongside fresh battery."
+        ),
         recommended: objective === "life",
       },
       {
-        name: "Secondary Reuse / Redeploy",
+        name: t("engine.dell.p3Name", "Secondary Reuse / Redeploy"),
         eligible: true,
         score: 74,
-        lifeExt: "+1.5 Years (Plugged-in role)",
-        cost: "₹0",
-        co2: "135 kg CO₂ avoided",
+        lifeExt: t("engine.dell.p3Life", "+1.5 Years (Plugged-in role)"),
+        cost: t("engine.dell.p3Cost", "₹0"),
+        co2: t("engine.dell.p3Co2", "135 kg CO₂ avoided"),
         turnaround: "Instant",
-        reason: "Use as desktop replacement with AC adapter plugged in; leaves battery problem unaddressed.",
+        reason: t(
+          "engine.dell.p3Reason",
+          "Use as desktop replacement with AC adapter plugged in; leaves battery problem unaddressed."
+        ),
         recommended: false,
       },
       {
-        name: "Direct Recycling",
+        name: t("engine.dell.p4Name", "Direct Recycling"),
         eligible: false,
         score: 15,
-        lifeExt: "0 Years",
-        cost: "₹58,000 New Laptop needed",
-        co2: "Heavy Net Emission",
+        lifeExt: t("engine.dell.p4Life", "0 Years"),
+        cost: t("engine.dell.p4Cost", "₹58,000 New Laptop needed"),
+        co2: t("engine.dell.p4Co2", "Heavy Net Emission"),
         turnaround: "Immediate",
-        reason: "Ineligible: Perfectly healthy i5-11th gen motherboard and display must not be shredded.",
+        reason: t(
+          "engine.dell.p4Reason",
+          "Ineligible: Perfectly healthy i5-11th gen motherboard and display must not be shredded."
+        ),
         recommended: false,
       },
     ];
   };
 
   const pathwayResults = calculatePathways();
-  const winner = pathwayResults.find((p) => p.recommended) || pathwayResults[0];
 
   return (
     <section id="live-engine" className="py-24 md:py-36 bg-white border-b border-[#E5E5E7] relative">
@@ -241,7 +250,7 @@ export const InteractiveEngineSection: React.FC<{ onOpenAuth: (mode: "login" | "
         {/* Section Header with Index Marker */}
         <div className="text-center max-w-3xl mx-auto mb-16">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#F5F5F7] border border-[#E5E5E7] text-[11px] font-mono font-bold text-[#6E6E73] mb-4">
-            <span>SECTION 03</span>
+            <span>{t("engine.sectionNum", "SECTION 03")}</span>
             <span>•</span>
             <span className="text-[#0071E3]">{t("engine.badge")}</span>
           </div>
@@ -260,7 +269,7 @@ export const InteractiveEngineSection: React.FC<{ onOpenAuth: (mode: "login" | "
             {/* Device Picker */}
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-[#6E6E73] mb-2">
-                1. Select Hardware Test Case
+                {t("engine.selectHardware", "1. Select Hardware Test Case")}
               </label>
               <div className="grid grid-cols-3 gap-2">
                 {Object.values(devices).map((d) => (
@@ -288,7 +297,7 @@ export const InteractiveEngineSection: React.FC<{ onOpenAuth: (mode: "login" | "
             {/* Objective Picker */}
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-[#6E6E73] mb-2">
-                2. Set Decision Objective
+                {t("engine.setObjective", "2. Set Decision Objective")}
               </label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {[
@@ -328,7 +337,7 @@ export const InteractiveEngineSection: React.FC<{ onOpenAuth: (mode: "login" | "
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-medium px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200">
-                  Battery: {currentDev.batteryHealth}%
+                  {t("engine.batteryLabel", "Battery")}: {currentDev.batteryHealth}%
                 </span>
                 <span
                   className={`text-xs font-medium px-2 py-0.5 rounded-md ${
@@ -337,7 +346,7 @@ export const InteractiveEngineSection: React.FC<{ onOpenAuth: (mode: "login" | "
                       : "bg-rose-50 text-rose-700 border border-rose-200"
                   }`}
                 >
-                  Motherboard: {currentDev.motherboardOk ? "Intact" : "Fault Detected"}
+                  {t("engine.motherboardLabel", "Motherboard")}: {currentDev.motherboardOk ? t("engine.intact", "Intact") : t("engine.faultDetected", "Fault Detected")}
                 </span>
               </div>
             </div>
@@ -359,10 +368,10 @@ export const InteractiveEngineSection: React.FC<{ onOpenAuth: (mode: "login" | "
           <div className="pt-8">
             <div className="flex items-center justify-between mb-4">
               <span className="text-xs font-bold uppercase tracking-wider text-[#6E6E73]">
-                Deterministic Ranking & Circular Value Score
+                {t("engine.rankingTitle", "Deterministic Ranking & Circular Value Score")}
               </span>
               <span className="text-xs text-[#0071E3] font-semibold">
-                Objective: {objective.toUpperCase()}
+                {t("engine.objectiveLabel", "Objective")}: {objective.toUpperCase()}
               </span>
             </div>
 
@@ -394,27 +403,27 @@ export const InteractiveEngineSection: React.FC<{ onOpenAuth: (mode: "login" | "
                       </h4>
                       {path.recommended && (
                         <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-[#0071E3] text-white tracking-wider">
-                          Optimal Next Life
+                          {t("engine.optimalBadge", "Optimal Next Life")}
                         </span>
                       )}
                       {!path.eligible && (
                         <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-[#FF3B30]/10 text-[#FF3B30] border border-[#FF3B30]/20">
-                          Ineligible
+                          {t("engine.ineligibleBadge", "Ineligible")}
                         </span>
                       )}
                     </div>
 
                     <div className="flex items-center gap-4 text-xs">
                       <div>
-                        <span className="text-[#86868B] block text-[10px]">Life Added</span>
+                        <span className="text-[#86868B] block text-[10px]">{t("engine.lifeAdded", "Life Added")}</span>
                         <span className="font-semibold text-[#1D1D1F]">{path.lifeExt}</span>
                       </div>
                       <div>
-                        <span className="text-[#86868B] block text-[10px]">Cost</span>
+                        <span className="text-[#86868B] block text-[10px]">{t("engine.cost", "Cost")}</span>
                         <span className="font-semibold text-[#1D1D1F]">{path.cost}</span>
                       </div>
                       <div>
-                        <span className="text-[#86868B] block text-[10px]">Score</span>
+                        <span className="text-[#86868B] block text-[10px]">{t("engine.score", "Score")}</span>
                         <span
                           className={`font-bold ${
                             path.recommended ? "text-[#0071E3] text-sm" : "text-[#6E6E73]"
@@ -436,14 +445,14 @@ export const InteractiveEngineSection: React.FC<{ onOpenAuth: (mode: "login" | "
             {/* Bottom CTA */}
             <div className="mt-8 pt-6 border-t border-[#E5E5E7] flex flex-col sm:flex-row items-center justify-between gap-4">
               <span className="text-xs text-[#6E6E73] text-center sm:text-left">
-                Want to evaluate your own device using real photos and telemetry?
+                {t("engine.ctaQuestion", "Want to evaluate your own device using real photos and telemetry?")}
               </span>
               <button
                 type="button"
                 onClick={() => onOpenAuth("register")}
                 className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-[#0071E3] hover:bg-[#0077ED] text-white text-xs font-semibold transition-all cursor-pointer shadow-xs"
               >
-                <span>Launch Device Scanner</span>
+                <span>{t("engine.ctaBtn", "Launch Device Scanner")}</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>

@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { UserObjective, UserSymptomItem, UserSymptomsData } from "@/types/assessment";
 import { Check, DollarSign, Clock, Leaf, Zap, ArrowLeft } from "lucide-react";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface UserSymptomsStepProps {
   initialData: UserSymptomsData;
@@ -32,6 +33,7 @@ export const UserSymptomsStep: React.FC<UserSymptomsStepProps> = ({
   onComplete,
   onBack,
 }) => {
+  const { t } = useLanguage();
   const [selectedMap, setSelectedMap] = useState<
     Record<string, "never" | "occasionally" | "frequently" | "almost_always">
   >(() => {
@@ -86,7 +88,7 @@ export const UserSymptomsStep: React.FC<UserSymptomsStepProps> = ({
       const found = AVAILABLE_SYMPTOMS.find((s) => s.id === id);
       return {
         symptomId: id,
-        label: found ? found.label : id,
+        label: t(`symptoms.${id}`) || (found ? found.label : id),
         frequency: selectedMap[id],
       };
     });
@@ -101,26 +103,26 @@ export const UserSymptomsStep: React.FC<UserSymptomsStepProps> = ({
   const objectiveOptions = [
     {
       id: "lowest_cost",
-      title: "Lowest cost",
-      desc: "Minimize direct repair & upgrade expenditure",
+      title: t("symptoms.objLowestCost"),
+      desc: t("symptoms.objLowestCostDesc"),
       icon: DollarSign,
     },
     {
       id: "max_life",
-      title: "Maximum remaining life",
-      desc: "Extend device operational life as long as possible",
+      title: t("symptoms.objMaxLife"),
+      desc: t("symptoms.objMaxLifeDesc"),
       icon: Clock,
     },
     {
       id: "environmental",
-      title: "Best environmental outcome",
-      desc: "Maximize material retention and CO₂ reduction",
+      title: t("symptoms.objEnvironmental"),
+      desc: t("symptoms.objEnvironmentalDesc"),
       icon: Leaf,
     },
     {
       id: "fastest_recovery",
-      title: "Fastest way to get usable",
-      desc: "Minimize downtime to resume productivity immediately",
+      title: t("symptoms.objFastest"),
+      desc: t("symptoms.objFastestDesc"),
       icon: Zap,
     },
   ];
@@ -130,11 +132,11 @@ export const UserSymptomsStep: React.FC<UserSymptomsStepProps> = ({
       {/* Header */}
       <div className="mb-8">
         <span className="text-xs font-mono font-bold uppercase px-2.5 py-1 rounded-md bg-amber-50 text-amber-700 border border-amber-200 mb-2 inline-block">
-          USER REPORTED EVIDENCE
+          {t("symptoms.badge")}
         </span>
-        <h2 className="text-3xl font-bold text-[#1D1D1F] tracking-tight">3. User Symptoms</h2>
+        <h2 className="text-3xl font-bold text-[#1D1D1F] tracking-tight">{t("symptoms.title")}</h2>
         <p className="text-[#6E6E73] text-sm sm:text-base mt-1">
-          Tell us what you&apos;ve noticed while using the device.
+          {t("symptoms.subtitle")}
         </p>
       </div>
 
@@ -142,10 +144,10 @@ export const UserSymptomsStep: React.FC<UserSymptomsStepProps> = ({
         {/* 8A Checkboxes */}
         <div className="apple-card p-6 bg-white">
           <h3 className="text-base font-bold text-[#1D1D1F] mb-1">
-            Symptoms & Behaviors Observed
+            {t("symptoms.observedTitle")}
           </h3>
           <p className="text-xs text-[#6E6E73] mb-6">
-            Select all issues that apply to your device experience.
+            {t("symptoms.observedSubtitle")}
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
@@ -168,14 +170,14 @@ export const UserSymptomsStep: React.FC<UserSymptomsStepProps> = ({
                       className="w-4 h-4 rounded text-[#0071E3]"
                     />
                     <span className="text-xs font-bold text-[#1D1D1F] flex-1">
-                      {sym.label}
+                      {t(`symptoms.${sym.id}`) || sym.label}
                     </span>
                   </label>
 
                   {/* 8B Frequency Selector if selected */}
                   {isSelected && (
                     <div className="mt-3 pt-2 border-t border-[#E5E5E7] flex items-center justify-between gap-1">
-                      <span className="text-[10px] font-semibold text-[#86868B]">Frequency:</span>
+                      <span className="text-[10px] font-semibold text-[#86868B]">{t("symptoms.frequencyLabel")}</span>
                       <div className="flex gap-1">
                         {(["occasionally", "frequently", "almost_always"] as const).map((freq) => (
                           <button
@@ -188,7 +190,7 @@ export const UserSymptomsStep: React.FC<UserSymptomsStepProps> = ({
                                 : "bg-white text-[#6E6E73] border border-[#D2D2D7]"
                             }`}
                           >
-                            {freq === "occasionally" ? "Occasional" : freq === "frequently" ? "Frequent" : "Constant"}
+                            {freq === "occasionally" ? t("symptoms.occasional") : freq === "frequently" ? t("symptoms.frequent") : t("symptoms.constant")}
                           </button>
                         ))}
                       </div>
@@ -203,17 +205,17 @@ export const UserSymptomsStep: React.FC<UserSymptomsStepProps> = ({
         {/* 8C Free Text Description */}
         <div className="apple-card p-6 bg-white">
           <h3 className="text-base font-bold text-[#1D1D1F] mb-1">
-            Additional User Description
+            {t("symptoms.descTitle")}
           </h3>
           <p className="text-xs text-[#6E6E73] mb-3">
-            Describe anything else you&apos;ve noticed about performance, battery, or physical state.
+            {t("symptoms.descSubtitle")}
           </p>
 
           <textarea
             rows={3}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            placeholder="Example: The laptop works normally when plugged in but shuts down after about 30 minutes on battery."
+            placeholder={t("symptoms.descPlaceholder")}
             className="w-full p-3 rounded-xl border border-[#D2D2D7] text-sm text-[#1D1D1F] focus:outline-none focus:border-[#0071E3]"
           />
         </div>
@@ -221,10 +223,10 @@ export const UserSymptomsStep: React.FC<UserSymptomsStepProps> = ({
         {/* 8D User Objective */}
         <div className="apple-card p-6 bg-white">
           <h3 className="text-base font-bold text-[#1D1D1F] mb-1">
-            What matters most to you?
+            {t("symptoms.objectiveTitle")}
           </h3>
           <p className="text-xs text-[#6E6E73] mb-6">
-            This objective feeds into ReLoop&apos;s Circular Path Optimizer stage.
+            {t("symptoms.objectiveSubtitle")}
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -272,14 +274,14 @@ export const UserSymptomsStep: React.FC<UserSymptomsStepProps> = ({
               className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full border border-[#D2D2D7] bg-white hover:bg-[#F5F5F7] text-[#1D1D1F] text-sm font-semibold transition-all shadow-xs cursor-pointer"
             >
               <ArrowLeft size={16} />
-              <span>Back to Diagnostics</span>
+              <span>{t("symptoms.backToDiag")}</span>
             </button>
           ) : <div />}
           <button
             type="submit"
             className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-[#0071E3] hover:bg-[#0077ED] text-white text-sm font-semibold transition-all shadow-md cursor-pointer ml-auto"
           >
-            <span>Review Assessment →</span>
+            <span>{t("symptoms.reviewBtn")}</span>
           </button>
         </div>
       </form>

@@ -35,6 +35,7 @@ import {
 } from "@/lib/api";
 import * as XLSX from "xlsx";
 import { jsPDF } from "jspdf";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface AssessedDeviceEngineProps {
   assessmentId: string;
@@ -47,6 +48,7 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
   initialAssessment,
   onOpenAuth,
 }) => {
+  const { t } = useLanguage();
   const [assessment, setAssessment] = useState<any>(initialAssessment || null);
   const [loading, setLoading] = useState<boolean>(!initialAssessment);
   const [objective, setObjective] = useState<"life" | "cost" | "carbon" | "speed">("life");
@@ -1178,7 +1180,7 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
       <div className="max-w-5xl mx-auto px-6 py-24 text-center">
         <div className="w-12 h-12 rounded-full border-4 border-[#0071E3] border-t-transparent animate-spin mx-auto mb-4" />
         <p className="text-sm font-semibold text-[#6E6E73]">
-          Loading your uploaded device assessment...
+          {t("common.loading")}
         </p>
       </div>
     );
@@ -1194,11 +1196,11 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
             className="inline-flex items-center gap-2 text-xs font-semibold text-[#6E6E73] hover:text-[#0071E3] transition-colors group cursor-pointer"
           >
             <ArrowLeft size={15} className="group-hover:-translate-x-0.5 transition-transform" />
-            <span>Back to Device Assessment & Evidence Profile</span>
+            <span>{t("engine.backToAssess")}</span>
           </Link>
 
           <span className="text-[11px] font-mono px-3 py-1 rounded-full bg-white border border-[#E5E5E7] text-[#6E6E73] shadow-2xs">
-            Assessed ID: <span className="text-[#0071E3] font-bold">{assessmentId}</span>
+            {t("engine.assessedId")}: <span className="text-[#0071E3] font-bold">{assessmentId}</span>
           </span>
         </div>
 
@@ -1206,13 +1208,13 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
         <div className="text-center max-w-3xl mx-auto mb-10">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#0071E3]/10 text-[#0071E3] text-xs font-bold mb-3">
             <Sparkles size={14} />
-            <span>CIRCULAR OPTIMIZATION RESULTS</span>
+            <span>{t("engine.resultsBadge")}</span>
           </div>
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-[#1D1D1F] tracking-tight mb-3">
-            Optimal next life for your {fullName}.
+            {fullName ? `${t("engine.resultsTitle")} (${fullName})` : t("engine.resultsTitle")}
           </h1>
           <p className="text-sm sm:text-base text-[#6E6E73] leading-relaxed">
-            ReLoop AI evaluated your uploaded photos, telemetry, and reported symptoms against component wear models to determine the highest-value pathway.
+            {t("engine.resultsSubtitle")}
           </p>
         </div>
 
@@ -1222,9 +1224,9 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
             <div>
               <div className="flex items-center gap-2.5 mb-1">
                 <span className="text-xs font-bold uppercase tracking-wider text-[#0071E3] bg-[#0071E3]/10 px-2.5 py-0.5 rounded-full">
-                  Uploaded & Verified
+                  {t("engine.uploadedVerified")}
                 </span>
-                <span className="text-xs text-[#86868B]">~{deviceAge} Years Old</span>
+                <span className="text-xs text-[#86868B]">~{deviceAge} {t("engine.yearsOld")}</span>
               </div>
               <h2 className="text-2xl font-bold text-[#1D1D1F]">{fullName}</h2>
               <p className="text-xs sm:text-sm text-[#6E6E73] mt-0.5">
@@ -1235,7 +1237,7 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
             <div className="flex items-center gap-2">
               <span className="text-xs font-mono font-bold px-3 py-1.5 rounded-full bg-[#34C759]/10 text-[#34C759] border border-[#34C759]/20 flex items-center gap-1.5">
                 <CheckCircle2 size={14} />
-                <span>8 / 8 Hardware Benchmarks Evaluated</span>
+                <span>8 / 8 {t("engine.benchmarksEvaluated")}</span>
               </span>
             </div>
           </div>
@@ -1243,7 +1245,7 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
           {/* All 8 Tested Diagnostic Benchmarks */}
           <div className="py-5 border-b border-[#F0F0F2]">
             <span className="text-xs font-bold text-[#6E6E73] uppercase tracking-wider block mb-3">
-              Full Diagnostic & Telemetry Suite Benchmarks:
+              {t("engine.suiteTitle")}
             </span>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
               {/* 1. BATTERY */}
@@ -1251,10 +1253,10 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
                 <div className="flex items-center justify-between text-[#6E6E73] mb-1">
                   <div className="flex items-center gap-1.5">
                     <Battery size={13} className="text-[#0071E3]" />
-                    <span className="text-[10px] font-bold uppercase">Battery</span>
+                    <span className="text-[10px] font-bold uppercase">{t("diag.batteryTitle")}</span>
                   </div>
                   <span className={`text-[10px] font-bold uppercase ${batteryHealth < 80 ? "text-[#FF9F0A]" : "text-[#34C759]"}`}>
-                    {batteryHealth < 80 ? "Degraded" : "Good"}
+                    {batteryHealth < 80 ? t("diag.degraded") : t("diag.goodCondition")}
                   </span>
                 </div>
                 <div className="text-sm font-bold text-[#1D1D1F]">
@@ -1267,10 +1269,10 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
                 <div className="flex items-center justify-between text-[#6E6E73] mb-1">
                   <div className="flex items-center gap-1.5">
                     <Cpu size={13} className="text-[#FF3B30]" />
-                    <span className="text-[10px] font-bold uppercase">Thermal</span>
+                    <span className="text-[10px] font-bold uppercase">{t("diag.thermalTitle")}</span>
                   </div>
                   <span className={`text-[10px] font-bold uppercase ${cpuTemp >= 80 ? "text-[#FF3B30]" : "text-[#34C759]"}`}>
-                    {cpuTemp >= 80 ? "Throttling" : "Normal"}
+                    {cpuTemp >= 80 ? t("diag.detected") : t("diag.goodCondition")}
                   </span>
                 </div>
                 <div className="text-sm font-bold text-[#1D1D1F]">
@@ -1283,7 +1285,7 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
                 <div className="flex items-center justify-between text-[#6E6E73] mb-1">
                   <div className="flex items-center gap-1.5">
                     <Layers size={13} className="text-[#0071E3]" />
-                    <span className="text-[10px] font-bold uppercase">RAM / Memory</span>
+                    <span className="text-[10px] font-bold uppercase">{t("diag.ramTitle")}</span>
                   </div>
                   <span className="text-[10px] font-bold uppercase text-[#34C759]">PASS</span>
                 </div>
@@ -1297,7 +1299,7 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
                 <div className="flex items-center justify-between text-[#6E6E73] mb-1">
                   <div className="flex items-center gap-1.5">
                     <HardDrive size={13} className="text-[#34C759]" />
-                    <span className="text-[10px] font-bold uppercase">SSD Storage</span>
+                    <span className="text-[10px] font-bold uppercase">{t("diag.ssdTitle")}</span>
                   </div>
                   <span className="text-[10px] font-bold uppercase text-[#34C759]">PASS</span>
                 </div>
@@ -1311,7 +1313,7 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
                 <div className="flex items-center justify-between text-[#6E6E73] mb-1">
                   <div className="flex items-center gap-1.5">
                     <Monitor size={13} className="text-[#0071E3]" />
-                    <span className="text-[10px] font-bold uppercase">Display Panel</span>
+                    <span className="text-[10px] font-bold uppercase">Display</span>
                   </div>
                   <span className="text-[10px] font-bold uppercase text-[#34C759]">PASS</span>
                 </div>
@@ -1367,11 +1369,9 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
           </div>
 
           {/* Observed Issues from Visual + Diagnostics + Symptoms */}
-
-          {/* Observed Issues from Visual + Diagnostics + Symptoms */}
           <div className="pt-4">
             <span className="text-xs font-bold text-[#6E6E73] uppercase tracking-wider block mb-2">
-              Detected Conditions & Symptoms:
+              {t("engine.detectedIssuesTitle")}
             </span>
             <div className="flex flex-wrap gap-2">
               {detectedIssues.map((issue, idx) => (
@@ -1391,22 +1391,22 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
         <div className="apple-card p-6 bg-white border border-[#E5E5E7] shadow-sm mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
             <div>
-              <h3 className="text-sm font-bold text-[#1D1D1F]">Select Decision Objective</h3>
+              <h3 className="text-sm font-bold text-[#1D1D1F]">{t("engine.selectObjTitle")}</h3>
               <p className="text-xs text-[#6E6E73]">
-                Adjust priorities to recalculate trade-offs between longevity, investment cost, and carbon reduction.
+                {t("engine.selectObjSubtitle")}
               </p>
             </div>
             <span className="text-xs font-semibold text-[#0071E3] shrink-0">
-              Active: {objective === "life" ? "Max Remaining Life" : objective === "cost" ? "Lowest Cost" : objective === "carbon" ? "Eco Impact" : "Fastest Turnaround"}
+              {t("engine.activeObj")}: {objective === "life" ? t("symptoms.objMaxLife") : objective === "cost" ? t("symptoms.objLowestCost") : objective === "carbon" ? t("symptoms.objEnvironmental") : t("symptoms.objFastest")}
             </span>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
-              { key: "life", label: "Max Remaining Life", desc: "Longest lifespan extension", icon: Clock },
-              { key: "cost", label: "Lowest Cost", desc: "Smallest financial outlay", icon: DollarSign },
-              { key: "carbon", label: "Eco Impact", desc: "Highest CO₂ avoided", icon: Leaf },
-              { key: "speed", label: "Fastest Turnaround", desc: "Usable in shortest time", icon: Zap },
+              { key: "life", label: t("symptoms.objMaxLife"), desc: t("symptoms.objMaxLifeDesc"), icon: Clock },
+              { key: "cost", label: t("symptoms.objLowestCost"), desc: t("symptoms.objLowestCostDesc"), icon: DollarSign },
+              { key: "carbon", label: t("symptoms.objEnvironmental"), desc: t("symptoms.objEnvironmentalDesc"), icon: Leaf },
+              { key: "speed", label: t("symptoms.objFastest"), desc: t("symptoms.objFastestDesc"), icon: Zap },
             ].map((obj) => {
               const Icon = obj.icon;
               const isSelected = objective === obj.key;
@@ -1439,10 +1439,10 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
         <div className="mb-12">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-bold uppercase tracking-wider text-[#6E6E73]">
-              Ranked Pathways for {fullName}
+              {t("engine.rankedTitle")}
             </h3>
             <span className="text-xs font-mono text-[#86868B]">
-              Ordered by circular utility index
+              {t("engine.rankedSubtitle")}
             </span>
           </div>
 
@@ -1472,27 +1472,27 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
                     </h4>
                     {path.recommended && (
                       <span className="text-[10px] font-bold uppercase px-2.5 py-0.5 rounded-full bg-[#0071E3] text-white tracking-wider">
-                        Recommended Next Life
+                        {t("engine.recNextLife")}
                       </span>
                     )}
                     {!path.eligible && (
                       <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-[#FF3B30]/10 text-[#FF3B30] border border-[#FF3B30]/20">
-                        Ineligible
+                        {t("engine.ineligible")}
                       </span>
                     )}
                   </div>
 
                   <div className="flex items-center gap-4 text-xs shrink-0">
                     <div>
-                      <span className="text-[#86868B] block text-[10px] uppercase">Life Added</span>
+                      <span className="text-[#86868B] block text-[10px] uppercase">{t("engine.lifeAdded")}</span>
                       <span className="font-bold text-[#1D1D1F]">{path.lifeExt}</span>
                     </div>
                     <div>
-                      <span className="text-[#86868B] block text-[10px] uppercase">Cost</span>
+                      <span className="text-[#86868B] block text-[10px] uppercase">{t("engine.cost")}</span>
                       <span className="font-bold text-[#1D1D1F]">{path.cost}</span>
                     </div>
                     <div>
-                      <span className="text-[#86868B] block text-[10px] uppercase">Score</span>
+                      <span className="text-[#86868B] block text-[10px] uppercase">{t("engine.score")}</span>
                       <span
                         className={`font-extrabold text-sm ${
                           path.recommended ? "text-[#0071E3]" : "text-[#6E6E73]"
@@ -1510,7 +1510,7 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
 
                 {/* Target Components */}
                 <div className="pt-3 border-t border-[#F0F0F2] flex flex-wrap items-center gap-2 text-xs">
-                  <span className="text-[11px] font-semibold text-[#86868B]">Action Plan:</span>
+                  <span className="text-[11px] font-semibold text-[#86868B]">{t("engine.actionPlan")}</span>
                   {path.targetComponents.map((comp: any, cIdx: number) => (
                     <span
                       key={cIdx}
@@ -1520,7 +1520,7 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
                     </span>
                   ))}
                   <span className="text-[11px] text-[#86868B] ml-auto">
-                    Turnaround: <strong className="text-[#1D1D1F]">{path.turnaround}</strong> • {path.co2}
+                    {t("engine.turnaround")} <strong className="text-[#1D1D1F]">{path.turnaround}</strong> • {path.co2}
                   </span>
                 </div>
               </div>
@@ -1537,9 +1537,9 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
                   <Sparkles size={16} />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-[#1D1D1F]">AI Decision Provenance & Narrative</h4>
+                  <h4 className="text-sm font-bold text-[#1D1D1F]">{t("engine.aiNarrative")}</h4>
                   <span className="text-[11px] text-[#86868B]">
-                    Deterministic scoring validated with guarded reasoning
+                    {t("engine.aiNarrativeSub")}
                   </span>
                 </div>
               </div>
@@ -1566,7 +1566,7 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
             {backendRecommendation.explanation.assumptions && backendRecommendation.explanation.assumptions.length > 0 && (
               <div className="pt-3 border-t border-[#F0F0F2]">
                 <span className="text-[10px] font-bold uppercase text-[#86868B] block mb-1">
-                  Engine Assumptions & Constraints:
+                  {t("engine.assumptionsTitle")}
                 </span>
                 <div className="flex flex-wrap gap-1.5">
                   {backendRecommendation.explanation.assumptions.map((assump, aIdx) => (
@@ -1588,31 +1588,31 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
                 <Zap size={16} />
               </div>
               <div>
-                <h4 className="text-sm font-bold text-[#1D1D1F]">Second-Life Deployment Specification</h4>
+                <h4 className="text-sm font-bold text-[#1D1D1F]">{t("engine.secondLifeTitle")}</h4>
                 <span className="text-[11px] text-[#6E6E73]">
-                  Optimized reuse role without unnecessary hardware disposal
+                  {t("engine.secondLifeSub")}
                 </span>
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
               <div className="p-3 bg-white rounded-xl border border-blue-100 shadow-2xs">
-                <span className="text-[10px] font-bold text-[#86868B] uppercase block">Recommended Role</span>
+                <span className="text-[10px] font-bold text-[#86868B] uppercase block">{t("engine.recRole")}</span>
                 <span className="text-xs font-bold text-[#1D1D1F]">{backendRecommendation.second_life.suggested_role}</span>
               </div>
               <div className="p-3 bg-white rounded-xl border border-blue-100 shadow-2xs">
-                <span className="text-[10px] font-bold text-[#86868B] uppercase block">Target User Profile</span>
+                <span className="text-[10px] font-bold text-[#86868B] uppercase block">{t("engine.targetUser")}</span>
                 <span className="text-xs font-bold text-[#1D1D1F]">{backendRecommendation.second_life.target_user}</span>
               </div>
               <div className="p-3 bg-white rounded-xl border border-blue-100 shadow-2xs">
-                <span className="text-[10px] font-bold text-[#86868B] uppercase block">OS Recommendation</span>
+                <span className="text-[10px] font-bold text-[#86868B] uppercase block">{t("engine.osRec")}</span>
                 <span className="text-xs font-bold text-[#0071E3]">{backendRecommendation.second_life.os_recommendation}</span>
               </div>
             </div>
 
             {backendRecommendation.second_life.workloads && (
               <div className="flex flex-wrap gap-1.5 items-center">
-                <span className="text-[11px] text-[#6E6E73] font-semibold">Supported Workloads:</span>
+                <span className="text-[11px] text-[#6E6E73] font-semibold">{t("engine.supportedWorkloads")}</span>
                 {backendRecommendation.second_life.workloads.map((wl, wIdx) => (
                   <span key={wIdx} className="text-[11px] px-2.5 py-0.5 rounded-full bg-white border border-blue-200 text-[#1D1D1F]">
                     {wl}
@@ -1632,14 +1632,14 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
                   <Layers size={16} />
                 </div>
                 <div>
-                  <h4 className="text-sm font-bold text-[#1D1D1F]">Modular Component Recovery Opportunity</h4>
+                  <h4 className="text-sm font-bold text-[#1D1D1F]">{t("engine.recoveryTitle")}</h4>
                   <span className="text-[11px] text-[#6E6E73]">
-                    Preserve high-value silicon before physical materials are processed
+                    {t("engine.recoverySub")}
                   </span>
                 </div>
               </div>
               <span className="text-xs font-bold text-amber-800 bg-amber-100/90 px-3 py-1 rounded-full border border-amber-300">
-                Est. Salvage: ${backendRecommendation.component_recovery.salvage_value_estimate_usd}
+                {t("engine.estSalvage")}: ${backendRecommendation.component_recovery.salvage_value_estimate_usd}
               </span>
             </div>
 
@@ -1662,10 +1662,10 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
         <div className="p-8 rounded-3xl bg-[#1D1D1F] text-white flex flex-col sm:flex-row items-center justify-between gap-6 shadow-2xl">
           <div>
             <h4 className="text-xl font-bold tracking-tight mb-1">
-              Ready to execute this next-life pathway?
+              {t("engine.readyExecuteTitle")}
             </h4>
             <p className="text-xs sm:text-sm text-gray-300">
-              Download the certified repair & lifecycle plan for your {fullName}, or share it with your local repair technician.
+              {t("engine.readyExecuteDesc")}
             </p>
           </div>
 
@@ -1677,7 +1677,7 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
               title="Save report as a printable PDF certificate"
             >
               <FileText size={14} className="text-[#0071E3]" />
-              <span>Save as PDF</span>
+              <span>{t("engine.savePdf")}</span>
             </button>
 
             <button
@@ -1687,14 +1687,14 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
               title="Export complete decision matrix and telemetry to Excel / CSV"
             >
               <FileSpreadsheet size={14} />
-              <span>Export Excel</span>
+              <span>{t("engine.exportExcel")}</span>
             </button>
 
             <Link
               href="/assess-device"
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#0071E3] hover:bg-[#0077ED] text-white text-xs font-semibold transition-all shadow-md cursor-pointer ml-1"
             >
-              <span>Assess Another Device</span>
+              <span>{t("engine.assessAnother")}</span>
               <ArrowRight size={14} />
             </Link>
           </div>

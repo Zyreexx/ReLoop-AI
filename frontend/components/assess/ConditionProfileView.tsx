@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { ComponentConditionRecord } from "@/types/assessment";
+import { useLanguage } from "@/context/LanguageContext";
 import {
   CheckCircle2,
   AlertTriangle,
@@ -41,6 +42,7 @@ export const ConditionProfileView: React.FC<ConditionProfileViewProps> = ({
   manufacturer,
   assessmentId,
 }) => {
+  const { t } = useLanguage();
   // Support state fallback if loaded from direct navigation or storage
   const [deviceModel, setDeviceModel] = useState<string>(confirmedModelName || "");
   const [deviceMfr, setDeviceMfr] = useState<string>(manufacturer || "");
@@ -109,23 +111,23 @@ export const ConditionProfileView: React.FC<ConditionProfileViewProps> = ({
       upper.includes(".JPEG") ||
       upper.includes(".WEBP")
     ) {
-      return { key: "visual", label: "Visual AI", category: "visual" };
+      return { key: "visual", label: t("profile.srcVisual"), category: "visual" };
     }
     if (
       upper.includes("QUESTIONNAIRE") ||
       upper.includes("USER") ||
       upper.includes("SYMPTOM")
     ) {
-      return { key: "user", label: "User Symptoms", category: "user" };
+      return { key: "user", label: t("profile.srcUser"), category: "user" };
     }
     if (
       upper.includes("CATALOG") ||
       upper.includes("SPECIFICATION") ||
-      upper.includes("HARDWARE") && upper.includes("SPEC")
+      (upper.includes("HARDWARE") && upper.includes("SPEC"))
     ) {
-      return { key: "specs", label: "OEM Specs", category: "specs" };
+      return { key: "specs", label: t("profile.srcSpecs"), category: "specs" };
     }
-    return { key: "diagnostic", label: "Diagnostics", category: "diagnostic" };
+    return { key: "diagnostic", label: t("profile.srcDiagnostic"), category: "diagnostic" };
   };
 
   const getDeduplicatedSources = (sourceTypes: string[]): NormalizedSource[] => {
@@ -174,29 +176,29 @@ export const ConditionProfileView: React.FC<ConditionProfileViewProps> = ({
             <div>
               <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                 <span className="text-[10px] font-mono font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full bg-[#0071E3]/10 text-[#0071E3] border border-[#0071E3]/20">
-                  Assessed Laptop Model
+                  {t("profile.modelBadge")}
                 </span>
                 <span className="text-xs font-semibold text-[#34C759] flex items-center gap-1">
                   <CheckCircle2 size={13} />
-                  Condition Profile Active
+                  {t("profile.activeBadge")}
                 </span>
               </div>
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[#1D1D1F] tracking-tight">
                 {fullDeviceName}
               </h1>
               <p className="text-xs sm:text-sm text-[#6E6E73] mt-1.5 max-w-2xl leading-relaxed">
-                Component-level health evaluation synthesized from visual inspection, hardware diagnostics, and reported user symptoms.
+                {t("profile.desc")}
               </p>
             </div>
           </div>
 
           <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center border-t sm:border-t-0 pt-4 sm:pt-0 border-[#F0F0F2] gap-1.5 shrink-0">
             <span className="text-[11px] font-medium text-[#86868B] uppercase tracking-wider">
-              Evaluated Components
+              {t("profile.evaluatedComp")}
             </span>
             <div className="text-2xl font-bold text-[#1D1D1F] flex items-baseline gap-1">
               <span>{conditionProfile.length}</span>
-              <span className="text-xs font-semibold text-[#86868B]">Subsystems</span>
+              <span className="text-xs font-semibold text-[#86868B]">{t("profile.subsystems")}</span>
             </div>
           </div>
         </div>
@@ -249,7 +251,7 @@ export const ConditionProfileView: React.FC<ConditionProfileViewProps> = ({
                     {isGood && <CheckCircle2 size={13} />}
                     {isAttention && <AlertTriangle size={13} />}
                     {isService && <AlertTriangle size={13} />}
-                    {isGood ? "Good" : isAttention ? "Needs Attention" : "Service Required"}
+                    {isGood ? t("profile.statusGood") : isAttention ? t("profile.statusAttention") : t("profile.statusService")}
                   </span>
                 </div>
 
@@ -309,7 +311,7 @@ export const ConditionProfileView: React.FC<ConditionProfileViewProps> = ({
                 <div className="text-[11px] text-[#86868B] flex items-center gap-1">
                   <ShieldCheck size={12} className="text-[#0071E3]" />
                   <span>
-                    {rawEvidenceCount} {rawEvidenceCount === 1 ? "data point" : "data points"}
+                    {rawEvidenceCount} {rawEvidenceCount === 1 ? t("profile.dataPoint") : t("profile.dataPoints")}
                   </span>
                 </div>
               </div>
@@ -325,18 +327,18 @@ export const ConditionProfileView: React.FC<ConditionProfileViewProps> = ({
         </div>
 
         <h3 className="text-2xl font-bold text-[#1D1D1F] tracking-tight mb-2">
-          ReLoop has evaluated {fullDeviceName}&apos;s condition.
+          {t("profile.ctaTitle")}
         </h3>
 
         <p className="text-sm text-[#6E6E73] max-w-xl mx-auto mb-8 leading-relaxed">
-          Your condition profile is saved. Now pass your evidence into ReLoop&apos;s Circular Path Optimizer to calculate repair, upgrade, refurbish, or reuse ROI.
+          {t("profile.ctaDesc")}
         </p>
 
         <Link
           href={`/engine?assessment_id=${assessmentId}`}
           className="inline-flex items-center gap-2.5 px-9 py-4 rounded-full bg-[#0071E3] hover:bg-[#0077ED] text-white text-base font-semibold transition-all duration-200 shadow-lg hover:shadow-xl cursor-pointer"
         >
-          <span>Find my device&apos;s next life</span>
+          <span>{t("profile.ctaBtn")}</span>
           <ArrowRight className="w-5 h-5" />
         </Link>
       </div>
