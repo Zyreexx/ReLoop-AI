@@ -3,96 +3,82 @@
 import React from "react";
 import Link from "next/link";
 import { RefreshCw } from "lucide-react";
+import { useLanguage } from "@/context/LanguageContext";
+import { LanguageSelector } from "@/components/ui/LanguageSelector";
 
 export const Footer: React.FC = () => {
+  const { t } = useLanguage();
+
   return (
     <footer className="bg-[#F5F5F7] text-[#6E6E73] text-[12px] border-t border-[#D2D2D7] pt-12 pb-16">
       <div className="max-w-6xl mx-auto px-6">
         {/* Apple-style Footnotes / Assumptions Disclosures */}
         <div className="pb-8 border-b border-[#D2D2D7] space-y-2 text-[#86868B] leading-relaxed">
-          <p>
-            1. <strong>Lifecycle Extensions:</strong> Expected life extension figures are calculated using component reliability models, assumes compatible OEM replacement parts are available, thermal issues are serviceable, and no latent catastrophic motherboard faults exist.
-          </p>
-          <p>
-            2. <strong>Evidence Integrity:</strong> Photographs provide visible cosmetic and structural observations only. In accordance with ReLoop AI engineering rules, exterior photos are never claimed to prove internal electronic health (e.g. battery chemistry, SSD SMART status, or silicon stability).
-          </p>
-          <p>
-            3. <strong>Avoided Embodied Carbon:</strong> Carbon savings are estimated against average life-cycle assessment (LCA) data for new laptop manufacturing (~180–260 kg CO₂e per typical business laptop).
-          </p>
-          <p>
-            4. <strong>Deterministic Scoring:</strong> ReLoop pathway recommendations are scored via deterministic algorithms in Python. Multimodal AI is utilized for product identification, visible defect detection, and narrative explanations, not for final decision arbitration.
-          </p>
+          <p>{t("footer.disclaimer1")}</p>
+          <p>{t("footer.disclaimer2")}</p>
+          <p>{t("footer.disclaimer3")}</p>
+          <p>{t("footer.disclaimer4")}</p>
         </div>
 
         {/* Directory Links */}
         <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-8 py-10">
           <div>
             <h4 className="font-semibold text-[#1D1D1F] text-[13px] mb-3">
-              Circular Pathways
+              {t("footer.pathways")}
             </h4>
             <ul className="space-y-2.5">
               <li>
-                <a href="#pathways" className="hover:text-[#1D1D1F] transition-colors">
-                  1. Targeted Repair
-                </a>
+                <Link href="/pathways" className="hover:text-[#1D1D1F] transition-colors">
+                  {t("pathways.repair")}
+                </Link>
               </li>
               <li>
-                <a href="#pathways" className="hover:text-[#1D1D1F] transition-colors">
-                  2. Component Upgrade
-                </a>
+                <Link href="/pathways" className="hover:text-[#1D1D1F] transition-colors">
+                  {t("pathways.upgrade")}
+                </Link>
               </li>
               <li>
-                <a href="#pathways" className="hover:text-[#1D1D1F] transition-colors">
-                  3. Full Refurbishment
-                </a>
+                <Link href="/pathways" className="hover:text-[#1D1D1F] transition-colors">
+                  {t("pathways.refurbish")}
+                </Link>
               </li>
               <li>
-                <a href="#pathways" className="hover:text-[#1D1D1F] transition-colors">
-                  4. Secondary Redeployment
-                </a>
+                <Link href="/pathways" className="hover:text-[#1D1D1F] transition-colors">
+                  {t("pathways.reuse")}
+                </Link>
               </li>
               <li>
-                <a href="#pathways" className="hover:text-[#1D1D1F] transition-colors">
-                  5. Component Recovery
-                </a>
+                <Link href="/pathways" className="hover:text-[#1D1D1F] transition-colors">
+                  {t("pathways.recovery")}
+                </Link>
               </li>
               <li>
-                <a href="#pathways" className="hover:text-[#1D1D1F] transition-colors">
-                  6. Material Recycling
-                </a>
+                <Link href="/pathways" className="hover:text-[#1D1D1F] transition-colors">
+                  {t("pathways.recycle")}
+                </Link>
               </li>
             </ul>
           </div>
 
           <div>
             <h4 className="font-semibold text-[#1D1D1F] text-[13px] mb-3">
-              Evidence System
+              {t("footer.evidenceSystem")}
             </h4>
             <ul className="space-y-2.5">
               <li>
-                <a href="#how-it-works" className="hover:text-[#1D1D1F] transition-colors">
-                  Vision AI Intake
-                </a>
+                <Link href="/how-it-works" className="hover:text-[#1D1D1F] transition-colors">
+                  {t("intake.step1")}
+                </Link>
               </li>
               <li>
-                <a href="#how-it-works" className="hover:text-[#1D1D1F] transition-colors">
-                  Diagnostic Telemetry
-                </a>
+                <Link href="/how-it-works" className="hover:text-[#1D1D1F] transition-colors">
+                  {t("intake.step2")}
+                </Link>
               </li>
               <li>
-                <a href="#how-it-works" className="hover:text-[#1D1D1F] transition-colors">
-                  Symptom Parsing
-                </a>
-              </li>
-              <li>
-                <a href="#how-it-works" className="hover:text-[#1D1D1F] transition-colors">
-                  Evidence Provenance Badges
-                </a>
-              </li>
-              <li>
-                <a href="#live-engine" className="hover:text-[#1D1D1F] transition-colors">
-                  Deterministic Optimizer
-                </a>
+                <Link href="/engine" className="hover:text-[#1D1D1F] transition-colors">
+                  {t("intake.step3")}
+                </Link>
               </li>
             </ul>
           </div>
@@ -129,25 +115,22 @@ export const Footer: React.FC = () => {
 
           <div>
             <h4 className="font-semibold text-[#1D1D1F] text-[13px] mb-3">
-              About ReLoop
+              {t("footer.about")}
             </h4>
             <ul className="space-y-2.5">
               <li>
-                <a href="#philosophy" className="hover:text-[#1D1D1F] transition-colors">
-                  Core Philosophy
-                </a>
+                <Link href="/philosophy" className="hover:text-[#1D1D1F] transition-colors">
+                  {t("nav.philosophy")}
+                </Link>
               </li>
               <li>
-                <span>Positioning: The Next-Life Engine</span>
+                <span>{t("brand.tagline")}</span>
               </li>
               <li>
-                <span>Target MVP: Laptop Lifecycle</span>
+                <span>Target: Laptop Lifecycle Optimization</span>
               </li>
               <li>
-                <span>Frontend: Next.js + React + Tailwind</span>
-              </li>
-              <li>
-                <span>Backend: FastAPI + Python Optimizer</span>
+                <span>Deterministic Scoring Engine</span>
               </li>
             </ul>
           </div>
@@ -159,14 +142,17 @@ export const Footer: React.FC = () => {
             <div className="w-5 h-5 rounded-full bg-[#0071E3] flex items-center justify-center text-white">
               <RefreshCw className="w-3 h-3" />
             </div>
-            <span>ReLoop AI</span>
+            <span>{t("brand.name")}</span>
             <span className="text-[#86868B] font-normal text-xs ml-1">
-              • The Next-Life Engine for Products
+              • {t("brand.tagline")}
             </span>
           </div>
 
-          <div className="text-xs text-[#86868B]">
-            Copyright © 2026 ReLoop AI Team. PCCoE International Grand Challenge. All rights reserved.
+          <div className="flex flex-col sm:flex-row items-center gap-4">
+            <LanguageSelector variant="footer" />
+            <div className="text-xs text-[#86868B] text-center sm:text-right">
+              {t("footer.copyright")}
+            </div>
           </div>
         </div>
       </div>

@@ -1,9 +1,9 @@
-"use client";
-
 import React from "react";
 import { Camera, Activity, MessageSquareText, Shield, Database, Cpu, CheckCircle2 } from "lucide-react";
+import { useLanguage } from "@/context/LanguageContext";
 
 export const IntakeWorkflowSection: React.FC = () => {
+  const { t } = useLanguage();
   const steps = [
     {
       step: "01",
@@ -71,13 +71,13 @@ export const IntakeWorkflowSection: React.FC = () => {
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-[#E5E5E7] text-[11px] font-mono font-bold text-[#6E6E73] mb-4 shadow-2xs">
             <span>SECTION 02</span>
             <span>•</span>
-            <span className="text-[#0071E3]">EVIDENCE INTAKE & PROVENANCE</span>
+            <span className="text-[#0071E3]">{t("intake.badge")}</span>
           </div>
           <h2 className="text-[34px] sm:text-[46px] md:text-[52px] font-bold text-[#1D1D1F] tracking-tight leading-tight mb-4">
-            How ReLoop builds the ground truth.
+            {t("intake.title")}
           </h2>
           <p className="text-[17px] text-[#6E6E73] leading-relaxed">
-            Other tools guess. ReLoop enforces evidence integrity. Every recommendation is backed by verifiable, traceable data points.
+            {t("intake.subtitle")}
           </p>
         </div>
 

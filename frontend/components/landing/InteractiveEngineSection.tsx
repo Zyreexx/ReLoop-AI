@@ -1,7 +1,6 @@
-"use client";
-
 import React, { useState } from "react";
 import { Sliders, CheckCircle2, TrendingUp, DollarSign, Clock, Leaf, Zap, ShieldAlert, ArrowRight } from "lucide-react";
+import { useLanguage } from "@/context/LanguageContext";
 
 interface DeviceCase {
   id: string;
@@ -22,6 +21,7 @@ interface DeviceCase {
 export const InteractiveEngineSection: React.FC<{ onOpenAuth: (mode: "login" | "register") => void }> = ({
   onOpenAuth,
 }) => {
+  const { t } = useLanguage();
   const [selectedDevice, setSelectedDevice] = useState<string>("dell5420");
   const [objective, setObjective] = useState<"cost" | "life" | "carbon" | "speed">("life");
 
@@ -243,14 +243,13 @@ export const InteractiveEngineSection: React.FC<{ onOpenAuth: (mode: "login" | "
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#F5F5F7] border border-[#E5E5E7] text-[11px] font-mono font-bold text-[#6E6E73] mb-4">
             <span>SECTION 03</span>
             <span>•</span>
-            <span className="text-[#0071E3]">INTERACTIVE SCORING ENGINE</span>
+            <span className="text-[#0071E3]">{t("engine.badge")}</span>
           </div>
           <h2 className="text-[34px] sm:text-[46px] md:text-[52px] font-bold text-[#1D1D1F] tracking-tight leading-tight mb-4">
-            Test the optimizer in real time.
+            {t("engine.title")}
           </h2>
           <p className="text-[17px] text-[#6E6E73] leading-relaxed">
-            The decision is never a random guess or hallucinated by an LLM.
-            Toggle test cases and priorities below to see the reproducible Python scoring algorithm in action.
+            {t("engine.subtitle")}
           </p>
         </div>
 
@@ -293,10 +292,10 @@ export const InteractiveEngineSection: React.FC<{ onOpenAuth: (mode: "login" | "
               </label>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {[
-                  { key: "life", label: "Max Life", icon: Clock },
-                  { key: "cost", label: "Lowest Cost", icon: DollarSign },
-                  { key: "carbon", label: "Eco Impact", icon: Leaf },
-                  { key: "speed", label: "Fastest Turn", icon: Zap },
+                  { key: "life", label: t("hero.objLife", "Max Life"), icon: Clock },
+                  { key: "cost", label: t("hero.objCost", "Lowest Cost"), icon: DollarSign },
+                  { key: "carbon", label: t("hero.objCarbon", "Eco Impact"), icon: Leaf },
+                  { key: "speed", label: t("hero.objFast", "Fastest Turn"), icon: Zap },
                 ].map((obj) => {
                   const Icon = obj.icon;
                   const isSelected = objective === obj.key;
@@ -312,7 +311,7 @@ export const InteractiveEngineSection: React.FC<{ onOpenAuth: (mode: "login" | "
                       }`}
                     >
                       <Icon className="w-4 h-4" />
-                      <span className="text-[11px] font-semibold">{obj.label}</span>
+                      <span className="text-[11px] font-semibold text-center leading-tight">{obj.label}</span>
                     </button>
                   );
                 })}

@@ -26,8 +26,11 @@ import {
   analyzeVision,
 } from "@/lib/api";
 
+import { useLanguage } from "@/context/LanguageContext";
+
 export default function AssessDevicePage() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
 
@@ -369,10 +372,10 @@ export default function AssessDevicePage() {
                 <Lock className="w-7 h-7" />
               </div>
               <h2 className="text-2xl sm:text-3xl font-bold text-[#1D1D1F] tracking-tight mb-3">
-                Sign in required
+                {t("auth.signInRequired", "Sign in required")}
               </h2>
               <p className="text-sm text-[#6E6E73] leading-relaxed mb-8">
-                Sign in to assess your device and save its condition report.
+                {t("auth.signInRequiredDesc", "Sign in to assess your device and save its condition report.")}
               </p>
 
               <button
@@ -380,7 +383,7 @@ export default function AssessDevicePage() {
                 onClick={() => handleOpenAuth("login")}
                 className="inline-flex items-center justify-center gap-2 w-full py-3.5 px-6 rounded-full bg-[#0071E3] hover:bg-[#0077ED] text-white font-semibold text-sm transition-all shadow-md cursor-pointer"
               >
-                <span>Sign In / Create Account</span>
+                <span>{t("auth.signInOrCreate", "Sign In / Create Account")}</span>
                 <ArrowRight size={16} />
               </button>
             </div>
@@ -392,10 +395,13 @@ export default function AssessDevicePage() {
             <div className="bg-white border-b border-[#E5E5E7] py-8 px-6 text-center">
               <div className="max-w-3xl mx-auto">
                 <h1 className="text-3xl sm:text-4xl font-bold text-[#1D1D1F] tracking-tight mb-2">
-                  Assess your device
+                  {t("assess.header", "Assess your device")}
                 </h1>
                 <p className="text-sm sm:text-base text-[#6E6E73] leading-relaxed">
-                  Give ReLoop the evidence it needs to understand your device&apos;s current condition and determine its next best life.
+                  {t(
+                    "assess.subtitle",
+                    "Give ReLoop the evidence it needs to understand your device's current condition and determine its next best life."
+                  )}
                 </p>
               </div>
             </div>

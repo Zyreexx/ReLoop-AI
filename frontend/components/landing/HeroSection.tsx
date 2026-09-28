@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import { useLanguage } from "@/context/LanguageContext";
 import {
   ArrowRight,
   BatteryCharging,
@@ -36,6 +37,7 @@ interface MarqueeLaptop {
 
 export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenAuth }) => {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"dell" | "mac" | "thinkpad">("dell");
 
@@ -362,24 +364,20 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenAuth }) => {
           <div className="flex justify-center mb-6">
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#E8E8ED]/90 backdrop-blur-md text-[#1D1D1F] text-[12px] font-medium tracking-wide shadow-xs border border-white/60">
               <span className="w-2 h-2 rounded-full bg-[#34C759] animate-pulse" />
-              <span>PCCoE International Grand Challenge 2026</span>
-              <span className="text-[#86868B]">•</span>
-              <span className="text-[#0071E3] font-semibold">Circular Economy</span>
+              <span>{t("hero.badge")}</span>
             </div>
           </div>
 
           {/* Hero Headline */}
           <h1 className="text-[42px] sm:text-[56px] md:text-[68px] font-bold text-[#1D1D1F] tracking-tight leading-[1.06] mb-6 drop-shadow-2xs">
-            Don&apos;t replace the whole machine.
+            {t("hero.title1")}
             <br />
-            <span className="text-[#0071E3]">Give it a next life.</span>
+            <span className="text-[#0071E3]">{t("hero.titleHighlight")}</span>
           </h1>
 
           {/* Hero Subtitle */}
           <p className="text-[18px] sm:text-[21px] text-[#1D1D1F] font-semibold max-w-2xl mx-auto leading-relaxed mb-10">
-            Laptops are routinely discarded when just one component slows down.
-            ReLoop AI blends photos, hardware diagnostics, and reported symptoms
-            to calculate the highest-value circular pathway.
+            {t("hero.subtitle")}
           </p>
 
           {/* CTAs */}
@@ -389,7 +387,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenAuth }) => {
               onClick={handleAssessClick}
               className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-[#0071E3] hover:bg-[#0077ED] text-white text-[15px] font-semibold transition-all duration-200 shadow-md hover:shadow-lg cursor-pointer"
             >
-              <span>Assess Your Laptop</span>
+              <span>{t("hero.assessBtn")}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
 
@@ -397,14 +395,14 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenAuth }) => {
               href="#live-engine"
               className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-white hover:bg-[#FBFBFD] text-[#1D1D1F] border border-[#D2D2D7] text-[15px] font-medium transition-all duration-200 cursor-pointer shadow-xs hover:border-[#1D1D1F]"
             >
-              <span>Test Decision Engine</span>
+              <span>{t("portals.engineBtn")}</span>
             </a>
 
             <a
               href="#pathways"
               className="inline-flex items-center gap-1.5 text-[14px] font-medium text-[#0071E3] hover:underline px-3 py-2"
             >
-              <span>See the 6 pathways</span>
+              <span>{t("hero.exploreBtn")}</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </a>
           </div>

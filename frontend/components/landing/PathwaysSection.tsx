@@ -15,6 +15,8 @@ import {
   ChevronRight,
 } from "lucide-react";
 
+import { useLanguage } from "@/context/LanguageContext";
+
 interface PathwayData {
   id: string;
   order: number;
@@ -32,6 +34,7 @@ interface PathwayData {
 }
 
 export const PathwaysSection: React.FC = () => {
+  const { t } = useLanguage();
   const [activePathway, setActivePathway] = useState<string>("repair");
 
   const pathways: PathwayData[] = [
@@ -167,14 +170,13 @@ export const PathwaysSection: React.FC = () => {
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#F5F5F7] border border-[#E5E5E7] text-[11px] font-mono font-bold text-[#6E6E73] mb-4">
             <span>SECTION 01</span>
             <span>•</span>
-            <span className="text-[#0071E3]">CIRCULAR HIERARCHY</span>
+            <span className="text-[#0071E3]">{t("pathways.badge")}</span>
           </div>
           <h2 className="text-[34px] sm:text-[46px] md:text-[52px] font-bold text-[#1D1D1F] tracking-tight leading-tight mb-4">
-            Six pathways. One optimal next life.
+            {t("pathways.title")}
           </h2>
           <p className="text-[17px] text-[#6E6E73] leading-relaxed">
-            Existing e-waste systems default straight to shredding and recycling.
-            ReLoop prioritizes value retention by evaluating loops from highest to lowest utility.
+            {t("pathways.subtitle")}
           </p>
         </div>
 
@@ -183,6 +185,7 @@ export const PathwaysSection: React.FC = () => {
           {pathways.map((p) => {
             const Icon = p.icon;
             const isSelected = activePathway === p.id;
+            const translatedTitle = t(`pathways.${p.id}`, p.title);
             return (
               <button
                 key={p.id}
@@ -198,7 +201,7 @@ export const PathwaysSection: React.FC = () => {
                   {p.order}
                 </span>
                 <Icon className="w-3.5 h-3.5" />
-                <span>{p.title}</span>
+                <span>{translatedTitle}</span>
               </button>
             );
           })}
@@ -225,14 +228,14 @@ export const PathwaysSection: React.FC = () => {
               </div>
 
               <h3 className="text-2xl sm:text-3xl font-bold text-[#1D1D1F] tracking-tight mb-2">
-                {current.title}
+                {t(`pathways.${current.id}`, current.title)}
               </h3>
               <p className="text-sm font-medium text-[#0071E3] mb-4">
                 {current.subtitle}
               </p>
 
               <p className="text-sm sm:text-[15px] text-[#6E6E73] leading-relaxed mb-6">
-                {current.description}
+                {t(`pathways.${current.id}Desc`, current.description)}
               </p>
 
               {/* Eligibility Criteria */}
