@@ -4,7 +4,6 @@ import React from "react";
 import Link from "next/link";
 import { RefreshCw } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
-import { LanguageSelector } from "@/components/ui/LanguageSelector";
 
 export const Footer: React.FC = () => {
   const { t } = useLanguage();
@@ -148,8 +147,7 @@ export const Footer: React.FC = () => {
             </span>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-center gap-4">
-            <LanguageSelector variant="footer" />
+          <div className="flex items-center">
             <div className="text-xs text-[#86868B] text-center sm:text-right">
               {t("footer.copyright")}
             </div>

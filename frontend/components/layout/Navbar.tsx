@@ -84,11 +84,8 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth }) => {
 
           {/* Actions */}
           <div className="hidden md:flex items-center gap-2.5">
-            {/* Language Selector Dropdown */}
-            <LanguageSelector variant="navbar" />
-
             {user ? (
-              <div className="flex items-center gap-3 pl-2">
+              <div className="flex items-center gap-3">
                 <div className="flex items-center gap-2">
                   {user.picture ? (
                     <img
@@ -126,11 +123,14 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth }) => {
             <button
               type="button"
               onClick={handleAssessDeviceClick}
-              className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-white bg-[#0071E3] hover:bg-[#0077ED] px-4 py-2 rounded-full transition-all duration-200 cursor-pointer shadow-xs hover:shadow-sm ml-1"
+              className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-white bg-[#0071E3] hover:bg-[#0077ED] px-4 py-2 rounded-full transition-all duration-200 cursor-pointer shadow-xs hover:shadow-sm"
             >
               <span>{t("nav.assessDevice")}</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
+
+            {/* Language Selector Dropdown - positioned on the far right */}
+            <LanguageSelector variant="navbar" className="ml-1" />
           </div>
 
           {/* Mobile hamburger */}
