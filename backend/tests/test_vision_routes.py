@@ -23,6 +23,7 @@ from app.services.vision import (
     filter_visible_findings,
     evaluate_identification_confidence,
     validate_image_roles,
+    _is_model_text_in_labels,
 )
 
 
@@ -540,6 +541,162 @@ def test_evaluate_identification_confidence_unit_matrix():
         model_confidence=0.99,
     )
     assert conf == ConfidenceLevel.UNKNOWN
+
+
+def test_vision_confidence_family_name_alone_does_not_qualify_high():
+    """
+    Tests that pure family/series names (Latitude, ThinkPad, EliteBook, MacBook) alone
+    never qualify as HIGH confidence without specific model numbers.
+    """
+    dell_cand = ProductCandidate(
+        manufacturer="Dell",
+        model="Latitude 5420",
+        model_year=2021,
+        confidence=ConfidenceLevel.HIGH,
+        specs=ProductSpecs(),
+    )
+    lenovo_cand = ProductCandidate(
+        manufacturer="Lenovo",
+        model="ThinkPad T14 Gen 1",
+        model_year=2020,
+        confidence=ConfidenceLevel.HIGH,
+        specs=ProductSpecs(),
+    )
+    hp_cand = ProductCandidate(
+        manufacturer="HP",
+        model="EliteBook 840 G7",
+        model_year=2020,
+        confidence=ConfidenceLevel.HIGH,
+        specs=ProductSpecs(),
+    )
+    apple_cand = ProductCandidate(
+        manufacturer="Apple",
+        model="MacBook Air (M1, 2020)",
+        model_year=2020,
+        confidence=ConfidenceLevel.HIGH,
+        specs=ProductSpecs(),
+    )
+
+    # 1. Family name alone -> _is_model_text_in_labels is False, confidence is MEDIUM (not HIGH)
+    assert not _is_model_text_in_labels(dell_cand, ["Latitude"])
+    conf_dell = evaluate_identification_confidence(
+        candidate=dell_cand,
+        candidate_id="C2",
+        label_evidence=["Latitude"],
+        visual_evidence=[],
+        contradictions=[],
+    )
+    assert conf_dell != ConfidenceLevel.HIGH
+    assert conf_dell == ConfidenceLevel.MEDIUM
+
+    assert not _is_model_text_in_labels(lenovo_cand, ["ThinkPad"])
+    conf_lenovo = evaluate_identification_confidence(
+        candidate=lenovo_cand,
+        candidate_id="C4",
+        label_evidence=["ThinkPad"],
+        visual_evidence=[],
+        contradictions=[],
+    )
+    assert conf_lenovo != ConfidenceLevel.HIGH
+    assert conf_lenovo == ConfidenceLevel.MEDIUM
+
+    assert not _is_model_text_in_labels(hp_cand, ["EliteBook"])
+    conf_hp = evaluate_identification_confidence(
+        candidate=hp_cand,
+        candidate_id="C3",
+        label_evidence=["EliteBook"],
+        visual_evidence=[],
+        contradictions=[],
+    )
+    assert conf_hp != ConfidenceLevel.HIGH
+    assert conf_hp == ConfidenceLevel.MEDIUM
+
+    assert not _is_model_text_in_labels(apple_cand, ["MacBook"])
+    assert not _is_model_text_in_labels(apple_cand, ["MacBook Air"])
+    conf_apple = evaluate_identification_confidence(
+        candidate=apple_cand,
+        candidate_id="C1",
+        label_evidence=["MacBook Air"],
+        visual_evidence=[],
+        contradictions=[],
+    )
+    assert conf_apple != ConfidenceLevel.HIGH
+    assert conf_apple == ConfidenceLevel.MEDIUM
+
+    # 2. Full model name -> _is_model_text_in_labels is True, confidence is HIGH
+    assert _is_model_text_in_labels(dell_cand, ["Latitude 5420"])
+    assert _is_model_text_in_labels(dell_cand, ["Dell Latitude 5420"])
+    conf_full = evaluate_identification_confidence(
+        candidate=dell_cand,
+        candidate_id="C2",
+        label_evidence=["Latitude 5420"],
+    )
+    assert conf_full == ConfidenceLevel.HIGH
+
+    # 3. Specific model number alone -> _is_model_text_in_labels is True, confidence is HIGH
+    assert _is_model_text_in_labels(dell_cand, ["5420"])
+    conf_num = evaluate_identification_confidence(
+        candidate=dell_cand,
+        candidate_id="C2",
+        label_evidence=["5420"],
+    )
+    assert conf_num == ConfidenceLevel.HIGH
+
+    # 4. M1 digit-bearing token for MacBook Air (M1, 2020) -> True and HIGH
+    # 'M1' contains the digit '1' and is an unambiguous specific silicon/model identifier
+    assert _is_model_text_in_labels(apple_cand, ["M1"])
+    conf_m1 = evaluate_identification_confidence(
+        candidate=apple_cand,
+        candidate_id="C1",
+        label_evidence=["M1"],
+    )
+    assert conf_m1 == ConfidenceLevel.HIGH
+
+
+def test_ambiguity_guard_with_synthetic_candidates():
+    """
+    Tests that digit-bearing identifiers that overlap or conflict across candidates
+    are rejected by the ambiguity guard to prevent false HIGH confidence.
+    """
+    cand_a = ProductCandidate(
+        manufacturer="Acme",
+        model="Pro 14",
+        model_year=2021,
+        confidence=ConfidenceLevel.HIGH,
+        specs=ProductSpecs(),
+    )
+    cand_b = ProductCandidate(
+        manufacturer="Acme",
+        model="Pro 140",
+        model_year=2021,
+        confidence=ConfidenceLevel.HIGH,
+        specs=ProductSpecs(),
+    )
+    synthetic_catalog = [cand_a, cand_b]
+
+    # '14' is a substring of '140' -> Ambiguous! Neither bare number qualifies for HIGH
+    assert not _is_model_text_in_labels(cand_a, ["14"], catalog_candidates=synthetic_catalog)
+    assert not _is_model_text_in_labels(cand_b, ["140"], catalog_candidates=synthetic_catalog)
+
+    conf_a = evaluate_identification_confidence(
+        candidate=cand_a,
+        candidate_id="C1",
+        label_evidence=["14"],
+        catalog_candidates=synthetic_catalog,
+    )
+    assert conf_a != ConfidenceLevel.HIGH
+
+    conf_b = evaluate_identification_confidence(
+        candidate=cand_b,
+        candidate_id="C2",
+        label_evidence=["140"],
+        catalog_candidates=synthetic_catalog,
+    )
+    assert conf_b != ConfidenceLevel.HIGH
+
+    # Exact full model strings still pass and achieve HIGH
+    assert _is_model_text_in_labels(cand_a, ["Pro 14"], catalog_candidates=synthetic_catalog)
+    assert _is_model_text_in_labels(cand_b, ["Pro 140"], catalog_candidates=synthetic_catalog)
 
 
 # ============================================================================

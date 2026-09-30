@@ -115,30 +115,102 @@ def validate_image_roles(image_roles: Optional[List[str]], image_count: int) -> 
     return normalized
 
 
-def _is_model_text_in_labels(candidate: Optional[ProductCandidate], label_evidence: List[str]) -> bool:
+def _extract_digit_tokens(model_name: str) -> List[str]:
+    """
+    Extracts lowercase tokens from a model string that contain at least one digit.
+    Pure alphabetic words (e.g. Latitude, ThinkPad, EliteBook, MacBook, Air) are excluded.
+    """
+    cleaned = re.sub(r"[(),/\-_]", " ", model_name.lower())
+    tokens = [t.strip() for t in cleaned.split() if t.strip()]
+    return [t for t in tokens if any(c.isdigit() for c in t)]
+
+
+def _is_identifier_ambiguous(
+    ident: str,
+    candidate: ProductCandidate,
+    catalog_candidates: Optional[List[ProductCandidate]] = None,
+) -> bool:
+    """
+    Checks if a digit-bearing identifier is ambiguous across catalog candidates.
+    An identifier is ambiguous if it matches or overlaps with a digit token from another candidate.
+    """
+    if not catalog_candidates:
+        return False
+
+    cand_model_norm = candidate.model.strip().lower()
+    cand_mfr_norm = candidate.manufacturer.strip().lower()
+
+    for other in catalog_candidates:
+        if not other:
+            continue
+        if (
+            other.model.strip().lower() == cand_model_norm
+            and other.manufacturer.strip().lower() == cand_mfr_norm
+        ):
+            continue
+
+        other_digit_tokens = _extract_digit_tokens(other.model)
+        for ot in other_digit_tokens:
+            # Exact token collision (e.g. both have '15' or '2020')
+            if ident == ot:
+                return True
+            # Substring collision for multi-character tokens (e.g. '14' vs '140')
+            if len(ident) >= 2 and len(ot) >= 2:
+                if ident in ot or ot in ident:
+                    return True
+            # Single digit token being matched is ambiguous if present inside another model's token
+            if len(ident) == 1 and ident in ot:
+                return True
+
+    return False
+
+
+def _is_model_text_in_labels(
+    candidate: Optional[ProductCandidate],
+    label_evidence: List[str],
+    catalog_candidates: Optional[List[ProductCandidate]] = None,
+) -> bool:
     """
     Checks if readable model-specific text or model number matching the chosen candidate
     is present in label_evidence.
+
+    Pure family/series names (e.g. 'Latitude', 'ThinkPad', 'EliteBook', 'MacBook') alone
+    do NOT qualify as model-specific text. Only full model names or unambiguous digit-bearing
+    model numbers/identifiers qualify.
     """
     if not candidate or not label_evidence:
         return False
     combined_labels = " ".join(label_evidence).lower()
 
-    # Full model name check
+    # 1. Full model name check
     model_lower = candidate.model.lower()
     if model_lower in combined_labels:
         return True
 
-    # Check key model identifiers and numbers (e.g. '5420', '840', 't14', 'm1', 'a2337', 'g7')
-    cleaned_model = re.sub(r"[(),]", " ", model_lower)
-    tokens = [t.strip() for t in cleaned_model.split() if len(t.strip()) >= 2]
-    specific_identifiers = [
-        t for t in tokens if any(c.isdigit() for c in t) or len(t) >= 4
-    ]
+    full_name = f"{candidate.manufacturer.lower()} {model_lower}"
+    if full_name in combined_labels:
+        return True
+
+    cleaned_model_full = re.sub(r"[(),/\-_]", " ", model_lower)
+    cleaned_model_collapsed = " ".join(cleaned_model_full.split())
+    if cleaned_model_collapsed and cleaned_model_collapsed in combined_labels:
+        return True
+
+    # 2. Check key digit-bearing model identifiers and numbers (e.g. '5420', '840', 't14', 'm1', 'g7')
+    specific_identifiers = _extract_digit_tokens(candidate.model)
+    if not specific_identifiers:
+        return False
+
+    if catalog_candidates is None:
+        try:
+            catalog_candidates = get_all_models()
+        except Exception:
+            catalog_candidates = []
 
     for ident in specific_identifiers:
-        if re.search(r"\b" + re.escape(ident) + r"\b", combined_labels) or ident in combined_labels:
-            return True
+        if re.search(r"\b" + re.escape(ident) + r"\b", combined_labels):
+            if not _is_identifier_ambiguous(ident, candidate, catalog_candidates):
+                return True
 
     return False
 
@@ -207,6 +279,7 @@ def evaluate_identification_confidence(
     visual_evidence: Optional[List[str]] = None,
     contradictions: Optional[List[str]] = None,
     model_confidence: float = 0.0,
+    catalog_candidates: Optional[List[ProductCandidate]] = None,
 ) -> ConfidenceLevel:
     """
     Deterministic confidence policy for product identification.
@@ -232,7 +305,7 @@ def evaluate_identification_confidence(
 
     # 3. HIGH:
     # Readable model text in label_evidence matching candidate
-    if _is_model_text_in_labels(candidate, labels):
+    if _is_model_text_in_labels(candidate, labels, catalog_candidates=catalog_candidates):
         return ConfidenceLevel.HIGH
 
     # OR >= 3 distinct visual_evidence items and no contradictions
@@ -445,6 +518,7 @@ class VisionService:
             visual_evidence=ai_res.visual_evidence,
             contradictions=ai_res.contradictions,
             model_confidence=ai_res.model_confidence,
+            catalog_candidates=all_supported,
         )
 
         if conf_level == ConfidenceLevel.UNKNOWN or candidate_obj is None:
