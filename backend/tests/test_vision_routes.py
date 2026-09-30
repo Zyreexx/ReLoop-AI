@@ -162,8 +162,8 @@ def test_identify_exact_label_match_evaluates_to_high(client: TestClient):
     assert len(data["label_evidence"]) >= 1
 
 
-def test_identify_distinct_visual_clues_without_contradiction_evaluates_to_high(client: TestClient):
-    """At least 3 distinct visual_evidence items and no contradictions -> HIGH."""
+def test_identify_distinct_visual_clues_without_contradiction_evaluates_to_medium(client: TestClient):
+    """Visual-only evidence (even >= 3 items) caps at MEDIUM confidence (HIGH requires specific model text in labels)."""
     mock_ai_output = CatalogIdentificationOutput(
         candidate_id="C2",
         label_evidence=[],
@@ -183,7 +183,7 @@ def test_identify_distinct_visual_clues_without_contradiction_evaluates_to_high(
     assert res.status_code == 200
     data = res.json()
     assert data["candidate_id"] == "C2"
-    assert data["confidence_level"] == ConfidenceLevel.HIGH.value
+    assert data["confidence_level"] == ConfidenceLevel.MEDIUM.value
 
 
 def test_identify_brand_only_evaluates_to_medium(client: TestClient):
@@ -454,7 +454,7 @@ def test_evaluate_identification_confidence_unit_matrix():
     )
     assert conf == ConfidenceLevel.HIGH
 
-    # 2. 3 visual items, no contradictions -> HIGH
+    # 2. 3 visual items, no contradictions -> MEDIUM (visual-only evidence caps at MEDIUM)
     conf = evaluate_identification_confidence(
         candidate=cand,
         candidate_id="C2",
@@ -463,7 +463,7 @@ def test_evaluate_identification_confidence_unit_matrix():
         contradictions=[],
         model_confidence=0.1,
     )
-    assert conf == ConfidenceLevel.HIGH
+    assert conf == ConfidenceLevel.MEDIUM
 
     # 3. Brand only in label -> MEDIUM
     conf = evaluate_identification_confidence(
@@ -1057,3 +1057,102 @@ def test_demo_fallback_true_for_unsupported_hint_returns_unknown(client: TestCli
     data_loq = res_loq.json()
     assert data_loq["status"] == "UNKNOWN"
     assert data_loq["identified_model"] is None
+
+
+# ============================================================================
+# 8. Open-Ended Laptop Vision Identification Tests
+# ============================================================================
+
+def test_identify_non_catalog_laptop_with_specific_label_evaluates_to_high(client: TestClient):
+    """Laptops not in the 4-model catalog identify successfully with HIGH confidence when specific model label is present."""
+    mock_ai_output = CatalogIdentificationOutput(
+        manufacturer="Acer",
+        model="Aspire 5 A515-56",
+        model_year=2021,
+        label_evidence=["Acer Aspire 5 Model A515-56-50RS"],
+        visual_evidence=["Silver sandblasted aluminum top cover", "Elevated hinge design"],
+        contradictions=[],
+        model_confidence=0.95,
+    )
+
+    with patch.object(gemini_client, "generate_structured", return_value=mock_ai_output):
+        files = [("images", ("acer_bottom.jpg", BytesIO(VALID_JPEG), "image/jpeg"))]
+        res = client.post("/api/products/identify", files=files)
+
+    assert res.status_code == 200
+    data = res.json()
+    assert data["status"] == "IDENTIFIED"
+    assert data["confidence_level"] == ConfidenceLevel.HIGH.value
+    assert data["identified_model"]["manufacturer"] == "Acer"
+    assert data["identified_model"]["model"] == "Aspire 5 A515-56"
+    assert data["identified_model"]["model_year"] == 2021
+
+
+def test_identify_non_catalog_laptop_bare_family_name_alone_is_not_high(client: TestClient):
+    """Bare family name like 'Aspire' alone without model number designator evaluates to MEDIUM, not HIGH."""
+    mock_ai_output = CatalogIdentificationOutput(
+        manufacturer="Acer",
+        model="Aspire 5 A515-56",
+        model_year=2021,
+        label_evidence=["Acer Aspire"],
+        visual_evidence=["Silver chassis", "Acer logo"],
+        contradictions=[],
+        model_confidence=0.88,
+    )
+
+    with patch.object(gemini_client, "generate_structured", return_value=mock_ai_output):
+        files = [("images", ("acer_lid.jpg", BytesIO(VALID_JPEG), "image/jpeg"))]
+        res = client.post("/api/products/identify", files=files)
+
+    assert res.status_code == 200
+    data = res.json()
+    assert data["status"] == "IDENTIFIED"
+    assert data["confidence_level"] == ConfidenceLevel.MEDIUM.value
+    assert data["identified_model"]["manufacturer"] == "Acer"
+    assert data["identified_model"]["model"] == "Aspire 5 A515-56"
+
+
+def test_identify_non_catalog_asus_zenbook_visual_only_caps_at_medium(client: TestClient):
+    """Non-catalog ASUS ZenBook identified via visual clues caps at MEDIUM confidence."""
+    mock_ai_output = CatalogIdentificationOutput(
+        manufacturer="ASUS",
+        model="ZenBook 14 UX425",
+        model_year=2020,
+        label_evidence=[],
+        visual_evidence=["Spun-metal concentric circle finish on lid", "ErgoLift hinge", "NumberPad 2.0 in touchpad"],
+        contradictions=[],
+        model_confidence=0.85,
+    )
+
+    with patch.object(gemini_client, "generate_structured", return_value=mock_ai_output):
+        files = [("images", ("asus_zenbook.jpg", BytesIO(VALID_JPEG), "image/jpeg"))]
+        res = client.post("/api/products/identify", files=files)
+
+    assert res.status_code == 200
+    data = res.json()
+    assert data["status"] == "IDENTIFIED"
+    assert data["confidence_level"] == ConfidenceLevel.MEDIUM.value
+    assert data["identified_model"]["manufacturer"] == "ASUS"
+    assert data["identified_model"]["model"] == "ZenBook 14 UX425"
+
+
+def test_identify_open_ended_with_ambiguous_bare_number_in_isolation():
+    """An ambiguous digit in isolation without brand context does not evaluate to HIGH confidence."""
+    cand = ProductCandidate(
+        manufacturer="GenericBrand",
+        model="Model 15",
+        model_year=2022,
+        confidence=ConfidenceLevel.HIGH,
+        specs=ProductSpecs(),
+    )
+
+    # Label only has bare '15' without brand context
+    conf = evaluate_identification_confidence(
+        candidate=cand,
+        label_evidence=["15"],
+        visual_evidence=[],
+        contradictions=[],
+        model_confidence=0.9,
+    )
+    assert conf != ConfidenceLevel.HIGH
+
