@@ -2,7 +2,7 @@
   "manufacturer": "Lenovo",
   "model": "ThinkPad T14 Gen 1",
   "slug": "lenovo-thinkpad-t14-gen-1",
-  "aliases": ["lenovo-thinkpad-t14", "lenovo-thinkpad-t490", "thinkpad-t14", "thinkpad-t490"],
+  "aliases": ["lenovo-thinkpad-t14", "lenovo-thinkpad-t490", "thinkpad-t14", "thinkpad-t490", "thinkpad t14 gen 1", "thinkpad t14", "t14 gen 1", "t14"],
   "model_year": 2020,
   "category": "LAPTOP",
   "specs": {

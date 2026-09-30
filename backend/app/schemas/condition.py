@@ -48,6 +48,7 @@ class AssessmentBuildRequest(BaseModel):
 class AssessmentBuildResponse(BaseModel):
     product_id: str
     overall_hardware_health: str = Field("FAIR", description="GOOD, FAIR, DEGRADED, CRITICAL")
+    is_generic_assessment: bool = False
     components: Dict[str, ComponentCondition] = Field(default_factory=dict)
     all_evidence: List[Evidence] = Field(default_factory=list)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))

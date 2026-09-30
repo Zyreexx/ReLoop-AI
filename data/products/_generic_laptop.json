@@ -1,0 +1,111 @@
+{
+  "manufacturer": "Generic",
+  "model": "General Laptop",
+  "slug": "generic-laptop",
+  "aliases": ["generic-laptop", "general-laptop", "general laptop", "generic", "generic laptop"],
+  "model_year": 2021,
+  "category": "LAPTOP",
+  "is_generic": true,
+  "specs": {
+    "category": "LAPTOP",
+    "ram_modular": true,
+    "ssd_modular": true,
+    "battery_replaceable": true,
+    "display_size_inches": 14.0,
+    "weight_kg": 1.50,
+    "baseline_embodied_co2_kg": 280.0,
+    "estimated_original_msrp_usd": 1000.0
+  },
+  "component_configuration": {
+    "cpu": "Standard Multi-Core Laptop Processor",
+    "ram_slots": 2,
+    "max_ram_gb": 32,
+    "ram_type": "DDR4 / DDR5 SO-DIMM",
+    "storage_interface": "1x M.2 PCIe NVMe SSD",
+    "battery_capacity_wh": 50.0,
+    "display_resolution": "1920x1080 FHD",
+    "chassis_material": "Standard polymer / aluminum composite"
+  },
+  "compatible_parts": {
+    "battery": ["Standard OEM-compatible replacement battery pack"],
+    "ssd": ["M.2 2280 PCIe NVMe SSD"],
+    "ram": ["Standard DDR4/DDR5 SODIMM module"]
+  },
+  "repairability_score": {
+    "score": 6.5,
+    "max_score": 10.0,
+    "source": "Category Baseline Index",
+    "basis": "GENERIC_CATEGORY_ESTIMATE",
+    "note": "Broad category estimate: Standard notebook architecture with modular storage and memory."
+  },
+  "typical_repair_cost_inr": {
+    "battery": {
+      "min": 2500,
+      "max": 5000,
+      "basis": "GENERIC_CATEGORY_ESTIMATE",
+      "note": "Broad category estimate for replacement laptop battery pack in India market."
+    },
+    "ssd": {
+      "min": 2500,
+      "max": 6000,
+      "basis": "GENERIC_CATEGORY_ESTIMATE",
+      "note": "Broad category estimate for standard M.2 NVMe SSD replacement (512GB-1TB)."
+    },
+    "ram": {
+      "min": 1800,
+      "max": 4000,
+      "basis": "GENERIC_CATEGORY_ESTIMATE",
+      "note": "Broad category estimate for standard DDR4/DDR5 SO-DIMM memory upgrade/replacement."
+    },
+    "keyboard": {
+      "min": 2000,
+      "max": 4000,
+      "basis": "GENERIC_CATEGORY_ESTIMATE",
+      "note": "Broad category estimate for replacement laptop keyboard assembly."
+    },
+    "thermals": {
+      "min": 800,
+      "max": 2000,
+      "basis": "GENERIC_CATEGORY_ESTIMATE",
+      "note": "Broad category estimate for thermal paste repaste and cooling fan cleaning/service."
+    },
+    "display": {
+      "min": 4000,
+      "max": 8000,
+      "basis": "GENERIC_CATEGORY_ESTIMATE",
+      "note": "Broad category estimate for 14-15.6 inch 1080p replacement display panel."
+    },
+    "motherboard": {
+      "min": 8000,
+      "max": 18000,
+      "basis": "GENERIC_CATEGORY_ESTIMATE",
+      "note": "Broad category estimate for system logic board component repair or replacement."
+    }
+  },
+  "expected_useful_life": {
+    "baseline_years": 5.0,
+    "extended_years_post_repair": 2.5,
+    "basis": "GENERIC_CATEGORY_ESTIMATE",
+    "note": "Broad category estimate: Standard consumer/commercial notebook useful life baseline."
+  },
+  "resale_recovery_values_inr": {
+    "working_a_grade": {
+      "min": 18000,
+      "max": 28000,
+      "basis": "GENERIC_CATEGORY_ESTIMATE",
+      "note": "Broad category estimate for working A-grade refurbished laptop."
+    },
+    "working_b_grade": {
+      "min": 12000,
+      "max": 20000,
+      "basis": "GENERIC_CATEGORY_ESTIMATE",
+      "note": "Broad category estimate for working B-grade refurbished laptop with minor cosmetic wear."
+    },
+    "parts_salvage": {
+      "min": 3500,
+      "max": 7500,
+      "basis": "GENERIC_CATEGORY_ESTIMATE",
+      "note": "Broad category estimate for salvage value of functional modular components (RAM, SSD, screen)."
+    }
+  }
+}
