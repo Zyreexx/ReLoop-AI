@@ -126,6 +126,20 @@ class ReportService:
                 profile=profile,
             )
 
+        from app.knowledge.loader import match_catalog_model
+        is_generic = (
+            getattr(product, "is_generic", False)
+            or getattr(product, "is_generic_assessment", False)
+            or getattr(profile, "is_generic_assessment", False)
+            or getattr(recommendation, "is_generic_assessment", False)
+            or match_catalog_model(product.manufacturer, product.model) is None
+        )
+
+        if is_generic:
+            generic_report_note = "General laptop category estimate applied (not specific to exact model hardware)."
+            if generic_report_note not in deduped_assumptions:
+                deduped_assumptions.append(generic_report_note)
+
         # 8. Construct and return ConditionReportResponse
         return ConditionReportResponse(
             id=assessment_id,
@@ -136,6 +150,7 @@ class ReportService:
             recommendation=recommendation,
             alternative_pathways=recommendation.alternative_pathways or [],
             impact_estimates=impact,
+            is_generic_assessment=is_generic,
             assumptions=deduped_assumptions,
             data_gaps=data_gaps,
             explanation=recommendation.explanation,

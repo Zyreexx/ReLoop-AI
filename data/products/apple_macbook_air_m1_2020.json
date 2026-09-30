@@ -2,7 +2,7 @@
   "manufacturer": "Apple",
   "model": "MacBook Air (M1, 2020)",
   "slug": "apple-macbook-air-m1-2020",
-  "aliases": ["macbook-air-m1", "macbook-air-2020", "macbook-pro-13-2019", "apple-macbook-pro-13-2019"],
+  "aliases": ["macbook-air-m1", "macbook-air-2020", "macbook-pro-13-2019", "apple-macbook-pro-13-2019", "macbook air m1", "macbook air (m1, 2020)", "macbook air 2020", "macbook air", "m1 2020", "m1"],
   "model_year": 2020,
   "category": "LAPTOP",
   "specs": {

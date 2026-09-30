@@ -25,6 +25,10 @@ from app.config import settings
 from app.db.repositories import product_repo, evidence_repo
 from app.db.store import store
 from app.errors import AppError, ErrorCode
+from app.knowledge.loader import (
+    match_catalog_model,
+    get_generic_laptop_profile,
+)
 from app.knowledge.models_catalog import (
     get_all_models,
     lookup_model,
@@ -398,6 +402,15 @@ class VisionService:
         Applies deterministic confidence policy and returns auditable evidence.
         """
         all_supported = get_all_models()
+        generic_prof = get_generic_laptop_profile()
+        generic_specs = ProductSpecs(**generic_prof["specs"]) if isinstance(generic_prof.get("specs"), dict) else ProductSpecs()
+        generic_candidate = ProductCandidate(
+            manufacturer="Generic",
+            model="General Laptop",
+            model_year=2021,
+            confidence=ConfidenceLevel.HIGH,
+            specs=generic_specs,
+        )
         target_model = manual_model or model_id or hint
 
         # 1. Demo fallback mode explicit flag
@@ -407,6 +420,28 @@ class VisionService:
 
         # 2. Manual path: client sends manual_model or model_id directly
         if target_model and not image_bytes_list:
+            # Check generic model request
+            target_norm = target_model.strip().lower()
+            if target_norm in ["generic-laptop", "general-laptop", "general laptop", "generic", "generic laptop"]:
+                return ProductIdentifyResponse(
+                    status=IdentificationStatus.IDENTIFIED,
+                    identified_model=generic_candidate,
+                    candidate_id="GENERIC",
+                    is_supported=False,
+                    confidence=1.0,
+                    confidence_level=ConfidenceLevel.HIGH,
+                    needs_confirmation=True,
+                    requires_user_confirmation=True,
+                    visual_clues=["General laptop category profile selected manually"],
+                    label_evidence=["Manual selection: General Laptop"],
+                    visual_evidence=["User manual confirmation"],
+                    contradictions=[],
+                    supported_models=all_supported,
+                    generic_fallback_available=True,
+                    generic_model=generic_candidate,
+                    source="manual",
+                )
+
             matched = lookup_model(target_model)
             if matched:
                 cand = ProductCandidate(
@@ -436,6 +471,8 @@ class VisionService:
                     visual_evidence=["User manual confirmation"],
                     contradictions=[],
                     supported_models=all_supported,
+                    generic_fallback_available=True,
+                    generic_model=generic_candidate,
                     source="manual",
                 )
             else:
@@ -450,7 +487,9 @@ class VisionService:
                     needs_confirmation=True,
                     requires_user_confirmation=True,
                     supported_models=all_supported,
-                    message=f"Model '{target_model}' is not in the supported catalog. Please select a supported model.",
+                    generic_fallback_available=True,
+                    generic_model=generic_candidate,
+                    message=f"Model '{target_model}' is not in the supported catalog. Please select a supported model or continue with a general laptop assessment.",
                     source="manual",
                 )
 
@@ -465,6 +504,8 @@ class VisionService:
                 needs_confirmation=True,
                 requires_user_confirmation=True,
                 supported_models=all_supported,
+                generic_fallback_available=True,
+                generic_model=generic_candidate,
                 message="Please upload product images or select a model manually.",
                 source="live",
             )
@@ -519,6 +560,8 @@ class VisionService:
                 needs_confirmation=True,
                 requires_user_confirmation=True,
                 supported_models=all_supported,
+                generic_fallback_available=True,
+                generic_model=generic_candidate,
                 message="AI identification is temporarily unavailable. Please select your model manually to continue.",
                 source="live",
             )
@@ -536,29 +579,36 @@ class VisionService:
                 raw_model = c_info.model
 
         candidate_obj = None
-        if raw_mfr and raw_mfr.upper() != "UNKNOWN" and raw_model and raw_model.upper() != "UNKNOWN":
-            # Match catalog if present to retain detailed specs if available
-            catalog_match = None
-            for m in all_supported:
-                if m.manufacturer.lower() == raw_mfr.lower() and m.model.lower() == raw_model.lower():
-                    catalog_match = m
-                    break
+        is_catalog_matched = False
+        c_id = raw_candidate_id
 
+        if raw_mfr and raw_mfr.upper() != "UNKNOWN" and raw_model and raw_model.upper() != "UNKNOWN":
+            # Match catalog using robust match_catalog_model
+            catalog_match = match_catalog_model(raw_mfr, raw_model)
             if catalog_match:
+                is_catalog_matched = True
+                specs_data = catalog_match.get("specs", {})
+                specs_obj = ProductSpecs(**specs_data) if isinstance(specs_data, dict) else ProductSpecs()
                 candidate_obj = ProductCandidate(
-                    manufacturer=catalog_match.manufacturer,
-                    model=catalog_match.model,
-                    model_year=ai_res.model_year or catalog_match.model_year,
+                    manufacturer=catalog_match.get("manufacturer", raw_mfr),
+                    model=catalog_match.get("model", raw_model),
+                    model_year=ai_res.model_year or catalog_match.get("model_year", 2021),
                     confidence=ConfidenceLevel.HIGH,
-                    specs=catalog_match.specs,
+                    specs=specs_obj,
                 )
+                if not c_id:
+                    for item in get_catalog_candidates_with_ids():
+                        if item["slug"] == catalog_match.get("slug"):
+                            c_id = item["candidate_id"]
+                            break
             else:
+                is_catalog_matched = False
                 candidate_obj = ProductCandidate(
                     manufacturer=raw_mfr,
                     model=raw_model,
                     model_year=ai_res.model_year or 2021,
                     confidence=ConfidenceLevel.HIGH,
-                    specs=ProductSpecs(),
+                    specs=generic_specs,
                 )
 
         conf_level = evaluate_identification_confidence(
@@ -572,7 +622,7 @@ class VisionService:
         )
 
         if conf_level == ConfidenceLevel.UNKNOWN or candidate_obj is None:
-            # Downgraded or unknown -> return UNKNOWN status
+            # Downgraded or unknown -> return UNKNOWN status with generic fallback option
             return ProductIdentifyResponse(
                 status=IdentificationStatus.UNKNOWN,
                 identified_model=None,
@@ -588,20 +638,14 @@ class VisionService:
                 needs_confirmation=True,
                 requires_user_confirmation=True,
                 supported_models=all_supported,
+                generic_fallback_available=True,
+                generic_model=generic_candidate,
                 message="Model could not be identified from photos. Your device may not be in the currently supported catalog. Please select your model manually to continue.",
                 source="live",
             )
 
         candidate_obj.confidence = conf_level
         num_conf = 0.95 if conf_level == ConfidenceLevel.HIGH else (0.75 if conf_level == ConfidenceLevel.MEDIUM else 0.5)
-
-        # Match catalog candidate_id if present
-        c_id = raw_candidate_id
-        if not c_id:
-            for item in get_catalog_candidates_with_ids():
-                if item["manufacturer"].lower() == candidate_obj.manufacturer.lower() and item["model"].lower() == candidate_obj.model.lower():
-                    c_id = item["candidate_id"]
-                    break
 
         alternatives = [
             m for m in all_supported
@@ -612,7 +656,7 @@ class VisionService:
             status=IdentificationStatus.IDENTIFIED,
             identified_model=candidate_obj,
             candidate_id=c_id,
-            is_supported=True,
+            is_supported=is_catalog_matched,
             confidence=num_conf,
             confidence_level=conf_level,
             visible_label_text="; ".join(ai_res.label_evidence) if ai_res.label_evidence else None,
@@ -624,6 +668,8 @@ class VisionService:
             requires_user_confirmation=True,
             alternative_models=alternatives,
             supported_models=all_supported,
+            generic_fallback_available=True,
+            generic_model=generic_candidate,
             source="live",
         )
 

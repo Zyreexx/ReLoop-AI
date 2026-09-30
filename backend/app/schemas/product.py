@@ -34,6 +34,8 @@ class Product(BaseModel):
     serial_or_identifier: Optional[str] = None
     age: float = Field(..., ge=0.0, description="Product age in years")
     specs: ProductSpecs = Field(default_factory=ProductSpecs)
+    is_generic: bool = False
+    is_generic_assessment: bool = False
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     @model_validator(mode="before")
@@ -44,6 +46,10 @@ class Product(BaseModel):
                 values["age"] = values["age_years"]
             elif "age" not in values and "model_year" in values:
                 values["age"] = max(0.5, float(2026 - int(values["model_year"])))
+            if "is_generic" in values and "is_generic_assessment" not in values:
+                values["is_generic_assessment"] = values["is_generic"]
+            elif "is_generic_assessment" in values and "is_generic" not in values:
+                values["is_generic"] = values["is_generic_assessment"]
         return values
 
     @property
@@ -103,6 +109,8 @@ class ProductIdentifyResponse(BaseModel):
     requires_user_confirmation: bool = True
     alternative_models: List[ProductCandidate] = Field(default_factory=list)
     supported_models: List[ProductCandidate] = Field(default_factory=list)
+    generic_fallback_available: bool = True
+    generic_model: Optional[ProductCandidate] = None
     message: Optional[str] = None
     source: str = Field("live", description="live | sample-data | manual")
 

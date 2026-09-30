@@ -60,6 +60,7 @@ class Recommendation(BaseModel):
     evidence_ids: List[str] = Field(default_factory=list)
     assumptions: List[str] = Field(default_factory=list)
     explanation: Optional[RecommendationExplanation] = None
+    is_generic_assessment: bool = False
 
     # UI and enrichment helpers
     primary_recommendation: Optional[ScoredPathway] = None

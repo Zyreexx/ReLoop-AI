@@ -34,6 +34,7 @@ class ConditionReportResponse(BaseModel):
     recommendation: Recommendation
     alternative_pathways: List[ScoredPathway | Any] = Field(default_factory=list)
     impact_estimates: ReportImpactEstimates
+    is_generic_assessment: bool = False
     assumptions: List[str] = Field(default_factory=list)
     data_gaps: List[str] = Field(default_factory=list)
     explanation: Optional[RecommendationExplanation] = None
