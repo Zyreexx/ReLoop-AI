@@ -18,6 +18,7 @@ from app.ai.prompt_loader import load_prompt
 from app.ai.schemas import (
     ModelIdentificationOutput,
     CatalogIdentificationOutput,
+    OpenIdentificationOutput,
     DamageAssessmentOutput,
 )
 from app.config import settings
@@ -76,12 +77,17 @@ ALLOWED_IMAGE_ROLES: Set[str] = {
 }
 
 KNOWN_BRAND_FAMILIES: Dict[str, List[str]] = {
-    "dell": ["dell", "latitude", "xps", "inspiron", "precision", "alienware", "vostro"],
+    "dell": ["dell", "latitude", "xps", "inspiron", "precision", "alienware", "vostro", "g-series"],
     "apple": ["apple", "macbook", "macbook air", "macbook pro", "imac"],
-    "hp": ["hp", "hewlett", "elitebook", "probook", "spectre", "pavilion", "omen", "victus", "envy"],
-    "lenovo": ["lenovo", "thinkpad", "ideapad", "legion", "yoga", "loq"],
-    "asus": ["asus", "zenbook", "vivobook", "rog", "tuf"],
-    "acer": ["acer", "aspire", "swift", "nitro", "predator"],
+    "hp": ["hp", "hewlett", "elitebook", "probook", "spectre", "pavilion", "omen", "victus", "envy", "zbook"],
+    "lenovo": ["lenovo", "thinkpad", "ideapad", "legion", "yoga", "loq", "thinkbook"],
+    "asus": ["asus", "zenbook", "vivobook", "rog", "tuf", "expertbook", "proart"],
+    "acer": ["acer", "aspire", "swift", "nitro", "predator", "spin", "travelmate", "conceptd"],
+    "microsoft": ["microsoft", "surface", "surface pro", "surface laptop", "surface book"],
+    "samsung": ["samsung", "galaxy book", "notebook"],
+    "msi": ["msi", "stealth", "raider", "katana", "prestige", "modern", "creator"],
+    "razer": ["razer", "blade"],
+    "lg": ["lg", "gram"],
 }
 
 
@@ -118,7 +124,7 @@ def validate_image_roles(image_roles: Optional[List[str]], image_count: int) -> 
 def _extract_digit_tokens(model_name: str) -> List[str]:
     """
     Extracts lowercase tokens from a model string that contain at least one digit.
-    Pure alphabetic words (e.g. Latitude, ThinkPad, EliteBook, MacBook, Air) are excluded.
+    Pure alphabetic words (e.g. Latitude, ThinkPad, EliteBook, MacBook, Air, Aspire) are excluded.
     """
     cleaned = re.sub(r"[(),/\-_]", " ", model_name.lower())
     tokens = [t.strip() for t in cleaned.split() if t.strip()]
@@ -129,11 +135,27 @@ def _is_identifier_ambiguous(
     ident: str,
     candidate: ProductCandidate,
     catalog_candidates: Optional[List[ProductCandidate]] = None,
+    combined_labels: str = "",
 ) -> bool:
     """
-    Checks if a digit-bearing identifier is ambiguous across catalog candidates.
-    An identifier is ambiguous if it matches or overlaps with a digit token from another candidate.
+    Checks if a digit-bearing identifier is ambiguous.
+    1. If catalog_candidates is provided, checks if it matches or overlaps with another candidate's token.
+    2. In open-ended context: if the identifier is generic/ambiguous in isolation
+       (e.g. bare 1-digit like '1', or bare 2-digit number like '14'/'15' with no brand/family context in labels),
+       it is treated as ambiguous.
     """
+    if len(ident) <= 1:
+        return True
+
+    if ident.isdigit() and len(ident) == 2:
+        cand_mfr = candidate.manufacturer.lower().strip()
+        cand_keywords = KNOWN_BRAND_FAMILIES.get(cand_mfr, [cand_mfr])
+        if cand_mfr not in cand_keywords:
+            cand_keywords = [cand_mfr] + cand_keywords
+        has_brand_context = any(bk in combined_labels for bk in cand_keywords)
+        if not has_brand_context:
+            return True
+
     if not catalog_candidates:
         return False
 
@@ -174,7 +196,7 @@ def _is_model_text_in_labels(
     Checks if readable model-specific text or model number matching the chosen candidate
     is present in label_evidence.
 
-    Pure family/series names (e.g. 'Latitude', 'ThinkPad', 'EliteBook', 'MacBook') alone
+    Pure family/series names (e.g. 'Latitude', 'ThinkPad', 'EliteBook', 'MacBook', 'Aspire') alone
     do NOT qualify as model-specific text. Only full model names or unambiguous digit-bearing
     model numbers/identifiers qualify.
     """
@@ -183,33 +205,28 @@ def _is_model_text_in_labels(
     combined_labels = " ".join(label_evidence).lower()
 
     # 1. Full model name check
-    model_lower = candidate.model.lower()
-    if model_lower in combined_labels:
-        return True
+    model_lower = candidate.model.lower().strip()
+    if model_lower and model_lower != "unknown":
+        if model_lower in combined_labels:
+            return True
 
-    full_name = f"{candidate.manufacturer.lower()} {model_lower}"
-    if full_name in combined_labels:
-        return True
+        full_name = f"{candidate.manufacturer.lower().strip()} {model_lower}"
+        if full_name in combined_labels:
+            return True
 
-    cleaned_model_full = re.sub(r"[(),/\-_]", " ", model_lower)
-    cleaned_model_collapsed = " ".join(cleaned_model_full.split())
-    if cleaned_model_collapsed and cleaned_model_collapsed in combined_labels:
-        return True
+        cleaned_model_full = re.sub(r"[(),/\-_]", " ", model_lower)
+        cleaned_model_collapsed = " ".join(cleaned_model_full.split())
+        if cleaned_model_collapsed and cleaned_model_collapsed in combined_labels:
+            return True
 
-    # 2. Check key digit-bearing model identifiers and numbers (e.g. '5420', '840', 't14', 'm1', 'g7')
+    # 2. Check key digit-bearing model identifiers and numbers (e.g. '5420', '840', 't14', 'm1', 'g7', 'a515')
     specific_identifiers = _extract_digit_tokens(candidate.model)
     if not specific_identifiers:
         return False
 
-    if catalog_candidates is None:
-        try:
-            catalog_candidates = get_all_models()
-        except Exception:
-            catalog_candidates = []
-
     for ident in specific_identifiers:
         if re.search(r"\b" + re.escape(ident) + r"\b", combined_labels):
-            if not _is_identifier_ambiguous(ident, candidate, catalog_candidates):
+            if not _is_identifier_ambiguous(ident, candidate, catalog_candidates, combined_labels):
                 return True
 
     return False
@@ -227,13 +244,16 @@ def _has_contradiction(
     if any(c.strip() for c in contradictions if c):
         return True
 
-    if not candidate:
+    if not candidate or not candidate.manufacturer or candidate.manufacturer.strip().upper() == "UNKNOWN":
         return False
 
-    cand_mfr = candidate.manufacturer.lower()
+    cand_mfr = candidate.manufacturer.lower().strip()
     cand_keywords = KNOWN_BRAND_FAMILIES.get(cand_mfr, [cand_mfr])
+    if cand_mfr not in cand_keywords:
+        cand_keywords = [cand_mfr] + cand_keywords
+
     combined_labels = " ".join(label_evidence).lower()
-    cand_brand_found = any(bk in combined_labels for bk in cand_keywords)
+    cand_brand_found = any(re.search(r"\b" + re.escape(bk) + r"\b", combined_labels) for bk in cand_keywords)
 
     for other_mfr, other_keywords in KNOWN_BRAND_FAMILIES.items():
         if other_mfr == cand_mfr:
@@ -255,10 +275,12 @@ def _is_manufacturer_clear(
     """
     Checks if manufacturer brand is clearly present in label_evidence or visual clues.
     """
-    if not candidate:
+    if not candidate or not candidate.manufacturer or candidate.manufacturer.strip().upper() == "UNKNOWN":
         return False
-    cand_mfr = candidate.manufacturer.lower()
+    cand_mfr = candidate.manufacturer.lower().strip()
     cand_keywords = KNOWN_BRAND_FAMILIES.get(cand_mfr, [cand_mfr])
+    if cand_mfr not in cand_keywords:
+        cand_keywords = [cand_mfr] + cand_keywords
 
     combined_labels = " ".join(label_evidence).lower()
     combined_visual = " ".join(visual_evidence).lower()
@@ -274,7 +296,7 @@ def _is_manufacturer_clear(
 
 def evaluate_identification_confidence(
     candidate: Optional[ProductCandidate],
-    candidate_id: Optional[str],
+    candidate_id: Optional[str] = None,
     label_evidence: Optional[List[str]] = None,
     visual_evidence: Optional[List[str]] = None,
     contradictions: Optional[List[str]] = None,
@@ -285,34 +307,39 @@ def evaluate_identification_confidence(
     Deterministic confidence policy for product identification.
     Never upgrades based on Gemini's numeric confidence alone.
 
-    - HIGH: readable model text in label_evidence that matches the chosen candidate,
-            OR at least 3 distinct visual_evidence items and no contradictions.
-    - MEDIUM: manufacturer clear but exact model not confirmed by label text.
-    - LOW: only generic visual similarity.
-    - UNKNOWN: candidate_id is UNKNOWN or evidence is insufficient.
+    - HIGH: readable specific model text in label_evidence that matches the chosen candidate,
+            with no contradictions.
+    - MEDIUM: manufacturer brand clear in label/visuals but exact model not confirmed by label text,
+              OR visual-only evidence with >= 2 distinct items and no contradictions.
+    - LOW: only generic visual similarity (>= 1 visual item).
+    - UNKNOWN: candidate is UNKNOWN, model is UNKNOWN, contradictions exist, or evidence is insufficient.
     """
     labels = [l.strip() for l in (label_evidence or []) if l and l.strip()]
     visuals = [v.strip() for v in (visual_evidence or []) if v and v.strip()]
     contra = [c.strip() for c in (contradictions or []) if c and c.strip()]
 
     # 1. Unknown or missing candidate
-    if not candidate or not candidate_id or candidate_id.strip().upper() == "UNKNOWN":
+    if (
+        not candidate
+        or not candidate.manufacturer
+        or candidate.manufacturer.strip().upper() == "UNKNOWN"
+        or not candidate.model
+        or candidate.model.strip().upper() == "UNKNOWN"
+    ):
+        return ConfidenceLevel.UNKNOWN
+
+    if candidate_id and candidate_id.strip().upper() == "UNKNOWN":
         return ConfidenceLevel.UNKNOWN
 
     # 2. Contradiction check
     if _has_contradiction(candidate, labels, visuals, contra):
         return ConfidenceLevel.UNKNOWN
 
-    # 3. HIGH:
-    # Readable model text in label_evidence matching candidate
+    # 3. HIGH: Readable specific model text in label_evidence matching candidate
     if _is_model_text_in_labels(candidate, labels, catalog_candidates=catalog_candidates):
         return ConfidenceLevel.HIGH
 
-    # OR >= 3 distinct visual_evidence items and no contradictions
-    if len(visuals) >= 3 and not contra:
-        return ConfidenceLevel.HIGH
-
-    # 4. MEDIUM: manufacturer clear but exact model not confirmed by label text
+    # 4. MEDIUM: visual-only evidence caps at MEDIUM (>= 2 visual items or manufacturer clear)
     if _is_manufacturer_clear(candidate, labels, visuals):
         return ConfidenceLevel.MEDIUM
 
@@ -453,11 +480,9 @@ class VisionService:
             image_roles_context = ""
 
         hint_context = f"User hint: {hint}" if hint else ""
-        candidate_list_str = format_candidates_for_prompt()
 
         prompt_obj = load_prompt("vision_identify", "v2")
         prompt_text = prompt_obj.format(
-            candidate_list=candidate_list_str,
             image_roles_context=image_roles_context,
             hint_context=hint_context,
         )
@@ -465,9 +490,9 @@ class VisionService:
         active_gemini = GeminiClient(api_key=api_key) if api_key else gemini_client
 
         try:
-            ai_res: CatalogIdentificationOutput = active_gemini.generate_structured(
+            ai_res: OpenIdentificationOutput = active_gemini.generate_structured(
                 prompt=prompt_text,
-                response_model=CatalogIdentificationOutput,
+                response_model=OpenIdentificationOutput,
                 images=image_bytes_list,
                 media_resolution=settings.GEMINI_MEDIA_RESOLUTION,
             )
@@ -498,18 +523,43 @@ class VisionService:
                 source="live",
             )
 
-        raw_candidate_id = (ai_res.candidate_id or "").strip().upper()
-        candidate_data = get_candidate_by_id(raw_candidate_id)
+        raw_mfr = (ai_res.manufacturer or "").strip()
+        raw_model = (ai_res.model or "").strip()
+        raw_candidate_id = (ai_res.candidate_id or "").strip().upper() if ai_res.candidate_id else None
+
+        # Fallback to legacy candidate_id if manufacturer/model not directly populated
+        if (not raw_mfr or raw_mfr.upper() == "UNKNOWN") and raw_candidate_id and raw_candidate_id != "UNKNOWN":
+            candidate_data = get_candidate_by_id(raw_candidate_id)
+            if candidate_data:
+                c_info = candidate_data["candidate"]
+                raw_mfr = c_info.manufacturer
+                raw_model = c_info.model
+
         candidate_obj = None
-        if candidate_data:
-            c_info = candidate_data["candidate"]
-            candidate_obj = ProductCandidate(
-                manufacturer=c_info.manufacturer,
-                model=c_info.model,
-                model_year=c_info.model_year,
-                confidence=c_info.confidence,
-                specs=c_info.specs,
-            )
+        if raw_mfr and raw_mfr.upper() != "UNKNOWN" and raw_model and raw_model.upper() != "UNKNOWN":
+            # Match catalog if present to retain detailed specs if available
+            catalog_match = None
+            for m in all_supported:
+                if m.manufacturer.lower() == raw_mfr.lower() and m.model.lower() == raw_model.lower():
+                    catalog_match = m
+                    break
+
+            if catalog_match:
+                candidate_obj = ProductCandidate(
+                    manufacturer=catalog_match.manufacturer,
+                    model=catalog_match.model,
+                    model_year=ai_res.model_year or catalog_match.model_year,
+                    confidence=ConfidenceLevel.HIGH,
+                    specs=catalog_match.specs,
+                )
+            else:
+                candidate_obj = ProductCandidate(
+                    manufacturer=raw_mfr,
+                    model=raw_model,
+                    model_year=ai_res.model_year or 2021,
+                    confidence=ConfidenceLevel.HIGH,
+                    specs=ProductSpecs(),
+                )
 
         conf_level = evaluate_identification_confidence(
             candidate=candidate_obj,
@@ -522,7 +572,7 @@ class VisionService:
         )
 
         if conf_level == ConfidenceLevel.UNKNOWN or candidate_obj is None:
-            # Downgraded or unknown -> return manual picker with UNKNOWN status
+            # Downgraded or unknown -> return UNKNOWN status
             return ProductIdentifyResponse(
                 status=IdentificationStatus.UNKNOWN,
                 identified_model=None,
@@ -545,6 +595,14 @@ class VisionService:
         candidate_obj.confidence = conf_level
         num_conf = 0.95 if conf_level == ConfidenceLevel.HIGH else (0.75 if conf_level == ConfidenceLevel.MEDIUM else 0.5)
 
+        # Match catalog candidate_id if present
+        c_id = raw_candidate_id
+        if not c_id:
+            for item in get_catalog_candidates_with_ids():
+                if item["manufacturer"].lower() == candidate_obj.manufacturer.lower() and item["model"].lower() == candidate_obj.model.lower():
+                    c_id = item["candidate_id"]
+                    break
+
         alternatives = [
             m for m in all_supported
             if not (m.manufacturer.lower() == candidate_obj.manufacturer.lower() and m.model.lower() == candidate_obj.model.lower())
@@ -553,7 +611,7 @@ class VisionService:
         return ProductIdentifyResponse(
             status=IdentificationStatus.IDENTIFIED,
             identified_model=candidate_obj,
-            candidate_id=raw_candidate_id,
+            candidate_id=c_id,
             is_supported=True,
             confidence=num_conf,
             confidence_level=conf_level,
