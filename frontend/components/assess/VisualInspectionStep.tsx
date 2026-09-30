@@ -26,11 +26,16 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
   onComplete,
 }) => {
   const { t } = useLanguage();
-  const [images, setImages] = useState<string[]>(initialData.images || []);
-  const [rawFiles, setRawFiles] = useState<File[]>(initialData.rawFiles || []);
+  const [images, setImages] = useState<string[]>(initialData?.images || []);
+  const [rawFiles, setRawFiles] = useState<File[]>(initialData?.rawFiles || []);
   const [analyzing, setAnalyzing] = useState(false);
   const [analyzed, setAnalyzed] = useState(
-    Boolean(initialData.identifiedProduct?.model && initialData.identifiedProduct.confirmed)
+    Boolean(
+      initialData?.images &&
+      initialData.images.length > 0 &&
+      initialData.identifiedProduct?.model &&
+      initialData.identifiedProduct.confirmed
+    )
   );
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [scanStatusText, setScanStatusText] = useState("Analyzing laptop with Gemini Vision...");
@@ -43,7 +48,7 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
   >(MVP_SUPPORTED_MODELS);
 
   const [identifiedProduct, setIdentifiedProduct] = useState(
-    initialData.identifiedProduct?.model
+    initialData?.identifiedProduct?.model
       ? initialData.identifiedProduct
       : {
           manufacturer: "",
@@ -55,11 +60,30 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
   );
 
   const [visibleObservations, setVisibleObservations] = useState<VisualObservation[]>(
-    initialData.visibleObservations || []
+    initialData?.visibleObservations || []
   );
 
   const [showModelPicker, setShowModelPicker] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Sync state if initialData is reset or cleared
+  useEffect(() => {
+    if (!initialData || !initialData.images || initialData.images.length === 0) {
+      setImages([]);
+      setRawFiles([]);
+      setAnalyzed(false);
+      setErrorMsg(null);
+      setShowModelPicker(false);
+      setIdentifiedProduct({
+        manufacturer: "",
+        model: "",
+        confidence: 0,
+        confirmed: false,
+        visible_label_text: null,
+      });
+      setVisibleObservations([]);
+    }
+  }, [initialData]);
 
   // Load stored custom Gemini key if any
   useEffect(() => {
@@ -89,7 +113,6 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
       .catch((err) => console.log("[ReLoop] Using local model catalog fallback", err.message));
   }, []);
 
-
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
     const files = Array.from(e.target.files);
@@ -98,6 +121,7 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
 
   const processFiles = (files: File[]) => {
     setErrorMsg(null);
+    setShowModelPicker(false);
     const validFormats = ["image/jpeg", "image/png", "image/webp", "image/jpg"];
     const addedFiles: File[] = [];
 
@@ -144,6 +168,8 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
     setRawFiles(updatedFiles);
     if (updatedImages.length === 0) {
       setAnalyzed(false);
+      setErrorMsg(null);
+      setShowModelPicker(false);
       setVisibleObservations([]);
       setIdentifiedProduct({
         manufacturer: "",
@@ -156,9 +182,14 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
   };
 
   const triggerVisionDetection = async (filesToUse: File[], imagesToUse: string[]) => {
-    if (filesToUse.length === 0) return;
+    if (filesToUse.length === 0) {
+      setErrorMsg(null);
+      setShowModelPicker(false);
+      return;
+    }
     setAnalyzing(true);
     setErrorMsg(null);
+    setShowModelPicker(false);
     setScanStatusText("Uploading image to Gemini Vision API...");
 
     const fileHint = filesToUse.map((f) => f.name).join(" ");
@@ -215,6 +246,8 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
         }
 
         setVisibleObservations(observations);
+        setErrorMsg(null);
+        setShowModelPicker(false);
         setAnalyzed(true);
       } else if (result.status === "AI_UNAVAILABLE") {
         setShowModelPicker(true);
@@ -294,6 +327,7 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
       confirmed: true,
       visible_label_text: null,
     });
+    setErrorMsg(null);
     setShowModelPicker(false);
     setAnalyzed(true);
   };
@@ -319,7 +353,6 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
             {t("visual.subtitle", "Upload a photo of your laptop. Gemini Vision AI will automatically detect the manufacturer, exact model name, and physical characteristics.")}
           </p>
         </div>
-
       </div>
 
       {/* Non-negotiable technical rule disclaimer */}
@@ -331,14 +364,16 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
         </div>
       </div>
 
-      {errorMsg && (
-        <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm flex items-center justify-between">
+      {/* Stale Error Guard: Never show error banner when 0 images uploaded */}
+      {images.length > 0 && errorMsg && (
+        <div data-testid="error-banner" className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm flex items-center justify-between">
           <div className="flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{errorMsg}</span>
           </div>
           <button
             type="button"
+            data-testid="retry-detection-btn"
             onClick={() => triggerVisionDetection(rawFiles, images)}
             className="text-xs font-semibold underline text-red-800 hover:text-red-950 cursor-pointer"
           >
@@ -406,6 +441,7 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
                         onClick={() => removeImage(idx)}
                         className="p-2 rounded-full bg-white text-[#FF3B30] hover:bg-red-50 transition-colors shadow-md cursor-pointer"
                         aria-label="Remove image"
+                        data-testid={`remove-image-btn-${idx}`}
                       >
                         <X size={16} />
                       </button>
@@ -441,6 +477,7 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
           multiple
           onChange={handleFileChange}
           className="hidden"
+          data-testid="file-upload-input"
         />
 
         {/* Footer Action Bar */}
@@ -502,9 +539,53 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
         </div>
       )}
 
+      {/* Manual Catalog Model Picker (Renders on UNKNOWN / AI_UNAVAILABLE / INVALID_EVIDENCE or when Change Model is clicked) */}
+      {images.length > 0 && !analyzing && showModelPicker && (
+        <div data-testid="model-picker" className="mb-8 p-6 rounded-3xl bg-[#F5F5F7] border border-[#D2D2D7] animate-in fade-in duration-200">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h5 className="text-sm font-bold uppercase tracking-wider text-[#1D1D1F]">
+                {t("visual.pickerTitle", "Select or Adjust Laptop Model")}
+              </h5>
+              <p className="text-xs text-[#6E6E73] mt-0.5">
+                {t("visual.pickerSubtitle", "Select a supported model from our verified hardware catalog:")}
+              </p>
+            </div>
+            {analyzed && Boolean(identifiedProduct.model) && (
+              <button
+                type="button"
+                onClick={() => setShowModelPicker(false)}
+                className="text-xs font-semibold text-[#6E6E73] hover:text-[#1D1D1F] cursor-pointer"
+              >
+                {t("visual.pickerClose", "Close")}
+              </button>
+            )}
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {catalogModels.map((m, idx) => (
+              <button
+                key={m.id || idx}
+                type="button"
+                data-testid={`catalog-model-option-${m.model.toLowerCase().replace(/[\s/()]+/g, "-")}`}
+                onClick={() => handleSelectCustomModel(m)}
+                className="p-3.5 rounded-2xl bg-white border border-[#E5E5E7] hover:border-[#0071E3] hover:shadow-xs text-left transition-all cursor-pointer flex items-center justify-between group"
+              >
+                <div>
+                  <span className="text-xs font-bold text-[#1D1D1F] block group-hover:text-[#0071E3] transition-colors">{m.model}</span>
+                  <span className="text-[11px] text-[#6E6E73]">{m.manufacturer} • {m.category || "Supported Model"}</span>
+                </div>
+                <div className="w-6 h-6 rounded-full bg-[#F5F5F7] group-hover:bg-[#0071E3]/10 group-hover:text-[#0071E3] flex items-center justify-center text-[#0071E3] transition-colors">
+                  →
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Gemini AI Identified Model Results */}
-      {analyzed && !analyzing && identifiedProduct.model && (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-3 duration-400">
+      {images.length > 0 && analyzed && !analyzing && Boolean(identifiedProduct.model) && (
+        <div data-testid="verified-model-card" className="space-y-6 animate-in fade-in slide-in-from-bottom-3 duration-400">
           {/* Detected Model Hero Card */}
           <div className="apple-card p-6 sm:p-8 bg-white border border-[#E5E5E7] rounded-3xl shadow-sm relative overflow-hidden">
             <div className="absolute top-0 right-0 w-64 h-64 bg-linear-to-bl from-[#0071E3]/10 via-[#34C759]/5 to-transparent rounded-bl-full pointer-events-none" />
@@ -556,47 +637,6 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
               </div>
             </div>
           </div>
-
-          {/* Model Picker Modal */}
-          {showModelPicker && (
-            <div className="p-6 rounded-3xl bg-[#F5F5F7] border border-[#D2D2D7] animate-in fade-in duration-200">
-              <div className="flex items-center justify-between mb-4">
-                <div>
-                  <h5 className="text-sm font-bold uppercase tracking-wider text-[#1D1D1F]">
-                    {t("visual.pickerTitle", "Select or Adjust Laptop Model")}
-                  </h5>
-                  <p className="text-xs text-[#6E6E73] mt-0.5">
-                    {t("visual.pickerSubtitle", "Select a supported model from our verified hardware catalog:")}
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowModelPicker(false)}
-                  className="text-xs font-semibold text-[#6E6E73] hover:text-[#1D1D1F] cursor-pointer"
-                >
-                  {t("visual.pickerClose", "Close")}
-                </button>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {catalogModels.map((m, idx) => (
-                  <button
-                    key={m.id || idx}
-                    type="button"
-                    onClick={() => handleSelectCustomModel(m)}
-                    className="p-3.5 rounded-2xl bg-white border border-[#E5E5E7] hover:border-[#0071E3] hover:shadow-xs text-left transition-all cursor-pointer flex items-center justify-between"
-                  >
-                    <div>
-                      <span className="text-xs font-bold text-[#1D1D1F] block">{m.model}</span>
-                      <span className="text-[11px] text-[#6E6E73]">{m.manufacturer} • {m.category || "Supported Model"}</span>
-                    </div>
-                    <div className="w-6 h-6 rounded-full bg-[#F5F5F7] flex items-center justify-center text-[#0071E3]">
-                      →
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
 
           {/* Visible Observations Grid */}
           {visibleObservations.length > 0 && (
