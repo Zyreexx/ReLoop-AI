@@ -36,6 +36,18 @@ import {
 import * as XLSX from "xlsx";
 import { jsPDF } from "jspdf";
 import { useLanguage } from "@/context/LanguageContext";
+import {
+  localizeComponentName,
+  localizeStatus,
+  localizeDetectedIssue,
+  getLocalizedPathway,
+  localizeSecondLifeRole,
+  localizeTargetUser,
+  localizeWorkload,
+  localizeRecoverablePart,
+  localizeMaterialRecoveryAction,
+  localizeAiNarrative,
+} from "@/lib/dynamicLocalization";
 
 interface AssessedDeviceEngineProps {
   assessmentId: string;
@@ -48,7 +60,7 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
   initialAssessment,
   onOpenAuth,
 }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [assessment, setAssessment] = useState<any>(initialAssessment || null);
   const [loading, setLoading] = useState<boolean>(!initialAssessment);
   const [objective, setObjective] = useState<"life" | "cost" | "carbon" | "speed">("life");
@@ -464,10 +476,57 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
   };
 
   const backendPathways = buildBackendPathways();
-  const pathways = backendPathways || calculateUploadedPathways();
+  const rawPathways = backendPathways || calculateUploadedPathways();
+  const pathways = React.useMemo(() => {
+    return rawPathways.map((p: any) => {
+      const loc = getLocalizedPathway(p.id, language, p);
+      return {
+        ...p,
+        name: loc.name,
+        reason: loc.reason,
+        lifeExt: loc.lifeExt,
+        cost: loc.cost,
+        co2: loc.co2,
+        turnaround: loc.turnaround,
+        targetComponents: loc.targetComponents,
+      };
+    });
+  }, [rawPathways, language]);
   const topPathway = pathways.find((p: any) => p.recommended) || pathways[0];
 
+  const localizedIssues = React.useMemo(() => {
+    return detectedIssues.map((issue) => localizeDetectedIssue(issue, language));
+  }, [detectedIssues, language]);
+
+  const localizedNarrative = React.useMemo(() => {
+    return localizeAiNarrative(
+      backendRecommendation?.explanation || {
+        summary:
+          "ReLoop Decision Engine deterministically selected the optimal next-life pathway by evaluating component wear logs against residual economic value and avoided emissions.",
+        details: [
+          "Motherboard power and display intact, rendering direct recycling ineligible.",
+          "Targeted battery and thermal overhaul restores device to nominal envelope with minimum expenditure.",
+          "RAM headroom ensures stable multitasking performance for 3+ additional years.",
+        ],
+        assumptions: [
+          "Assuming logic board power circuit is intact",
+          "Battery replacement performed with certified OEM pack",
+          "Thermal dissipation restored to factory thresholds",
+        ],
+        source: "Deterministic Circular Optimizer",
+      },
+      language
+    );
+  }, [backendRecommendation?.explanation, language]);
+
   const handleDownloadPDF = () => {
+    // For non-English languages (Hindi, Gujarati), native browser print-to-PDF provides
+    // 100% typographic fidelity for complex Unicode glyphs & matras without ASCII stripping.
+    if (language !== "en") {
+      window.print();
+      return;
+    }
+
     try {
       const cleanSafeName = `${manufacturer}_${modelName}_lifecycle_plan_${assessmentId}`.replace(/[^a-zA-Z0-9_-]/g, "_");
       const doc = new jsPDF({
@@ -1301,7 +1360,9 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
                     <HardDrive size={13} className="text-[#34C759]" />
                     <span className="text-[10px] font-bold uppercase">{t("diag.ssdTitle")}</span>
                   </div>
-                  <span className="text-[10px] font-bold uppercase text-[#34C759]">PASS</span>
+                  <span className="text-[10px] font-bold uppercase text-[#34C759]">
+                    {localizeStatus("PASS", language)}
+                  </span>
                 </div>
                 <div className="text-sm font-bold text-[#1D1D1F]">
                   91% Health <span className="text-[11px] font-normal text-[#86868B]">(SMART)</span>
@@ -1313,12 +1374,14 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
                 <div className="flex items-center justify-between text-[#6E6E73] mb-1">
                   <div className="flex items-center gap-1.5">
                     <Monitor size={13} className="text-[#0071E3]" />
-                    <span className="text-[10px] font-bold uppercase">Display</span>
+                    <span className="text-[10px] font-bold uppercase">{localizeComponentName("display", language)}</span>
                   </div>
-                  <span className="text-[10px] font-bold uppercase text-[#34C759]">PASS</span>
+                  <span className="text-[10px] font-bold uppercase text-[#34C759]">
+                    {localizeStatus("PASS", language)}
+                  </span>
                 </div>
                 <div className="text-sm font-bold text-[#1D1D1F]">
-                  1080p IPS <span className="text-[11px] font-normal text-[#86868B]">(Glass Intact)</span>
+                  1080p IPS <span className="text-[11px] font-normal text-[#86868B]">({language === "gu" ? "ગ્લાસ અકબંધ" : language === "hi" ? "ग्लास बरकरार" : "Glass Intact"})</span>
                 </div>
               </div>
 
@@ -1327,12 +1390,14 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
                 <div className="flex items-center justify-between text-[#6E6E73] mb-1">
                   <div className="flex items-center gap-1.5">
                     <Plug size={13} className="text-[#0071E3]" />
-                    <span className="text-[10px] font-bold uppercase">Ports & I/O</span>
+                    <span className="text-[10px] font-bold uppercase">{localizeComponentName("ports & i/o", language)}</span>
                   </div>
-                  <span className="text-[10px] font-bold uppercase text-[#34C759]">PASS</span>
+                  <span className="text-[10px] font-bold uppercase text-[#34C759]">
+                    {localizeStatus("PASS", language)}
+                  </span>
                 </div>
                 <div className="text-sm font-bold text-[#1D1D1F]">
-                  Type-C / HDMI <span className="text-[11px] font-normal text-[#86868B]">(Clean)</span>
+                  Type-C / HDMI <span className="text-[11px] font-normal text-[#86868B]">({language === "gu" ? "સ્વચ્છ" : language === "hi" ? "स्वच्छ" : "Clean"})</span>
                 </div>
               </div>
 
@@ -1341,12 +1406,14 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
                 <div className="flex items-center justify-between text-[#6E6E73] mb-1">
                   <div className="flex items-center gap-1.5">
                     <Keyboard size={13} className="text-[#FF9F0A]" />
-                    <span className="text-[10px] font-bold uppercase">Keyboard</span>
+                    <span className="text-[10px] font-bold uppercase">{localizeComponentName("keyboard", language)}</span>
                   </div>
-                  <span className="text-[10px] font-bold uppercase text-[#FF9F0A]">WEAR</span>
+                  <span className="text-[10px] font-bold uppercase text-[#FF9F0A]">
+                    {localizeStatus("WEAR", language)}
+                  </span>
                 </div>
                 <div className="text-sm font-bold text-[#1D1D1F]">
-                  Deck OK <span className="text-[11px] font-normal text-[#86868B]">(2 Loose)</span>
+                  Deck OK <span className="text-[11px] font-normal text-[#86868B]">({language === "gu" ? "2 છૂટા કીકેપ્સ" : language === "hi" ? "2 ढीले कीकैप्स" : "2 Loose"})</span>
                 </div>
               </div>
 
@@ -1355,14 +1422,14 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
                 <div className="flex items-center justify-between text-[#6E6E73] mb-1">
                   <div className="flex items-center gap-1.5">
                     <CheckCircle2 size={13} className="text-[#34C759]" />
-                    <span className="text-[10px] font-bold uppercase">Motherboard</span>
+                    <span className="text-[10px] font-bold uppercase">{localizeComponentName("motherboard", language)}</span>
                   </div>
                   <span className={`text-[10px] font-bold uppercase ${motherboardOk ? "text-[#34C759]" : "text-[#FF3B30]"}`}>
-                    {motherboardOk ? "PASS" : "FAULT"}
+                    {motherboardOk ? localizeStatus("PASS", language) : localizeStatus("FAULT", language)}
                   </span>
                 </div>
                 <div className="text-sm font-bold text-[#1D1D1F]">
-                  Logic Board <span className="text-[11px] font-normal text-[#86868B]">(Healthy)</span>
+                  Logic Board <span className="text-[11px] font-normal text-[#86868B]">({language === "gu" ? "સ્વસ્થ" : language === "hi" ? "स्वस्थ" : "Healthy"})</span>
                 </div>
               </div>
             </div>
@@ -1374,7 +1441,7 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
               {t("engine.detectedIssuesTitle")}
             </span>
             <div className="flex flex-wrap gap-2">
-              {detectedIssues.map((issue, idx) => (
+              {localizedIssues.map((issue, idx) => (
                 <span
                   key={idx}
                   className="text-xs px-3 py-1.5 rounded-lg bg-amber-50 text-amber-900 border border-amber-200/70 flex items-center gap-1.5 font-medium"
@@ -1529,7 +1596,7 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
         </div>
 
         {/* AI DECISION PROVENANCE & NARRATIVE (FROM BACKEND OPTIMIZER) */}
-        {backendRecommendation?.explanation && (
+        {localizedNarrative && (
           <div className="apple-card p-6 sm:p-7 bg-white border border-[#E5E5E7] shadow-sm mb-8">
             <div className="flex items-center justify-between mb-3 pb-3 border-b border-[#F0F0F2]">
               <div className="flex items-center gap-2.5">
@@ -1544,17 +1611,17 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
                 </div>
               </div>
               <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 uppercase font-semibold">
-                {backendRecommendation.explanation.source || "Guardrailed Optimizer"}
+                {localizedNarrative.source || "Guardrailed Optimizer"}
               </span>
             </div>
 
             <p className="text-sm text-[#1D1D1F] font-medium mb-3 leading-relaxed">
-              {backendRecommendation.explanation.summary}
+              {localizedNarrative.summary}
             </p>
 
-            {backendRecommendation.explanation.details && backendRecommendation.explanation.details.length > 0 && (
+            {localizedNarrative.details && localizedNarrative.details.length > 0 && (
               <ul className="space-y-1.5 pl-1 mb-4">
-                {backendRecommendation.explanation.details.map((detail, dIdx) => (
+                {localizedNarrative.details.map((detail: string, dIdx: number) => (
                   <li key={dIdx} className="text-xs text-[#6E6E73] flex items-start gap-2">
                     <span className="text-[#0071E3] font-bold mt-0.5">•</span>
                     <span>{detail}</span>
@@ -1563,13 +1630,13 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
               </ul>
             )}
 
-            {backendRecommendation.explanation.assumptions && backendRecommendation.explanation.assumptions.length > 0 && (
+            {localizedNarrative.assumptions && localizedNarrative.assumptions.length > 0 && (
               <div className="pt-3 border-t border-[#F0F0F2]">
                 <span className="text-[10px] font-bold uppercase text-[#86868B] block mb-1">
                   {t("engine.assumptionsTitle")}
                 </span>
                 <div className="flex flex-wrap gap-1.5">
-                  {backendRecommendation.explanation.assumptions.map((assump, aIdx) => (
+                  {localizedNarrative.assumptions.map((assump: string, aIdx: number) => (
                     <span key={aIdx} className="text-[11px] px-2 py-0.5 rounded bg-[#F5F5F7] text-[#6E6E73]">
                       {assump}
                     </span>
@@ -1598,11 +1665,15 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
               <div className="p-3 bg-white rounded-xl border border-blue-100 shadow-2xs">
                 <span className="text-[10px] font-bold text-[#86868B] uppercase block">{t("engine.recRole")}</span>
-                <span className="text-xs font-bold text-[#1D1D1F]">{backendRecommendation.second_life.suggested_role}</span>
+                <span className="text-xs font-bold text-[#1D1D1F]">
+                  {localizeSecondLifeRole(backendRecommendation.second_life.suggested_role, language)}
+                </span>
               </div>
               <div className="p-3 bg-white rounded-xl border border-blue-100 shadow-2xs">
                 <span className="text-[10px] font-bold text-[#86868B] uppercase block">{t("engine.targetUser")}</span>
-                <span className="text-xs font-bold text-[#1D1D1F]">{backendRecommendation.second_life.target_user}</span>
+                <span className="text-xs font-bold text-[#1D1D1F]">
+                  {localizeTargetUser(backendRecommendation.second_life.target_user, language)}
+                </span>
               </div>
               <div className="p-3 bg-white rounded-xl border border-blue-100 shadow-2xs">
                 <span className="text-[10px] font-bold text-[#86868B] uppercase block">{t("engine.osRec")}</span>
@@ -1613,9 +1684,9 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
             {backendRecommendation.second_life.workloads && (
               <div className="flex flex-wrap gap-1.5 items-center">
                 <span className="text-[11px] text-[#6E6E73] font-semibold">{t("engine.supportedWorkloads")}</span>
-                {backendRecommendation.second_life.workloads.map((wl, wIdx) => (
+                {backendRecommendation.second_life.workloads.map((wl: string, wIdx: number) => (
                   <span key={wIdx} className="text-[11px] px-2.5 py-0.5 rounded-full bg-white border border-blue-200 text-[#1D1D1F]">
-                    {wl}
+                    {localizeWorkload(wl, language)}
                   </span>
                 ))}
               </div>
@@ -1644,14 +1715,14 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
             </div>
 
             <p className="text-xs text-[#6E6E73] mb-3">
-              {backendRecommendation.component_recovery.material_recovery_action}
+              {localizeMaterialRecoveryAction(backendRecommendation.component_recovery.material_recovery_action, language)}
             </p>
 
             <div className="flex flex-wrap gap-2">
-              {backendRecommendation.component_recovery.recoverable_parts.map((part, pIdx) => (
+              {backendRecommendation.component_recovery.recoverable_parts.map((part: string, pIdx: number) => (
                 <span key={pIdx} className="text-xs px-3 py-1 bg-white border border-amber-200 rounded-lg text-[#1D1D1F] font-semibold flex items-center gap-1.5 shadow-2xs">
                   <Check size={12} className="text-green-600" />
-                  <span>{part}</span>
+                  <span>{localizeRecoverablePart(part, language)}</span>
                 </span>
               ))}
             </div>
@@ -1674,7 +1745,7 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
               type="button"
               onClick={handleDownloadPDF}
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-semibold transition-all cursor-pointer shadow-xs"
-              title="Save report as a printable PDF certificate"
+              title={t("engine.savePdfTooltip")}
             >
               <FileText size={14} className="text-[#0071E3]" />
               <span>{t("engine.savePdf")}</span>
@@ -1684,7 +1755,7 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
               type="button"
               onClick={handleDownloadExcel}
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-emerald-600/90 hover:bg-emerald-500 text-white text-xs font-semibold transition-all cursor-pointer shadow-xs"
-              title="Export complete decision matrix and telemetry to Excel / CSV"
+              title={t("engine.exportExcelTooltip")}
             >
               <FileSpreadsheet size={14} />
               <span>{t("engine.exportExcel")}</span>

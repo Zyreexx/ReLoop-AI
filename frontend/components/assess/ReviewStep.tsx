@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { DiagnosticData, UserSymptomsData, VisualInspectionData } from "@/types/assessment";
 import { Sparkles, RefreshCw, CheckCircle2, ShieldCheck, AlertCircle, ArrowLeft } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
+import { localizeComponentName, localizeObservation } from "@/lib/dynamicLocalization";
 
 interface ReviewStepProps {
   visual: VisualInspectionData;
@@ -22,7 +23,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
   isGenerating,
   onBack,
 }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
 
   const objectiveTitles: Record<string, string> = {
     lowest_cost: t("symptoms.objLowestCost"),
@@ -84,8 +85,10 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
                   className="p-3 rounded-xl bg-[#FBFBFD] border border-[#E5E5E7] flex items-center justify-between text-xs"
                 >
                   <div>
-                    <span className="font-bold capitalize text-[#1D1D1F] mr-2">{obs.component}:</span>
-                    <span className="text-[#6E6E73]">{obs.observation}</span>
+                    <span className="font-bold capitalize text-[#1D1D1F] mr-2">
+                      {localizeComponentName(obs.component, language)}:
+                    </span>
+                    <span className="text-[#6E6E73]">{localizeObservation(obs.observation, language)}</span>
                   </div>
                   <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-purple-50 text-purple-700 font-bold shrink-0">
                     {t("provenance.visual", "VISUAL")}
@@ -113,7 +116,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
                 <span className="text-xs text-[#6E6E73]">
                   {diagnostics.battery.notProvided
                     ? t("review.notProvided")
-                    : `${diagnostics.battery.healthPercentage}% health (${diagnostics.battery.fullChargeCapacity} / ${diagnostics.battery.designCapacity} ${diagnostics.battery.unit})`}
+                    : `${diagnostics.battery.healthPercentage}% ${language === "gu" ? "આરોગ્ય" : language === "hi" ? "स्वास्थ्य" : "health"} (${diagnostics.battery.fullChargeCapacity} / ${diagnostics.battery.designCapacity} ${diagnostics.battery.unit})`}
                 </span>
               </div>
               <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-blue-50 text-blue-700 font-bold">
@@ -128,7 +131,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
                 <span className="text-xs text-[#6E6E73]">
                   {diagnostics.ssd.notProvided
                     ? t("review.notProvided")
-                    : `${diagnostics.ssd.healthPercentage}% Health (SMART: ${diagnostics.ssd.smartStatus})`}
+                    : `${diagnostics.ssd.healthPercentage}% ${language === "gu" ? "આરોગ્ય" : language === "hi" ? "स्वास्थ्य" : "Health"} (SMART: ${diagnostics.ssd.smartStatus})`}
                 </span>
               </div>
               <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-blue-50 text-blue-700 font-bold">
@@ -141,7 +144,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
               <div>
                 <span className="text-xs font-bold text-[#1D1D1F] block">{t("review.ramMemory")}</span>
                 <span className="text-xs text-[#6E6E73]">
-                  {diagnostics.ram.capacityGB} GB (Stress Test: {diagnostics.ram.testResult})
+                  {`${diagnostics.ram.capacityGB} GB (${language === "gu" ? "સ્ટ્રેસ ટેસ્ટ" : language === "hi" ? "तनाव परीक्षण" : "Stress Test"}: ${diagnostics.ram.testResult})`}
                 </span>
               </div>
               <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-blue-50 text-blue-700 font-bold">
@@ -154,7 +157,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
               <div>
                 <span className="text-xs font-bold text-[#1D1D1F] block">{t("review.thermals")}</span>
                 <span className="text-xs text-[#6E6E73]">
-                  {diagnostics.thermals.cpuTempC}°C (Throttling: {diagnostics.thermals.thermalThrottling})
+                  {`${diagnostics.thermals.cpuTempC}°C (${language === "gu" ? "થ્રોટલિંગ" : language === "hi" ? "थ्रॉटलिंग" : "Throttling"}: ${diagnostics.thermals.thermalThrottling})`}
                 </span>
               </div>
               <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-blue-50 text-blue-700 font-bold">
@@ -193,14 +196,20 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
                 <span className="text-xs text-[#6E6E73]">{t("review.noSymptoms")}</span>
               ) : (
                 <div className="flex flex-wrap gap-2">
-                  {symptoms.selectedSymptoms.map((sym) => (
-                    <span
-                      key={sym.symptomId}
-                      className="px-2.5 py-1 rounded-md bg-white border border-[#D2D2D7] text-xs text-[#1D1D1F] font-medium"
-                    >
-                      {sym.label} ({sym.frequency})
-                    </span>
-                  ))}
+                  {symptoms.selectedSymptoms.map((sym) => {
+                    const symptomKey = `symptoms.${sym.symptomId}`;
+                    const freqKey = `symptoms.${sym.frequency.toLowerCase()}`;
+                    const translatedLabel = t(symptomKey) !== symptomKey ? t(symptomKey) : sym.label;
+                    const translatedFreq = t(freqKey) !== freqKey ? t(freqKey) : sym.frequency;
+                    return (
+                      <span
+                        key={sym.symptomId}
+                        className="px-2.5 py-1 rounded-md bg-white border border-[#D2D2D7] text-xs text-[#1D1D1F] font-medium"
+                      >
+                        {translatedLabel} ({translatedFreq})
+                      </span>
+                    );
+                  })}
                 </div>
               )}
             </div>

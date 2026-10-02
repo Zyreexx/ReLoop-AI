@@ -82,9 +82,15 @@ class AssessmentService:
         else:
             overall = "FAIR"
 
+        from app.knowledge.loader import match_catalog_model
+        is_generic = getattr(product, "is_generic", False) or getattr(product, "is_generic_assessment", False)
+        if not is_generic and match_catalog_model(product.manufacturer, product.model) is None:
+            is_generic = True
+
         profile = ConditionProfile(
             product_id=product_id,
             overall_hardware_health=overall,
+            is_generic_assessment=is_generic,
             components=components,
             all_evidence=evidence_list,
         )
