@@ -400,7 +400,7 @@ class VisionService:
             )
         except Exception as e:
             if settings.DEMO_FALLBACK:
-                demo_match = find_demo_case(target_model or hint)
+                demo_match = find_demo_case(target_model or hint, allow_default=True)
                 if demo_match:
                     logger.info(f"Gemini API identify call failed ({e}); falling back to precomputed sample data for '{demo_match.get('id')}'.")
                     return get_sample_identify_response(target_model or hint)
