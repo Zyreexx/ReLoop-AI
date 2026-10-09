@@ -329,7 +329,7 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
       model: item.model,
       confidence: 1.0,
       confirmed: true,
-      visible_label_text: `Manually selected: ${item.manufacturer} ${item.model}`,
+      visible_label_text: null,
     };
     setIdentifiedProduct(updated);
 
@@ -340,7 +340,7 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
           id: "vis-manual-1",
           component: "chassis",
           condition: "no_visible_damage",
-          observation: `Manually verified ${item.manufacturer} ${item.model} chassis profile`,
+          observation: `Verified hardware profile for ${item.manufacturer}`,
           confidence: 1.0,
         },
       ]);
@@ -393,8 +393,8 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
         </div>
       </div>
 
-      {errorMsg && (
-        <div className="mb-6 p-4 rounded-2xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 text-red-700 dark:text-red-300 text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+      {images.length > 0 && errorMsg && (
+        <div data-testid="error-banner" className="mb-6 p-4 rounded-2xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900 text-red-700 dark:text-red-300 text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
           <div className="flex items-center gap-2">
             <AlertCircle className="w-5 h-5 shrink-0 text-red-600 dark:text-red-400" />
             <span>{errorMsg}</span>
@@ -414,6 +414,7 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
             </button>
             <button
               type="button"
+              data-testid="retry-detection-btn"
               onClick={() => triggerVisionDetection(rawFiles, images)}
               className="text-xs font-semibold underline text-red-800 hover:text-red-950 dark:text-red-200 cursor-pointer"
             >
