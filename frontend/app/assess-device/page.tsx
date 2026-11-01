@@ -284,7 +284,7 @@ export default function AssessDevicePage() {
           setConditionProfile(condProfile);
           setAssessmentId(backendAssessmentId);
 
-          // Save to localStorage for the engine page
+          // Save to user store and localStorage for engine & dashboard
           const assessmentRecord = {
             id: backendAssessmentId,
             userId: user.email,
@@ -301,6 +301,16 @@ export default function AssessDevicePage() {
           try {
             localStorage.setItem(`assessment_${backendAssessmentId}`, JSON.stringify(assessmentRecord));
             localStorage.setItem("current_assessment", JSON.stringify(assessmentRecord));
+            const userListKey = `reloop_user_assessments_${user.email.toLowerCase()}`;
+            const storedList = JSON.parse(localStorage.getItem(userListKey) || "[]");
+            const updatedList = [assessmentRecord, ...storedList.filter((a: any) => a.id !== backendAssessmentId)];
+            localStorage.setItem(userListKey, JSON.stringify(updatedList));
+
+            fetch("/api/assessments", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(assessmentRecord),
+            }).catch((e) => console.warn("Failed to sync assessment to API:", e));
           } catch (err) {
             console.warn("Could not write assessment to localStorage", err);
           }
@@ -341,6 +351,16 @@ export default function AssessDevicePage() {
         };
         localStorage.setItem(`assessment_${data.assessment.id}`, JSON.stringify(enrichedRecord));
         localStorage.setItem("current_assessment", JSON.stringify(enrichedRecord));
+        const userListKey = `reloop_user_assessments_${user.email.toLowerCase()}`;
+        const storedList = JSON.parse(localStorage.getItem(userListKey) || "[]");
+        const updatedList = [enrichedRecord, ...storedList.filter((a: any) => a.id !== data.assessment.id)];
+        localStorage.setItem(userListKey, JSON.stringify(updatedList));
+
+        fetch("/api/assessments", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(enrichedRecord),
+        }).catch((e) => console.warn("Failed to sync assessment to API:", e));
       } catch (err) {
         console.warn("Could not write assessment to localStorage", err);
       }
