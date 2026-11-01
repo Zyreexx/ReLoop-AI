@@ -418,6 +418,7 @@ export default function AssessDevicePage() {
               )}
               {currentStep === 2 && (
                 <DiagnosticsStep
+                  productId={productId}
                   confirmedModelName={visualData.identifiedProduct.model}
                   manufacturer={visualData.identifiedProduct.manufacturer}
                   initialData={diagnosticsData}

@@ -1,13 +1,20 @@
 """
-Diagnostics schemas and validations for battery, storage, memory, thermals, and system.
+Diagnostics schemas and validations for battery, storage, memory, thermals,
+display, keyboard, chassis, and system board.
 Conforms to docs/architecture.md and prompt requirements:
 - battery: design_capacity, full_charge_capacity, cycle_count
-- ssd: health_percent
-- ram: test_result (PASS/FAIL)
+- ssd: health_percent, smart_status
+- ram: test_result (PASS/FAIL), installed_gb
 - thermals: max_temp_c, throttling_detected
-- system: critical_errors (list[str])
+- cpu: model, cores, status
+- display: adapter, resolution, status
+- keyboard: device, status
+- chassis: form_factor
+- system: critical_errors (list[str]), post_successful, motherboard_power_stable
+- Diagnostic sessions for cross-platform agent communication.
 """
-from typing import List, Literal, Optional
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Literal, Optional
 from pydantic import BaseModel, Field, model_validator
 from app.schemas.evidence import Evidence
 
@@ -122,6 +129,31 @@ class ThermalDiagnostic(BaseModel):
         return self
 
 
+class CpuDiagnostic(BaseModel):
+    model: Optional[str] = None
+    cores: Optional[int] = Field(None, ge=1, le=128)
+    threads: Optional[int] = Field(None, ge=1, le=256)
+    base_clock_mhz: Optional[int] = None
+    status: Optional[str] = "OK"
+
+
+class DisplayDiagnostic(BaseModel):
+    adapter: Optional[str] = None
+    resolution: Optional[str] = None
+    refresh_rate: Optional[str] = None
+    status: Optional[str] = "OK"
+
+
+class KeyboardDiagnostic(BaseModel):
+    device: Optional[str] = None
+    status: Optional[str] = "OK"
+
+
+class ChassisDiagnostic(BaseModel):
+    form_factor: Optional[str] = "Notebook / Laptop"
+    notes: Optional[str] = None
+
+
 class SystemDiagnostic(BaseModel):
     critical_errors: List[str] = Field(default_factory=list)
     post_successful: bool = True
@@ -145,6 +177,18 @@ class SystemDiagnostic(BaseModel):
         return values
 
 
+class SubsystemResult(BaseModel):
+    status: Literal["PASSED", "FAULT_DETECTED", "PARTIAL", "UNSUPPORTED", "SKIPPED", "FAILED"] = "PASSED"
+    component_status: Literal["GOOD", "WEAR", "REPLACE", "UNKNOWN"] = "GOOD"
+    fault_severity: Literal["INFO", "LOW", "MEDIUM", "HIGH", "CRITICAL"] = "INFO"
+    faults: List[str] = Field(default_factory=list)
+    evidence: Dict[str, Any] = Field(default_factory=dict)
+    source: str = "Hardware Telemetry"
+    observations: List[str] = Field(default_factory=list)
+    notes: Optional[str] = None
+    explanation: Optional[str] = None
+
+
 class DiagnosticsValidateRequest(BaseModel):
     product_id: Optional[str] = None
     report_text: Optional[str] = None
@@ -152,6 +196,10 @@ class DiagnosticsValidateRequest(BaseModel):
     ssd: Optional[SsdDiagnostic] = None
     ram: Optional[RamDiagnostic] = None
     thermals: Optional[ThermalDiagnostic] = None
+    cpu: Optional[CpuDiagnostic] = None
+    display: Optional[DisplayDiagnostic] = None
+    keyboard: Optional[KeyboardDiagnostic] = None
+    chassis: Optional[ChassisDiagnostic] = None
     system: Optional[SystemDiagnostic] = None
 
     @model_validator(mode="before")
@@ -168,6 +216,43 @@ class DiagnosticsValidateResponse(BaseModel):
     valid: bool
     evidence_items: List[Evidence] = Field(default_factory=list)
     summary: dict = Field(default_factory=dict)
+    subsystems: Optional[Dict[str, SubsystemResult]] = None
+
+
+# Session models
+class DiagnosticSessionCreate(BaseModel):
+    product_id: Optional[str] = None
+
+
+class DiagnosticSessionResponse(BaseModel):
+    session_token: str
+    product_id: Optional[str] = None
+    status: str = "PENDING"  # PENDING, RUNNING, COMPLETED, FAILED
+    created_at: str
+    expires_at: str
+    subsystems_progress: Dict[str, str] = Field(default_factory=dict)
+
+
+class DiagnosticSessionSubmit(BaseModel):
+    timestamp: Optional[str] = None
+    os: Optional[Dict[str, Any]] = None
+    overall_status: Optional[str] = None
+    subsystem_statuses: Optional[Dict[str, str]] = None
+    subsystems: Dict[str, Any]
+    faults: Optional[List[Dict[str, Any]]] = None
+    total_faults_count: Optional[int] = None
+
+
+class DiagnosticSessionReport(BaseModel):
+    session_token: str
+    product_id: Optional[str] = None
+    status: str
+    overall_hardware_health: str = "GOOD"
+    subsystems: Dict[str, SubsystemResult] = Field(default_factory=dict)
+    faults: List[Dict[str, Any]] = Field(default_factory=list)
+    summary: Dict[str, str] = Field(default_factory=dict)
+    evidence_items: List[Evidence] = Field(default_factory=list)
+    ai_explanation: Optional[str] = None
 
 
 # Compatibility aliases
