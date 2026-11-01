@@ -1,14 +1,8 @@
 """
 Unit tests for ReLoop AI Cross-Platform Smart Diagnostics Agent.
+Zero external test dependencies — uses Python standard library only.
+Fully discoverable and executable by pytest and unittest runner.
 """
-try:
-    import pytest
-except ImportError:
-    class _MockPytest:
-        @staticmethod
-        def fixture(func):
-            return func
-    pytest = _MockPytest()  # type: ignore
 from unittest.mock import MagicMock, patch
 from diagnostics_agent.os_detect import OSInfo, detect_os
 from diagnostics_agent.adapters.base import BaseDiagnosticAdapter
@@ -18,8 +12,7 @@ from diagnostics_agent.adapters.linux import LinuxAdapter
 from diagnostics_agent.collector import StructuredCollector
 
 
-@pytest.fixture
-def win_os_info():
+def get_win_os_info() -> OSInfo:
     return OSInfo(
         system="Windows",
         release="11",
@@ -30,8 +23,7 @@ def win_os_info():
     )
 
 
-@pytest.fixture
-def mac_os_info():
+def get_mac_os_info() -> OSInfo:
     return OSInfo(
         system="Darwin",
         release="23.4.0",
@@ -42,8 +34,7 @@ def mac_os_info():
     )
 
 
-@pytest.fixture
-def linux_os_info():
+def get_linux_os_info() -> OSInfo:
     return OSInfo(
         system="Linux",
         release="6.5.0-generic",
@@ -55,16 +46,20 @@ def linux_os_info():
 
 
 # --- OS Detection Tests ---
-def test_os_info_properties(win_os_info, mac_os_info, linux_os_info):
-    assert win_os_info.is_windows is True
-    assert win_os_info.is_macos is False
-    assert win_os_info.is_linux is False
+def test_os_info_properties():
+    win_info = get_win_os_info()
+    mac_info = get_mac_os_info()
+    linux_info = get_linux_os_info()
 
-    assert mac_os_info.is_macos is True
-    assert mac_os_info.is_windows is False
+    assert win_info.is_windows is True
+    assert win_info.is_macos is False
+    assert win_info.is_linux is False
 
-    assert linux_os_info.is_linux is True
-    assert linux_os_info.is_windows is False
+    assert mac_info.is_macos is True
+    assert mac_info.is_windows is False
+
+    assert linux_info.is_linux is True
+    assert linux_info.is_windows is False
 
 
 def test_detect_os_live():
@@ -75,8 +70,8 @@ def test_detect_os_live():
 
 
 # --- Windows Adapter Tests ---
-def test_windows_battery_thresholds(win_os_info):
-    adapter = WindowsAdapter(win_os_info)
+def test_windows_battery_thresholds():
+    adapter = WindowsAdapter(get_win_os_info())
 
     # 1. Healthy Battery (85% health, 200 cycles -> GOOD)
     with patch.object(adapter, "_run_ps_json") as mock_ps:
@@ -118,8 +113,8 @@ def test_windows_battery_thresholds(win_os_info):
                 assert any("Elevated cycle count" in f for f in res["faults"])
 
 
-def test_windows_storage_smart_evaluation(win_os_info):
-    adapter = WindowsAdapter(win_os_info)
+def test_windows_storage_smart_evaluation():
+    adapter = WindowsAdapter(get_win_os_info())
 
     # 1. Healthy NVMe SSD
     with patch.object(adapter, "_run_ps_json") as mock_ps:
@@ -145,8 +140,8 @@ def test_windows_storage_smart_evaluation(win_os_info):
         assert res["fault_severity"] == "CRITICAL"
 
 
-def test_windows_memory_evaluation(win_os_info):
-    adapter = WindowsAdapter(win_os_info)
+def test_windows_memory_evaluation():
+    adapter = WindowsAdapter(get_win_os_info())
 
     # Clean memory modules
     with patch.object(adapter, "_run_ps_json") as mock_ps:
@@ -162,8 +157,8 @@ def test_windows_memory_evaluation(win_os_info):
         assert res["evidence"]["slots_used"] == 2
 
 
-def test_windows_thermals_throttling(win_os_info):
-    adapter = WindowsAdapter(win_os_info)
+def test_windows_thermals_throttling():
+    adapter = WindowsAdapter(get_win_os_info())
 
     # Throttling detected
     with patch.object(adapter, "_run_ps_json") as mock_ps:
@@ -178,8 +173,8 @@ def test_windows_thermals_throttling(win_os_info):
         assert res["evidence"]["service_recommended"] is True
 
 
-def test_windows_system_board_evaluation(win_os_info):
-    adapter = WindowsAdapter(win_os_info)
+def test_windows_system_board_evaluation():
+    adapter = WindowsAdapter(get_win_os_info())
 
     # Healthy motherboard
     with patch.object(adapter, "_run_ps_json") as mock_ps:
@@ -195,8 +190,8 @@ def test_windows_system_board_evaluation(win_os_info):
 
 
 # --- macOS Adapter Tests ---
-def test_macos_battery_evaluation(mac_os_info):
-    adapter = MacOSAdapter(mac_os_info)
+def test_macos_battery_evaluation():
+    adapter = MacOSAdapter(get_mac_os_info())
     with patch.object(adapter, "_run_system_profiler") as mock_sp:
         mock_sp.return_value = {
             "SPPowerDataType": [{
@@ -213,8 +208,8 @@ def test_macos_battery_evaluation(mac_os_info):
         assert res["evidence"]["health_percentage"] == 91.0
 
 
-def test_macos_storage_evaluation(mac_os_info):
-    adapter = MacOSAdapter(mac_os_info)
+def test_macos_storage_evaluation():
+    adapter = MacOSAdapter(get_mac_os_info())
     with patch.object(adapter, "_run_system_profiler") as mock_sp:
         mock_sp.return_value = {
             "SPStorageDataType": [{
@@ -230,8 +225,8 @@ def test_macos_storage_evaluation(mac_os_info):
 
 
 # --- Linux Adapter Tests ---
-def test_linux_battery_evaluation(linux_os_info):
-    adapter = LinuxAdapter(linux_os_info)
+def test_linux_battery_evaluation():
+    adapter = LinuxAdapter(get_linux_os_info())
     with patch("glob.glob", return_value=["/sys/class/power_supply/BAT0"]):
         with patch.object(adapter, "_read_file") as mock_rf:
             def read_side_effect(path):
@@ -251,8 +246,8 @@ def test_linux_battery_evaluation(linux_os_info):
 
 
 # --- Collector Integration Tests ---
-def test_structured_collector_all_subsystems(win_os_info):
-    collector = StructuredCollector(win_os_info)
+def test_structured_collector_all_subsystems():
+    collector = StructuredCollector(get_win_os_info())
 
     # Mock all adapter methods
     collector.adapter.diagnose_battery = MagicMock(return_value={"status": "PASSED", "component_status": "GOOD", "faults": [], "evidence": {"health_percentage": 92.0}})

@@ -1,0 +1,12 @@
+{
+  "include": [
+    "diagnostics_agent",
+    "backend"
+  ],
+  "extraPaths": [
+    ".",
+    "backend"
+  ],
+  "venvPath": "backend",
+  "venv": ".venv"
+}
