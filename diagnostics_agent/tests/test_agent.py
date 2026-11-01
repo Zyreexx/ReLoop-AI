@@ -1,7 +1,14 @@
 """
 Unit tests for ReLoop AI Cross-Platform Smart Diagnostics Agent.
 """
-import pytest
+try:
+    import pytest
+except ImportError:
+    class _MockPytest:
+        @staticmethod
+        def fixture(func):
+            return func
+    pytest = _MockPytest()  # type: ignore
 from unittest.mock import MagicMock, patch
 from diagnostics_agent.os_detect import OSInfo, detect_os
 from diagnostics_agent.adapters.base import BaseDiagnosticAdapter
