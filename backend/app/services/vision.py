@@ -14,6 +14,7 @@ import logging
 from typing import Any, Dict, List, Optional, Set
 from sqlalchemy.orm import Session
 from app.ai.gemini_client import gemini_client, GeminiClient
+from app.ai.groq_client import groq_client, GroqClient
 from app.ai.prompt_loader import load_prompt
 from app.ai.schemas import (
     ModelIdentificationOutput,
@@ -387,6 +388,41 @@ def filter_visible_findings(findings: List[VisibleFinding]) -> List[VisibleFindi
     return filtered
 
 
+def _is_rate_limit_error(e: Exception) -> bool:
+    """
+    Checks if an exception indicates a rate limit or quota exhaustion:
+    HTTP 429, RESOURCE_EXHAUSTED, or Quota Exceeded.
+    """
+    for attr in ["http_status", "status_code", "code"]:
+        val = getattr(e, attr, None)
+        if val in (429, "429"):
+            return True
+
+    cls_name = e.__class__.__name__.lower()
+    if "rate" in cls_name and "limit" in cls_name:
+        return True
+    if "resourceexhausted" in cls_name or "quota" in cls_name:
+        return True
+
+    msg = str(e).lower()
+    indicators = [
+        "429",
+        "resource_exhausted",
+        "resourceexhausted",
+        "resource has been exhausted",
+        "quota exceeded",
+        "quota_exceeded",
+        "quotaexceeded",
+        "check quota",
+        "rate limit",
+        "rate_limit",
+        "ratelimit",
+        "too many requests",
+        "exceeded your current quota",
+    ]
+    return any(indicator in msg for indicator in indicators)
+
+
 class VisionService:
     def identify(
         self,
@@ -530,41 +566,56 @@ class VisionService:
 
         active_gemini = GeminiClient(api_key=api_key) if api_key else gemini_client
 
+        ai_res: Optional[OpenIdentificationOutput] = None
         try:
-            ai_res: OpenIdentificationOutput = active_gemini.generate_structured(
+            ai_res = active_gemini.generate_structured(
                 prompt=prompt_text,
                 response_model=OpenIdentificationOutput,
                 images=image_bytes_list,
                 media_resolution=settings.GEMINI_MEDIA_RESOLUTION,
             )
         except Exception as e:
-            if settings.DEMO_FALLBACK:
-                demo_match = find_demo_case(target_model or hint, allow_default=True)
-                if demo_match:
-                    logger.info(f"Gemini API identify call failed ({e}); falling back to precomputed sample data for '{demo_match.get('id')}'.")
-                    return get_sample_identify_response(target_model or hint)
+            if _is_rate_limit_error(e) and settings.GROQ_API_KEY:
+                logger.warning("Gemini rate limit encountered. Falling back to Groq (Llama 3.2 Vision)...")
+                try:
+                    ai_res = groq_client.generate_structured(
+                        prompt=prompt_text,
+                        response_model=OpenIdentificationOutput,
+                        images=image_bytes_list,
+                    )
+                except Exception as groq_err:
+                    logger.warning(f"Groq fallback identify call also failed ({groq_err}).")
+                    ai_res = None
+                    e = groq_err
 
-            logger.warning(f"Gemini API identify call failed ({e}); returning structured AI_UNAVAILABLE state.")
-            return ProductIdentifyResponse(
-                status=IdentificationStatus.AI_UNAVAILABLE,
-                identified_model=None,
-                candidate_id="UNKNOWN",
-                is_supported=False,
-                confidence=0.0,
-                confidence_level=ConfidenceLevel.UNKNOWN,
-                visible_label_text=None,
-                visual_clues=[],
-                label_evidence=[],
-                visual_evidence=[],
-                contradictions=[],
-                needs_confirmation=True,
-                requires_user_confirmation=True,
-                supported_models=all_supported,
-                generic_fallback_available=True,
-                generic_model=generic_candidate,
-                message="AI identification is temporarily unavailable. Please select your model manually to continue.",
-                source="live",
-            )
+            if ai_res is None:
+                if settings.DEMO_FALLBACK:
+                    demo_match = find_demo_case(target_model or hint, allow_default=True)
+                    if demo_match:
+                        logger.info(f"Gemini API identify call failed ({e}); falling back to precomputed sample data for '{demo_match.get('id')}'.")
+                        return get_sample_identify_response(target_model or hint)
+
+                logger.warning(f"Gemini API identify call failed ({e}); returning structured AI_UNAVAILABLE state.")
+                return ProductIdentifyResponse(
+                    status=IdentificationStatus.AI_UNAVAILABLE,
+                    identified_model=None,
+                    candidate_id="UNKNOWN",
+                    is_supported=False,
+                    confidence=0.0,
+                    confidence_level=ConfidenceLevel.UNKNOWN,
+                    visible_label_text=None,
+                    visual_clues=[],
+                    label_evidence=[],
+                    visual_evidence=[],
+                    contradictions=[],
+                    needs_confirmation=True,
+                    requires_user_confirmation=True,
+                    supported_models=all_supported,
+                    generic_fallback_available=True,
+                    generic_model=generic_candidate,
+                    message="AI identification is temporarily unavailable. Please select your model manually to continue.",
+                    source="live",
+                )
 
         raw_mfr = (ai_res.manufacturer or "").strip()
         raw_model = (ai_res.model or "").strip()
@@ -711,37 +762,51 @@ class VisionService:
             if inspection_notes:
                 prompt_text += f"\nInspection context from user: {inspection_notes}"
 
+            ai_res: Optional[DamageAssessmentOutput] = None
             try:
-                ai_res: DamageAssessmentOutput = gemini_client.generate_structured(
+                ai_res = gemini_client.generate_structured(
                     prompt=prompt_text,
                     response_model=DamageAssessmentOutput,
                     images=image_bytes_list,
                 )
-
-                # Map raw AI items to VisibleFinding
-                for crack in ai_res.cracks:
-                    raw_findings.append(VisibleFinding(component=ComponentName.DISPLAY, description=crack, severity="HIGH"))
-                for dent in ai_res.dents:
-                    raw_findings.append(VisibleFinding(component=ComponentName.HINGE_CHASSIS, description=dent, severity="LOW"))
-                for key in ai_res.missing_keys:
-                    raw_findings.append(VisibleFinding(component=ComponentName.KEYBOARD, description=key, severity="MODERATE"))
-                for h_dmg in ai_res.hinge_damage:
-                    raw_findings.append(VisibleFinding(component=ComponentName.HINGE_CHASSIS, description=h_dmg, severity="HIGH"))
-                for p_dmg in ai_res.port_damage:
-                    raw_findings.append(VisibleFinding(component="PORTS", description=p_dmg, severity="MODERATE"))
-                for swell in ai_res.visible_swelling:
-                    raw_findings.append(VisibleFinding(component=ComponentName.HINGE_CHASSIS, description=f"Visible exterior bulge: {swell}", severity="HIGH"))
-                for obs in ai_res.observations:
-                    raw_findings.append(VisibleFinding(component=ComponentName.HINGE_CHASSIS, description=obs, severity="LOW"))
-
             except Exception as e:
-                # Check if this product or context corresponds to a demo case
-                demo_match = find_demo_case(inspection_notes or (image_names[0] if image_names else None), product_id=product_id)
-                if demo_match:
-                    logger.info(f"Gemini API vision call failed ({e}); falling back to sample data for demo case '{demo_match.get('id')}'.")
-                    return get_sample_vision_findings(product_id, query_or_notes=inspection_notes, image_names=image_names)
-                # Never silently use sample data outside explicit flag or demo failure path
-                raise
+                if _is_rate_limit_error(e) and settings.GROQ_API_KEY:
+                    logger.warning("Gemini rate limit encountered. Falling back to Groq (Llama 3.2 Vision)...")
+                    try:
+                        ai_res = groq_client.generate_structured(
+                            prompt=prompt_text,
+                            response_model=DamageAssessmentOutput,
+                            images=image_bytes_list,
+                        )
+                    except Exception as groq_err:
+                        logger.warning(f"Groq fallback vision call also failed ({groq_err}).")
+                        ai_res = None
+                        e = groq_err
+
+                if ai_res is None:
+                    # Check if this product or context corresponds to a demo case
+                    demo_match = find_demo_case(inspection_notes or (image_names[0] if image_names else None), product_id=product_id)
+                    if demo_match:
+                        logger.info(f"Vision call failed ({e}); falling back to sample data for demo case '{demo_match.get('id')}'.")
+                        return get_sample_vision_findings(product_id, query_or_notes=inspection_notes, image_names=image_names)
+                    # Never silently use sample data outside explicit flag or demo failure path
+                    raise
+
+            # Map raw AI items to VisibleFinding
+            for crack in ai_res.cracks:
+                raw_findings.append(VisibleFinding(component=ComponentName.DISPLAY, description=crack, severity="HIGH"))
+            for dent in ai_res.dents:
+                raw_findings.append(VisibleFinding(component=ComponentName.HINGE_CHASSIS, description=dent, severity="LOW"))
+            for key in ai_res.missing_keys:
+                raw_findings.append(VisibleFinding(component=ComponentName.KEYBOARD, description=key, severity="MODERATE"))
+            for h_dmg in ai_res.hinge_damage:
+                raw_findings.append(VisibleFinding(component=ComponentName.HINGE_CHASSIS, description=h_dmg, severity="HIGH"))
+            for p_dmg in ai_res.port_damage:
+                raw_findings.append(VisibleFinding(component="PORTS", description=p_dmg, severity="MODERATE"))
+            for swell in ai_res.visible_swelling:
+                raw_findings.append(VisibleFinding(component=ComponentName.HINGE_CHASSIS, description=f"Visible exterior bulge: {swell}", severity="HIGH"))
+            for obs in ai_res.observations:
+                raw_findings.append(VisibleFinding(component=ComponentName.HINGE_CHASSIS, description=obs, severity="LOW"))
         elif inspection_notes:
             # Fallback when only notes provided without images
             lowered = inspection_notes.lower()
