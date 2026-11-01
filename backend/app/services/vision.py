@@ -37,11 +37,6 @@ from app.knowledge.models_catalog import (
     get_candidate_by_id,
     format_candidates_for_prompt,
 )
-from app.knowledge.sample_data import (
-    get_sample_identify_response,
-    get_sample_vision_findings,
-    find_demo_case,
-)
 from app.schemas.enums import ComponentName, ComponentStatus, ConfidenceLevel, EvidenceType, IdentificationStatus
 from app.schemas.evidence import Evidence
 from app.schemas.product import ProductCandidate, ProductIdentifyResponse, ProductSpecs
@@ -447,14 +442,9 @@ class VisionService:
             confidence=ConfidenceLevel.HIGH,
             specs=generic_specs,
         )
-        target_model = manual_model or model_id or hint
+        target_model = manual_model or model_id
 
-        # 1. Demo fallback mode explicit flag
-        if settings.DEMO_FALLBACK:
-            logger.info("DEMO_FALLBACK active: serving precomputed sample identification.")
-            return get_sample_identify_response(target_model)
-
-        # 2. Manual path: client sends manual_model or model_id directly
+        # 1. Manual path: client sends manual_model or model_id directly
         if target_model and not image_bytes_list:
             # Check generic model request
             target_norm = target_model.strip().lower()
@@ -589,13 +579,7 @@ class VisionService:
                     e = groq_err
 
             if ai_res is None:
-                if settings.DEMO_FALLBACK:
-                    demo_match = find_demo_case(target_model or hint, allow_default=True)
-                    if demo_match:
-                        logger.info(f"Gemini API identify call failed ({e}); falling back to precomputed sample data for '{demo_match.get('id')}'.")
-                        return get_sample_identify_response(target_model or hint)
-
-                logger.warning(f"Gemini API identify call failed ({e}); returning structured AI_UNAVAILABLE state.")
+                logger.warning(f"AI identify call failed ({e}); returning structured AI_UNAVAILABLE state.")
                 return ProductIdentifyResponse(
                     status=IdentificationStatus.AI_UNAVAILABLE,
                     identified_model=None,
@@ -735,7 +719,7 @@ class VisionService:
         """
         Analyzes visible exterior damage, post-filters internal claims,
         and saves results as VISUAL evidence items.
-        Supports DEMO_FALLBACK mode and automatic fallback on Gemini failure for demo models.
+        Analyzes product photos for visible damage using Gemini Vision with Groq Vision fallback.
         """
         product = store.get_product(product_id)
         if not product and db:
@@ -748,11 +732,6 @@ class VisionService:
                 field="product_id",
                 http_status=404,
             )
-
-        # 1. Demo fallback mode explicit flag
-        if settings.DEMO_FALLBACK:
-            logger.info(f"DEMO_FALLBACK active: serving precomputed sample vision findings for product {product_id}.")
-            return get_sample_vision_findings(product_id, query_or_notes=inspection_notes, image_names=image_names)
 
         raw_findings: List[VisibleFinding] = []
 
@@ -784,13 +763,12 @@ class VisionService:
                         e = groq_err
 
                 if ai_res is None:
-                    # Check if this product or context corresponds to a demo case
-                    demo_match = find_demo_case(inspection_notes or (image_names[0] if image_names else None), product_id=product_id)
-                    if demo_match:
-                        logger.info(f"Vision call failed ({e}); falling back to sample data for demo case '{demo_match.get('id')}'.")
-                        return get_sample_vision_findings(product_id, query_or_notes=inspection_notes, image_names=image_names)
-                    # Never silently use sample data outside explicit flag or demo failure path
-                    raise
+                    logger.warning(f"AI vision damage analysis failed ({e}).")
+                    raise AppError(
+                        code=ErrorCode.AI_FAILURE.value,
+                        message=f"Vision damage analysis failed: {e}",
+                        http_status=503,
+                    )
 
             # Map raw AI items to VisibleFinding
             for crack in ai_res.cracks:

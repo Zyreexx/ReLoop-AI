@@ -4,27 +4,12 @@ import {
   getAssessment,
   getUserAssessments,
   deleteAssessment,
-  getDemoAssessments,
 } from "@/lib/assessmentsStore";
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { id, userId, userEmail, seedDemo } = body;
-
-    // Handle seeding demo records
-    if (seedDemo && (userId || userEmail)) {
-      const email = userEmail || userId;
-      const demoList = getDemoAssessments(email);
-      for (const item of demoList) {
-        saveAssessment(item.id, item);
-      }
-      return NextResponse.json({
-        success: true,
-        message: "Demo cases seeded successfully",
-        count: demoList.length,
-      });
-    }
+    const { id, userId, userEmail } = body;
 
     if (!id || (!userId && !userEmail)) {
       return NextResponse.json(
@@ -52,7 +37,6 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
   const userId = searchParams.get("userId") || searchParams.get("userEmail");
-  const seedIfEmpty = searchParams.get("seedIfEmpty") === "true";
 
   // 1. Get specific assessment by ID
   if (id) {
@@ -67,14 +51,6 @@ export async function GET(req: NextRequest) {
   if (userId) {
     let list = getUserAssessments(userId);
 
-    // If empty and seedIfEmpty requested, seed realistic demo cases
-    if (list.length === 0 && seedIfEmpty) {
-      const demoList = getDemoAssessments(userId);
-      for (const item of demoList) {
-        saveAssessment(item.id, item);
-      }
-      list = demoList;
-    }
 
     return NextResponse.json({
       success: true,

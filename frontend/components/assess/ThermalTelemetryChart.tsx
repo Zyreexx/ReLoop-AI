@@ -16,6 +16,7 @@ interface ThermalTelemetryChartProps {
   initialMaxTemp?: number;
   hardwareModel?: string;
   isLive?: boolean;
+  telemetryData?: TelemetryPoint[];
 }
 
 export default function ThermalTelemetryChart({
@@ -23,10 +24,9 @@ export default function ThermalTelemetryChart({
   initialMaxTemp = 48,
   hardwareModel = "Hardware Sensor Bus",
   isLive = false,
+  telemetryData,
 }: ThermalTelemetryChartProps) {
-  const [dataPoints, setDataPoints] = useState<TelemetryPoint[]>([]);
-  const [isSimulating, setIsSimulating] = useState(false);
-  const [simulationSecondsLeft, setSimulationSecondsLeft] = useState(0);
+  const [dataPoints, setDataPoints] = useState<TelemetryPoint[]>(telemetryData || []);
   const [hoveredPoint, setHoveredPoint] = useState<{
     point: TelemetryPoint;
     x: number;
@@ -35,92 +35,12 @@ export default function ThermalTelemetryChart({
 
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Generate initial 30 seconds of rolling telemetry
+  // Sync incoming real telemetry stream if provided
   useEffect(() => {
-    const points: TelemetryPoint[] = [];
-    const now = Date.now();
-    const count = 30;
-
-    for (let i = count; i >= 0; i--) {
-      const t = new Date(now - i * 1000);
-      const timeStr = t.toTimeString().split(" ")[0]; // HH:MM:SS
-
-      // Normal idle fluctuations around initialBaseTemp
-      const noiseCpu = (Math.sin(i * 0.4) + Math.cos(i * 0.7)) * 1.5;
-      const noiseGpu = (Math.cos(i * 0.5) + Math.sin(i * 0.3)) * 1.2;
-      const cpu = Math.max(25, Math.min(105, initialBaseTemp + noiseCpu - 2));
-      const gpu = Math.max(25, Math.min(105, initialBaseTemp + noiseGpu - 5));
-      const fan = Math.round(1100 + (cpu - 35) * 25 + Math.random() * 40);
-
-      points.push({
-        time: timeStr,
-        timestamp: t.getTime(),
-        cpuTemp: parseFloat(cpu.toFixed(1)),
-        gpuTemp: parseFloat(gpu.toFixed(1)),
-        fanRpm: Math.max(600, Math.min(3400, fan)),
-      });
+    if (telemetryData) {
+      setDataPoints(telemetryData);
     }
-
-    setDataPoints(points);
-  }, [initialBaseTemp]);
-
-  // Rolling tick effect every 1 second
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setDataPoints((prev) => {
-        if (prev.length === 0) return prev;
-        const now = new Date();
-        const timeStr = now.toTimeString().split(" ")[0];
-
-        let targetCpu = initialBaseTemp;
-        let targetGpu = initialBaseTemp - 4;
-        let targetFan = 1200;
-
-        if (isSimulating) {
-          // Stress load spike: ramp up to ~78-82°C and ~2400-2700 RPM
-          targetCpu = 78 + (Math.sin(Date.now() / 300) * 2.5);
-          targetGpu = 72 + (Math.cos(Date.now() / 350) * 2.0);
-          targetFan = 2450 + Math.round(Math.random() * 120);
-        } else {
-          // Normal idle fluctuation
-          const jitter = (Math.sin(Date.now() / 1000) * 1.2) + (Math.random() * 0.8 - 0.4);
-          targetCpu = Math.max(30, initialBaseTemp + jitter);
-          targetGpu = Math.max(28, initialBaseTemp - 4 + jitter * 0.8);
-          targetFan = Math.round(1100 + (targetCpu - 35) * 22);
-        }
-
-        const newPoint: TelemetryPoint = {
-          time: timeStr,
-          timestamp: now.getTime(),
-          cpuTemp: parseFloat(targetCpu.toFixed(1)),
-          gpuTemp: parseFloat(targetGpu.toFixed(1)),
-          fanRpm: Math.max(500, Math.min(3500, targetFan)),
-        };
-
-        return [...prev.slice(1), newPoint];
-      });
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [isSimulating, initialBaseTemp]);
-
-  // Handle 5-second thermal load simulation
-  const handleSimulateLoad = () => {
-    if (isSimulating) return;
-    setIsSimulating(true);
-    setSimulationSecondsLeft(5);
-
-    const countdown = setInterval(() => {
-      setSimulationSecondsLeft((prev) => {
-        if (prev <= 1) {
-          clearInterval(countdown);
-          setIsSimulating(false);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-  };
+  }, [telemetryData]);
 
   // Export JSON log
   const handleExportLog = () => {
@@ -245,7 +165,7 @@ export default function ThermalTelemetryChart({
         <div>
           <div className="flex items-center gap-2">
             <h3 className="text-base sm:text-lg font-bold text-[#1D1D1F]">
-              Simulated Thermal History (Last 30 Seconds)
+              Thermal Sensor Telemetry
             </h3>
             {isLive ? (
               <span className="flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
@@ -253,13 +173,13 @@ export default function ThermalTelemetryChart({
                 Live Agent Telemetry
               </span>
             ) : (
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-[#0071E3]">
-                Continuous Rolling Buffer
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                Sensor Bus Idle
               </span>
             )}
           </div>
           <p className="text-xs text-[#6E6E73] mt-0.5">
-            Synchronized CPU Package, GPU Core, and PWM Fan Speed curves — {isLive ? "verified through hardware diagnostics." : "interactive sensor telemetry stream."}
+            Synchronized CPU Package, GPU Core, and PWM Fan Speed curves — {isLive ? "verified through hardware diagnostics." : "hardware sensor telemetry stream."}
           </p>
         </div>
 
@@ -268,33 +188,11 @@ export default function ThermalTelemetryChart({
           <button
             type="button"
             onClick={handleExportLog}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#D2D2D7] hover:bg-[#F5F5F7] text-xs font-semibold text-[#1D1D1F] transition-all cursor-pointer shadow-2xs"
+            disabled={dataPoints.length === 0}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#D2D2D7] hover:bg-[#F5F5F7] text-xs font-semibold text-[#1D1D1F] transition-all cursor-pointer shadow-2xs disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Download size={13} className="text-[#6E6E73]" />
-            <span>Export Demo Log (JSON)</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={handleSimulateLoad}
-            disabled={isSimulating}
-            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold text-white transition-all cursor-pointer shadow-sm ${
-              isSimulating
-                ? "bg-amber-600 animate-pulse cursor-not-allowed"
-                : "bg-[#0071E3] hover:bg-[#0077ED] active:scale-95"
-            }`}
-          >
-            {isSimulating ? (
-              <>
-                <Flame size={13} className="animate-bounce text-amber-200" />
-                <span>Simulating... ({simulationSecondsLeft}s)</span>
-              </>
-            ) : (
-              <>
-                <Play size={13} />
-                <span>Simulate 5s Thermal Load</span>
-              </>
-            )}
+            <span>Export Log (JSON)</span>
           </button>
         </div>
       </div>
@@ -414,6 +312,19 @@ export default function ThermalTelemetryChart({
                 </g>
               );
             })}
+
+            {dataPoints.length === 0 && (
+              <g>
+                <text
+                  x={svgWidth / 2}
+                  y={paddingTop + chartHeight / 2}
+                  textAnchor="middle"
+                  className="text-xs font-mono fill-slate-400 select-none"
+                >
+                  Waiting for hardware telemetry stream...
+                </text>
+              </g>
+            )}
 
             {/* Cooling Fan RPM Path (Dashed Teal) */}
             <path
