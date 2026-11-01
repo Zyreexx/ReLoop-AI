@@ -23,10 +23,6 @@ export default function Home() {
     setAuthModalOpen(true);
   };
 
-  const handleAssessClick = () => {
-    router.push("/assess-device");
-  };
-
   const featurePortals = [
     {
       badge: t("portals.badgePathways", "CIRCULAR HIERARCHY"),
@@ -144,30 +140,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Call to Action Banner */}
-        <section className="py-20 bg-[#F5F5F7]">
-          <div className="max-w-4xl mx-auto px-6">
-            <div className="p-8 sm:p-12 rounded-3xl bg-[#1D1D1F] text-white text-center shadow-xl">
-              <h3 className="text-2xl sm:text-3xl font-bold tracking-tight mb-3">
-                {t("portals.ctaTitle", "Ready to assess your hardware?")}
-              </h3>
-              <p className="text-sm text-gray-300 max-w-xl mx-auto mb-6">
-                {t(
-                  "portals.ctaSubtitle",
-                  "Calculate the highest-value next life for your device in seconds."
-                )}
-              </p>
-              <button
-                type="button"
-                onClick={handleAssessClick}
-                className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full bg-[#0071E3] hover:bg-[#0077ED] text-white text-sm font-semibold transition-all duration-200 shadow-md cursor-pointer"
-              >
-                <span>{t("portals.ctaBtn", "Assess Your Laptop")}</span>
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        </section>
+
       </main>
 
       {/* Footer */}
