@@ -154,7 +154,7 @@ class ReportService:
             assumptions=deduped_assumptions,
             data_gaps=data_gaps,
             explanation=recommendation.explanation,
-            disclaimer="Demo baseline assumptions, not verified market data. Estimates are derived from deterministic model parameters.",
+            disclaimer="Baseline technical estimates based on hardware specifications and condition analysis. Estimates are derived from deterministic model parameters.",
             timestamp=profile.created_at,
         )
 

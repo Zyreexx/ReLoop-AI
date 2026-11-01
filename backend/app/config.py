@@ -55,12 +55,8 @@ class Settings:
     GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
     GROQ_MODEL: str = os.getenv("GROQ_MODEL", "llama-3.2-11b-vision-preview")
 
-    # Fallback mode for demo deployment / Gemini failure
-    DEMO_FALLBACK: bool = os.getenv("DEMO_FALLBACK", "false").lower() in (
-        "true",
-        "1",
-        "yes",
-    )
+    # Fallback mode for demo deployment / Gemini failure (permanently disabled)
+    DEMO_FALLBACK: bool = False
 
     # Resend
     RESEND_API_KEY: str = os.getenv("RESEND_API_KEY", "")

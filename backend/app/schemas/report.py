@@ -38,7 +38,7 @@ class ConditionReportResponse(BaseModel):
     assumptions: List[str] = Field(default_factory=list)
     data_gaps: List[str] = Field(default_factory=list)
     explanation: Optional[RecommendationExplanation] = None
-    disclaimer: str = "Demo baseline assumptions, not verified market data. Estimates are derived from deterministic model parameters."
+    disclaimer: str = "Baseline technical estimates based on hardware specifications and condition analysis. Estimates are derived from deterministic model parameters."
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 

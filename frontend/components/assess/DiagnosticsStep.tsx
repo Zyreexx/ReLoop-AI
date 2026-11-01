@@ -82,44 +82,44 @@ export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
   }, []);
 
   // Manual Form State
-  const [deviceAge, setDeviceAge] = useState<number>(initialData.deviceAgeYears || 4);
-  const [noBatteryInfo, setNoBatteryInfo] = useState<boolean>(initialData.battery?.notProvided || false);
-  const [designCap, setDesignCap] = useState<number>(initialData.battery?.designCapacity || 51000);
-  const [fullCap, setFullCap] = useState<number>(initialData.battery?.fullChargeCapacity || 37230);
-  const [cycleCount, setCycleCount] = useState<number>(initialData.battery?.cycleCount || 482);
+  const [deviceAge, setDeviceAge] = useState<number>(initialData.deviceAgeYears || 0);
+  const [noBatteryInfo, setNoBatteryInfo] = useState<boolean>(initialData.battery?.notProvided ?? true);
+  const [designCap, setDesignCap] = useState<number>(initialData.battery?.designCapacity || 0);
+  const [fullCap, setFullCap] = useState<number>(initialData.battery?.fullChargeCapacity || 0);
+  const [cycleCount, setCycleCount] = useState<number>(initialData.battery?.cycleCount || 0);
   const [unit, setUnit] = useState<"mWh" | "Wh">(initialData.battery?.unit || "mWh");
   const [showBatteryHelp, setShowBatteryHelp] = useState<boolean>(false);
 
-  const [noSsdInfo, setNoSsdInfo] = useState<boolean>(initialData.ssd?.notProvided || false);
-  const [ssdHealth, setSsdHealth] = useState<number>(initialData.ssd?.healthPercentage || 91);
-  const [powerHours, setPowerHours] = useState<number>(initialData.ssd?.powerOnHours || 3420);
+  const [noSsdInfo, setNoSsdInfo] = useState<boolean>(initialData.ssd?.notProvided ?? true);
+  const [ssdHealth, setSsdHealth] = useState<number>(initialData.ssd?.healthPercentage || 0);
+  const [powerHours, setPowerHours] = useState<number>(initialData.ssd?.powerOnHours || 0);
   const [smartStatus, setSmartStatus] = useState<"PASS" | "FAIL" | "NOT_TESTED">(
-    initialData.ssd?.smartStatus || "PASS"
+    initialData.ssd?.smartStatus || "NOT_TESTED"
   );
 
-  const [ramCapacity, setRamCapacity] = useState<number>(initialData.ram?.capacityGB || 16);
+  const [ramCapacity, setRamCapacity] = useState<number>(initialData.ram?.capacityGB || 0);
   const [ramTest, setRamTest] = useState<"PASS" | "FAIL" | "NOT_TESTED">(
-    initialData.ram?.testResult || "PASS"
+    initialData.ram?.testResult || "NOT_TESTED"
   );
 
-  const [cpuTemp, setCpuTemp] = useState<number>(initialData.thermals?.cpuTempC || 88);
-  const [gpuTemp, setGpuTemp] = useState<number>(initialData.thermals?.gpuTempC || 75);
+  const [cpuTemp, setCpuTemp] = useState<number>(initialData.thermals?.cpuTempC || 0);
+  const [gpuTemp, setGpuTemp] = useState<number>(initialData.thermals?.gpuTempC || 0);
   const [throttling, setThrottling] = useState<"DETECTED" | "NOT_DETECTED" | "UNKNOWN">(
-    initialData.thermals?.thermalThrottling || "DETECTED"
+    initialData.thermals?.thermalThrottling || "UNKNOWN"
   );
-  const [overheating, setOverheating] = useState<boolean>(initialData.thermals?.overheatingSymptoms || true);
+  const [overheating, setOverheating] = useState<boolean>(initialData.thermals?.overheatingSymptoms || false);
 
   const [hardwareResult, setHardwareResult] = useState<"PASS" | "FAIL" | "NOT_TESTED">(
-    initialData.system?.hardwareResult || "PASS"
+    initialData.system?.hardwareResult || "NOT_TESTED"
   );
   const [criticalFaults, setCriticalFaults] = useState<string>(
-    initialData.system?.criticalFaults || "None reported"
+    initialData.system?.criticalFaults || ""
   );
 
   const [validationError, setValidationError] = useState<string | null>(null);
 
   const calculatedBatteryHealth =
-    designCap > 0 ? Math.min(100, Math.round((fullCap / designCap) * 100)) : 0;
+    (designCap > 0 && fullCap > 0) ? Math.min(100, Math.round((fullCap / designCap) * 100)) : 0;
 
   // Initialize or fetch session on consent
   const handleStartSession = async () => {

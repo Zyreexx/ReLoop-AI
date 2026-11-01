@@ -196,7 +196,7 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
     setShowModelPicker(false);
     setScanStatusText("Uploading image to Gemini Vision API...");
 
-    const fileHint = filesToUse.map((f) => f.name).join(" ");
+    const fileHint = undefined;
 
     // Rotate status messages during AI inference
     const statusTimer = setInterval(() => {

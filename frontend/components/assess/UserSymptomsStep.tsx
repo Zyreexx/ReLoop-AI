@@ -42,17 +42,12 @@ export const UserSymptomsStep: React.FC<UserSymptomsStepProps> = ({
       for (const item of initialData.selectedSymptoms) {
         map[item.symptomId] = item.frequency;
       }
-    } else {
-      // Default sample pre-checked items for smooth testing experience
-      map["battery_drain"] = "frequently";
-      map["overheating"] = "occasionally";
     }
     return map;
   });
 
   const [description, setDescription] = useState<string>(
-    initialData.userDescription ||
-      "The laptop works normally when plugged in, but battery drops rapidly after 30 minutes. Noticeable heat near the hinge under multi-tab browsing."
+    initialData?.userDescription || ""
   );
 
   const [objective, setObjective] = useState<UserObjective>(
