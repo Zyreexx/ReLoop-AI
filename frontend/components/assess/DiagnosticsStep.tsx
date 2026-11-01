@@ -27,6 +27,7 @@ import {
   FileCode,
   AlertTriangle,
 } from "lucide-react";
+import ThermalTelemetryChart from "./ThermalTelemetryChart";
 import { DiagnosticData } from "@/types/assessment";
 import { useLanguage } from "@/context/LanguageContext";
 import {
@@ -531,6 +532,17 @@ export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
                         <span>{copiedCmd ? "Copied" : "Copy"}</span>
                       </button>
                     </div>
+
+                    {detectedOS === "Windows" && (
+                      <div className="pt-1.5 text-[11px] text-[#86868B] font-sans">
+                        <span>If </span>
+                        <code className="text-zinc-300 font-mono">python</code>
+                        <span> is not in your PATH, run with project venv:</span>
+                        <div className="mt-1 bg-black/30 p-2 rounded border border-white/5 font-mono text-[10px] text-zinc-300 select-all">
+                          backend\.venv\Scripts\python.exe reloop_agent.py --token {sessionToken || "<TOKEN>"}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -626,6 +638,12 @@ export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
                   })}
                 </div>
               </div>
+
+              {/* Thermal Telemetry & Sensor History Graph */}
+              <ThermalTelemetryChart
+                hardwareModel={`${manufacturer} ${confirmedModelName}`}
+                isLive={sessionStatus === "RUNNING"}
+              />
             </div>
           ) : (
             /* Substage 3: Comprehensive Findings & 8 Subsystem Cards */
@@ -680,6 +698,14 @@ export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
                   </div>
                 </div>
               </div>
+
+              {/* Thermal Telemetry & Sensor History Graph */}
+              <ThermalTelemetryChart
+                initialBaseTemp={sessionReport?.subsystems?.thermals?.evidence?.cpu_idle_temp_c || 42}
+                initialMaxTemp={sessionReport?.subsystems?.thermals?.evidence?.max_temp_c || 48}
+                hardwareModel={`${manufacturer} ${confirmedModelName}`}
+                isLive={false}
+              />
 
               {/* 8 Subsystems Detailed Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
