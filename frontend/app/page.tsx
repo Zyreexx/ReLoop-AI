@@ -24,14 +24,7 @@ export default function Home() {
   };
 
   const handleAssessClick = () => {
-    if (user) {
-      router.push("/assess-device");
-    } else {
-      try {
-        localStorage.setItem("reloop_redirect", "/assess-device");
-      } catch {}
-      handleOpenAuth("register");
-    }
+    router.push("/assess-device");
   };
 
   const featurePortals = [
