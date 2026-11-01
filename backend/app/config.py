@@ -42,6 +42,10 @@ class Settings:
     GEMINI_MEDIA_RESOLUTION: str = os.getenv("GEMINI_MEDIA_RESOLUTION", "HIGH")
     MAX_IDENTIFY_IMAGES: int = int(os.getenv("MAX_IDENTIFY_IMAGES", "5"))
 
+    # Groq (Secondary fallback for vision)
+    GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
+    GROQ_MODEL: str = os.getenv("GROQ_MODEL", "llama-3.2-11b-vision-preview")
+
     # Fallback mode for demo deployment / Gemini failure
     DEMO_FALLBACK: bool = os.getenv("DEMO_FALLBACK", "false").lower() in (
         "true",

@@ -14,6 +14,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from app.ai.gemini_client import GeminiClient
+from app.ai.groq_client import GroqClient
 from app.ai.prompt_loader import load_prompt, LoadedPrompt
 from app.ai.schemas import (
     ModelIdentificationOutput,
@@ -261,8 +262,156 @@ def test_ai_layer_has_no_scoring_or_optimizer_logic():
     """
     import app.ai.prompt_loader as prompt_mod
 
-    for obj in [GeminiClient, prompt_mod]:
+    for obj in [GeminiClient, GroqClient, prompt_mod]:
         src = inspect.getsource(obj)
         assert "optimizer" not in src.lower(), f"{obj} references optimizer"
         assert "score_pathways" not in src, f"{obj} references score_pathways"
         assert "scoring" not in src.lower(), f"{obj} references scoring"
+
+
+# --- 3. Mocked Groq SDK Tests ---
+
+@pytest.fixture
+def mock_groq_client():
+    return GroqClient(api_key="mock_groq_key", model_name="llama-3.2-11b-vision-preview", timeout=5.0)
+
+
+def test_groq_valid_json_returns_validated_pydantic_model(mock_groq_client):
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {
+        "choices": [
+            {
+                "message": {
+                    "content": '{"cracks": ["Hairline crack on bezel"], "dents": [], "missing_keys": ["F1 keycap missing"], "hinge_damage": [], "port_damage": [], "visible_swelling": [], "observations": ["Normal chassis wear"]}'
+                }
+            }
+        ]
+    }
+
+    with patch("httpx.Client.post", return_value=mock_response):
+        result = mock_groq_client.generate_structured(
+            prompt="Analyze damage",
+            response_model=DamageAssessmentOutput,
+        )
+
+    assert isinstance(result, DamageAssessmentOutput)
+    assert result.cracks == ["Hairline crack on bezel"]
+    assert result.missing_keys == ["F1 keycap missing"]
+    assert result.dents == []
+
+
+def test_groq_valid_json_wrapped_in_markdown_codeblock(mock_groq_client):
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {
+        "choices": [
+            {
+                "message": {
+                    "content": """```json
+                    {
+                      "cracks": [],
+                      "dents": ["Corner dent"],
+                      "missing_keys": [],
+                      "hinge_damage": [],
+                      "port_damage": [],
+                      "visible_swelling": [],
+                      "observations": []
+                    }
+                    ```"""
+                }
+            }
+        ]
+    }
+
+    with patch("httpx.Client.post", return_value=mock_response):
+        result = mock_groq_client.generate_structured(
+            prompt="Analyze damage",
+            response_model=DamageAssessmentOutput,
+        )
+
+    assert isinstance(result, DamageAssessmentOutput)
+    assert result.dents == ["Corner dent"]
+
+
+def test_groq_malformed_json_raises_ai_failure(mock_groq_client):
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {
+        "choices": [
+            {
+                "message": {
+                    "content": "Not valid json at all {broken"
+                }
+            }
+        ]
+    }
+
+    with patch("httpx.Client.post", return_value=mock_response):
+        with pytest.raises(AppError) as exc_info:
+            mock_groq_client.generate_structured(
+                prompt="Analyze damage",
+                response_model=DamageAssessmentOutput,
+            )
+
+    err = exc_info.value
+    assert err.code == ErrorCode.AI_FAILURE.value
+    assert "malformed" in err.message.lower() or "json" in err.message.lower()
+    assert err.http_status == 502
+
+
+def test_groq_unconfigured_api_key_raises_ai_failure():
+    unconfigured = GroqClient(api_key="")
+    with pytest.raises(AppError) as exc_info:
+        unconfigured.generate_structured(
+            prompt="Analyze",
+            response_model=DamageAssessmentOutput,
+        )
+    assert exc_info.value.code == ErrorCode.AI_FAILURE.value
+    assert "GROQ_API_KEY" in exc_info.value.message
+
+
+def test_groq_timeout_retries_once_then_succeeds(mock_groq_client):
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {
+        "choices": [
+            {
+                "message": {
+                    "content": '{"cracks": [], "dents": [], "missing_keys": [], "hinge_damage": [], "port_damage": [], "visible_swelling": [], "observations": ["All clear"]}'
+                }
+            }
+        ]
+    }
+
+    call_count = 0
+
+    def mock_post(*args, **kwargs):
+        nonlocal call_count
+        call_count += 1
+        if call_count == 1:
+            raise TimeoutError("Connection timed out to api.groq.com")
+        return mock_response
+
+    with patch("httpx.Client.post", side_effect=mock_post):
+        result = mock_groq_client.generate_structured(
+            prompt="Analyze damage",
+            response_model=DamageAssessmentOutput,
+        )
+
+    assert call_count == 2
+    assert isinstance(result, DamageAssessmentOutput)
+    assert result.observations == ["All clear"]
+
+
+def test_groq_image_data_url_conversion(mock_groq_client):
+    png_bytes = b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR" + b"\x00" * 20
+    data_url_png = mock_groq_client._convert_to_data_url(png_bytes)
+    assert data_url_png.startswith("data:image/png;base64,")
+
+    jpeg_bytes = b"\xff\xd8\xff\xe0" + b"\x00" * 20
+    data_url_jpeg = mock_groq_client._convert_to_data_url(jpeg_bytes)
+    assert data_url_jpeg.startswith("data:image/jpeg;base64,")
+
+    existing_url = "data:image/webp;base64,UklGRg=="
+    assert mock_groq_client._convert_to_data_url(existing_url) == existing_url
