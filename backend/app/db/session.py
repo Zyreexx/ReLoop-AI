@@ -29,9 +29,10 @@ def _create_database_engine():
         logger.info("Connected to database successfully.")
         return eng
     except Exception:
-        logger.warning("Could not connect to primary database. Falling back to local SQLite './reloop.db'.")
+        fallback_url = f"sqlite:///{settings.DEFAULT_SQLITE_PATH.as_posix()}"
+        logger.warning(f"Could not connect to primary database. Falling back to SQLite '{fallback_url}'.")
         return create_engine(
-            "sqlite:///./reloop.db",
+            fallback_url,
             connect_args={"check_same_thread": False},
         )
 
@@ -61,9 +62,10 @@ def create_all_tables():
     try:
         Base.metadata.create_all(bind=engine)
     except Exception as e:
-        logger.warning(f"create_all_tables failed on current engine: {e}. Retrying with SQLite...")
+        fallback_url = f"sqlite:///{settings.DEFAULT_SQLITE_PATH.as_posix()}"
+        logger.warning(f"create_all_tables failed on current engine: {e}. Retrying with SQLite '{fallback_url}'...")
         engine = create_engine(
-            "sqlite:///./reloop.db",
+            fallback_url,
             connect_args={"check_same_thread": False},
         )
         SessionLocal.configure(bind=engine)
