@@ -77,7 +77,7 @@ def test_get_report_healthy_demo_case(client: TestClient):
     assert report["impact_estimates"]["co2_avoided_kg_min"] > 0
     assert len(report["assumptions"]) > 0
     assert "disclaimer" in report
-    assert "Demo baseline assumptions" in report["disclaimer"]
+    assert "Baseline technical estimates" in report["disclaimer"]
     assert "timestamp" in report
 
 
