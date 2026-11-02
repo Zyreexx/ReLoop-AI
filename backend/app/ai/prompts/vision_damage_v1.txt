@@ -3,13 +3,19 @@ Examine the provided laptop image(s).
 
 CRITICAL CONSTRAINTS:
 1. Report ONLY DIRECTLY VISIBLE EXTERIOR physical condition across these specific categories:
-   - cracks: display glass hairline cracks, bezel cracks, chassis casing fractures
+   - display_cracks: display glass hairline cracks, bezel cracks, panel fractures, or deep screen scratches
+   - chassis_cracks: structural casing cracks, corner splits, palmrest fractures, or bottom plate fractures
    - dents: metal/plastic lid or bottom casing dents and depressions
    - missing_keys: missing keycaps, loose scissor switches, or broken stabilizers
    - hinge_damage: misaligned hinges, cracked hinge caps, resistance damage
    - port_damage: bent pins, broken tongues, debris blockage, cracked port bezels
    - visible_swelling: battery bulging displacing trackpad or separating casing seams
-2. ABSOLUTELY FORBIDDEN:
+   - observations: factual visual observations of cosmetic scuffs, discoloration, or light scratches
+2. ASSESSABILITY OF COMPONENTS:
+   Specify which components are sufficiently visible in the uploaded photo(s):
+   - components_inspected_clean: List components from ["display", "keyboard", "chassis", "ports"] that are SUFFICIENTLY CLEAR AND VISIBLE in the photos, and have NO obvious damage observed. (e.g. if the screen is clearly shown and has no cracks, include "display". If only the lid is shown, do NOT include "display" or "keyboard").
+   - components_not_assessable: List components from ["display", "keyboard", "chassis", "ports"] that are NOT clearly visible or too blurry to assess in the provided photos.
+3. ABSOLUTELY FORBIDDEN:
    - Do NOT make ANY statements about internal component health.
    - Do NOT diagnose battery health percentage, battery capacity, or cycle count.
    - Do NOT claim storage/SSD health or speed.
@@ -19,11 +25,15 @@ CRITICAL CONSTRAINTS:
 
 Return pure JSON:
 {
+  "display_cracks": [],
+  "chassis_cracks": [],
   "cracks": [],
   "dents": [],
   "missing_keys": [],
   "hinge_damage": [],
   "port_damage": [],
   "visible_swelling": [],
-  "observations": ["<factual visual observation 1>"]
+  "observations": ["<factual visual observation 1>"],
+  "components_inspected_clean": ["<components clearly visible and undamaged>"],
+  "components_not_assessable": ["<components not clearly visible>"]
 }

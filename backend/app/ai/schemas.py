@@ -30,13 +30,17 @@ CatalogIdentificationOutput = OpenIdentificationOutput
 
 
 class DamageAssessmentOutput(BaseModel):
-    cracks: List[str] = Field(default_factory=list)
-    dents: List[str] = Field(default_factory=list)
-    missing_keys: List[str] = Field(default_factory=list)
-    hinge_damage: List[str] = Field(default_factory=list)
-    port_damage: List[str] = Field(default_factory=list)
-    visible_swelling: List[str] = Field(default_factory=list)
-    observations: List[str] = Field(default_factory=list)
+    display_cracks: List[str] = Field(default_factory=list, description="Directly visible display glass hairline cracks, panel damage, or deep screen scratches")
+    chassis_cracks: List[str] = Field(default_factory=list, description="Directly visible structural fractures or cracks on the casing, chassis corners, bottom plate, or palmrest")
+    cracks: List[str] = Field(default_factory=list, description="General or legacy crack observations")
+    dents: List[str] = Field(default_factory=list, description="Metal/plastic lid or bottom casing dents and depressions")
+    missing_keys: List[str] = Field(default_factory=list, description="Missing keycaps, loose scissor switches, or broken stabilizers")
+    hinge_damage: List[str] = Field(default_factory=list, description="Misaligned hinges, cracked hinge caps, resistance damage")
+    port_damage: List[str] = Field(default_factory=list, description="Bent pins, broken tongues, debris blockage, cracked port bezels")
+    visible_swelling: List[str] = Field(default_factory=list, description="Visible exterior battery bulge displacing trackpad or separating casing seams")
+    observations: List[str] = Field(default_factory=list, description="Factual visual observations (cosmetic scuffs, discoloration, sticker residue)")
+    components_inspected_clean: List[str] = Field(default_factory=list, description="Components clearly visible in photos with NO obvious damage observed ('display', 'keyboard', 'chassis', 'ports')")
+    components_not_assessable: List[str] = Field(default_factory=list, description="Components that are not visible or too blurry to assess reliably ('display', 'keyboard', 'chassis', 'ports')")
 
 
 class SymptomClassificationOutput(BaseModel):

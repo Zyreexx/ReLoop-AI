@@ -1054,21 +1054,79 @@ class VisionService:
                         http_status=orig_status if orig_status in (429, 500, 502, 503) else 502,
                     )
 
-            # Map raw AI items to VisibleFinding
-            for crack in ai_res.cracks:
+            # Map raw AI items to VisibleFinding with distinct display vs chassis crack handling
+            for crack in (getattr(ai_res, "display_cracks", []) or []):
                 raw_findings.append(VisibleFinding(component=ComponentName.DISPLAY, description=crack, severity="HIGH"))
-            for dent in ai_res.dents:
+
+            for crack in (getattr(ai_res, "chassis_cracks", []) or []):
+                raw_findings.append(VisibleFinding(component=ComponentName.HINGE_CHASSIS, description=crack, severity="HIGH"))
+
+            for crack in (ai_res.cracks or []):
+                crack_lower = crack.lower()
+                if any(k in crack_lower for k in ["chassis", "casing", "housing", "corner", "base", "lid", "palmrest", "bottom"]):
+                    raw_findings.append(VisibleFinding(component=ComponentName.HINGE_CHASSIS, description=crack, severity="HIGH"))
+                else:
+                    raw_findings.append(VisibleFinding(component=ComponentName.DISPLAY, description=crack, severity="HIGH"))
+
+            for dent in (ai_res.dents or []):
                 raw_findings.append(VisibleFinding(component=ComponentName.HINGE_CHASSIS, description=dent, severity="LOW"))
-            for key in ai_res.missing_keys:
+
+            for key in (ai_res.missing_keys or []):
                 raw_findings.append(VisibleFinding(component=ComponentName.KEYBOARD, description=key, severity="MODERATE"))
-            for h_dmg in ai_res.hinge_damage:
+
+            for h_dmg in (ai_res.hinge_damage or []):
                 raw_findings.append(VisibleFinding(component=ComponentName.HINGE_CHASSIS, description=h_dmg, severity="HIGH"))
-            for p_dmg in ai_res.port_damage:
+
+            for p_dmg in (ai_res.port_damage or []):
                 raw_findings.append(VisibleFinding(component="PORTS", description=p_dmg, severity="MODERATE"))
-            for swell in ai_res.visible_swelling:
+
+            for swell in (ai_res.visible_swelling or []):
                 raw_findings.append(VisibleFinding(component=ComponentName.HINGE_CHASSIS, description=f"Visible exterior bulge: {swell}", severity="HIGH"))
-            for obs in ai_res.observations:
+
+            for obs in (ai_res.observations or []):
                 raw_findings.append(VisibleFinding(component=ComponentName.HINGE_CHASSIS, description=obs, severity="LOW"))
+
+            # Process components specifically verified as visible and undamaged
+            clean_comps = getattr(ai_res, "components_inspected_clean", []) or []
+            reported_damaged_components = {
+                str(getattr(f.component, "value", f.component)).lower()
+                for f in raw_findings
+            }
+
+            for comp in clean_comps:
+                comp_key = str(comp).strip().lower()
+                if comp_key == "display" and "display" not in reported_damaged_components:
+                    raw_findings.append(VisibleFinding(
+                        component=ComponentName.DISPLAY,
+                        description="Display panel and glass clearly visible with no obvious cracks or panel blemishes detected.",
+                        severity="NONE",
+                    ))
+                elif comp_key == "keyboard" and "keyboard" not in reported_damaged_components:
+                    raw_findings.append(VisibleFinding(
+                        component=ComponentName.KEYBOARD,
+                        description="Keyboard layout clearly visible with all keycaps intact and aligned.",
+                        severity="NONE",
+                    ))
+                elif comp_key in ["chassis", "hinge"] and not any(k in reported_damaged_components for k in ["chassis", "hinge", "hinge_chassis"]):
+                    raw_findings.append(VisibleFinding(
+                        component=ComponentName.HINGE_CHASSIS,
+                        description="Chassis casing and hinges clearly visible with no obvious structural fractures or deep dents observed.",
+                        severity="NONE",
+                    ))
+                elif comp_key == "ports" and "ports" not in reported_damaged_components:
+                    raw_findings.append(VisibleFinding(
+                        component="PORTS",
+                        description="Exterior I/O ports clearly visible with no pin or connector damage observed.",
+                        severity="NONE",
+                    ))
+
+            # Fallback if AI found no damage and did not list clean components
+            if not raw_findings:
+                raw_findings.append(VisibleFinding(
+                    component=ComponentName.HINGE_CHASSIS,
+                    description="No visible physical damage detected.",
+                    severity="LOW"
+                ))
         elif inspection_notes:
             # Fallback when only notes provided without images
             lowered = inspection_notes.lower()
@@ -1079,7 +1137,8 @@ class VisionService:
             if not raw_findings:
                 raw_findings.append(VisibleFinding(component=ComponentName.HINGE_CHASSIS, description="Exterior inspected; normal wear observed.", severity="LOW"))
         else:
-            raw_findings.append(VisibleFinding(component=ComponentName.HINGE_CHASSIS, description="No visible physical damage detected.", severity="LOW"))
+            # When neither images nor notes are provided, do not fabricate positive evidence
+            pass
 
         # POST-FILTER: drop any claim about internal component health
         clean_findings = filter_visible_findings(raw_findings)
@@ -1111,12 +1170,17 @@ class VisionService:
         # Determine overall condition
         has_severe = any(f.severity in ["HIGH", "CRITICAL"] for f in clean_findings)
         has_moderate = any(f.severity in ["MODERATE", "MEDIUM"] for f in clean_findings)
-        overall_cond = ComponentStatus.DAMAGED if has_severe else (ComponentStatus.WEAR if has_moderate else ComponentStatus.GOOD)
+        if not clean_findings:
+            overall_cond = ComponentStatus.UNKNOWN
+            overall_visual = "UNKNOWN"
+        else:
+            overall_cond = ComponentStatus.DAMAGED if has_severe else (ComponentStatus.WEAR if has_moderate else ComponentStatus.GOOD)
+            overall_visual = "SERVICE_REQUIRED" if (has_severe or has_moderate) else "GOOD"
 
         return VisionAnalyzeResponse(
             product_id=product_id,
             findings=clean_findings,
-            overall_visual_condition="SERVICE_REQUIRED" if (has_severe or has_moderate) else "GOOD",
+            overall_visual_condition=overall_visual,
             overall_condition=overall_cond,
             evidence_items=evidence_items,
             source="live" if image_bytes_list else "manual",

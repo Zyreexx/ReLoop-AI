@@ -219,11 +219,13 @@ export async function POST(req: NextRequest) {
     });
 
     // 8. CHASSIS COMPONENT
-    const visChassis = visual.visibleObservations.find((v) => v.component === "chassis");
+    const visChassis = visual.visibleObservations.find((v) => v.component === "chassis" && v.source === "DAMAGE_ANALYSIS") || visual.visibleObservations.find((v) => v.component === "chassis");
+    const chassisStatus = visChassis?.condition === "visible_crack" ? "needs_attention" : visChassis?.condition === "loose_part" ? "needs_attention" : "good";
+    const chassisLabel = visChassis?.condition === "visible_crack" ? "Structural Damage" : visChassis?.condition === "loose_part" ? "Loose Part" : visChassis?.condition === "surface_scratches" ? "Cosmetic Scratches" : "Good";
     conditionProfile.push({
       component: "Chassis / Case",
-      status: visChassis?.condition === "surface_scratches" ? "good" : visChassis?.condition === "loose_part" ? "needs_attention" : "good",
-      statusLabel: visChassis?.condition === "surface_scratches" ? "Cosmetic Scratches" : "Good",
+      status: chassisStatus,
+      statusLabel: chassisLabel,
       summary: visChassis?.observation || "Chassis structurally sound",
       confidence: "High",
       evidence: [

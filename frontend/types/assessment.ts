@@ -45,6 +45,8 @@ export type VisualObservation = {
   condition: "no_visible_damage" | "minor_wear" | "surface_scratches" | "loose_part" | "visible_crack" | "missing_key";
   observation: string;
   confidence: number;
+  severity?: "NONE" | "LOW" | "MODERATE" | "HIGH" | "CRITICAL";
+  source?: "DAMAGE_ANALYSIS" | "MODEL_IDENTIFICATION" | "USER_REPORTED";
 };
 
 export type VisualInspectionData = {
@@ -58,6 +60,14 @@ export type VisualInspectionData = {
     visible_label_text?: string | null;
   };
   visibleObservations: VisualObservation[];
+  damageFindings?: Array<{
+    component: string;
+    description: string;
+    severity: string;
+    confidence: number;
+    evidence_type?: string;
+  }>;
+  overallVisualCondition?: string;
 };
 
 export type BatteryDiagnostic = {

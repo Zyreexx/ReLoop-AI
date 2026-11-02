@@ -86,7 +86,7 @@ class AssessmentService:
         components["keyboard"] = self._synthesize_keyboard(kb_evs, product)
 
         # 7. CHASSIS / HINGE (Visual / User-Reported)
-        chas_evs = [e for e in evidence_list if e.component in ["chassis", "hinge", "hinge_chassis"]]
+        chas_evs = [e for e in evidence_list if e.component in ["chassis", "hinge", "hinge_chassis", "ports"]]
         components["chassis"] = self._synthesize_chassis(chas_evs, product)
 
         # 8. SYSTEM / MOTHERBOARD (Diagnostic / User-Reported only — Visual can NEVER prove board health)
@@ -346,7 +346,7 @@ class AssessmentService:
         )
 
     def _synthesize_display(self, evs: List[EvidenceItem], prod: ProductRecord) -> ComponentCondition:
-        vis_ev = next((e for e in evs if e.type == EvidenceType.VISUAL), None)
+        vis_evs = [e for e in evs if e.type == EvidenceType.VISUAL]
         diag_ev = next((e for e in evs if e.type == EvidenceType.DIAGNOSTIC), None)
         user_ev = next((e for e in evs if e.type == EvidenceType.USER_REPORTED), None)
         evidence_ids = [e.id for e in evs]
@@ -367,14 +367,27 @@ class AssessmentService:
                 label = "Bench Tested OK"
             observations.append(f"Display diagnostic: {val.get('note', 'Tested panel output')} ({diag_ev.source}).")
             confidence = ConfidenceLevel.HIGH
-        elif vis_ev:
-            vis_data = vis_ev.value if isinstance(vis_ev.value, dict) else {}
-            status_str = str(vis_data.get("visible_status", vis_data.get("severity", "GOOD"))).upper()
-            obs = vis_data.get("observation", vis_data.get("description", ""))
-            observations.append(f"Optical scan: {obs} ({vis_ev.source}).")
-            if status_str in ["SERVICE_REQUIRED", "HIGH", "CRITICAL", "DAMAGED"]:
+        elif vis_evs:
+            severities = []
+            obs_list = []
+            for ve in vis_evs:
+                vis_data = ve.value if isinstance(ve.value, dict) else {}
+                status_str = str(vis_data.get("visible_status", vis_data.get("severity", "GOOD"))).upper()
+                obs = vis_data.get("observation", vis_data.get("description", ""))
+                severities.append(status_str)
+                if obs and obs not in obs_list:
+                    obs_list.append(obs)
+                    observations.append(f"Optical scan: {obs} ({ve.source}).")
+
+            has_severe = any(s in ["SERVICE_REQUIRED", "HIGH", "CRITICAL", "DAMAGED"] for s in severities)
+            has_moderate = any(s in ["MODERATE", "MEDIUM", "WEAR", "FAIR"] for s in severities)
+
+            if has_severe:
                 status = ComponentStatus.SERVICE_REQUIRED
                 label = "Visible Damage / Crack"
+            elif has_moderate:
+                status = ComponentStatus.SERVICE_REQUIRED
+                label = "Display Issue"
             else:
                 status = ComponentStatus.GOOD
                 label = "Clean / No Cracks"
@@ -406,23 +419,37 @@ class AssessmentService:
 
     def _synthesize_keyboard(self, evs: List[EvidenceItem], prod: ProductRecord) -> ComponentCondition:
         diag_ev = next((e for e in evs if e.type == EvidenceType.DIAGNOSTIC), None)
-        vis_ev = next((e for e in evs if e.type == EvidenceType.VISUAL), None)
+        vis_evs = [e for e in evs if e.type == EvidenceType.VISUAL]
         user_ev = next((e for e in evs if e.type == EvidenceType.USER_REPORTED), None)
         evidence_ids = [e.id for e in evs]
         sources = [e.source for e in evs]
         observations = []
 
-        if vis_ev:
-            val = vis_ev.value if isinstance(vis_ev.value, dict) else {}
-            status_str = str(val.get("visible_status", val.get("severity", "GOOD"))).upper()
-            obs = val.get("observation", val.get("description", ""))
-            if status_str in ["SERVICE_REQUIRED", "MEDIUM", "HIGH", "CRITICAL", "DAMAGED"]:
+        if vis_evs:
+            severities = []
+            obs_list = []
+            has_missing_key = False
+            for ve in vis_evs:
+                val = ve.value if isinstance(ve.value, dict) else {}
+                status_str = str(val.get("visible_status", val.get("severity", "GOOD"))).upper()
+                obs = val.get("observation", val.get("description", ""))
+                severities.append(status_str)
+                if obs and obs not in obs_list:
+                    obs_list.append(obs)
+                    observations.append(f"Visual inspection: {obs} ({ve.source}).")
+                obs_lower = obs.lower()
+                if ("missing" in obs_lower or "broken" in obs_lower or "loose" in obs_lower or "unseated" in obs_lower) and ("key" in obs_lower or "switch" in obs_lower or "scissor" in obs_lower):
+                    has_missing_key = True
+
+            has_damage = any(s in ["SERVICE_REQUIRED", "MEDIUM", "MODERATE", "HIGH", "CRITICAL", "DAMAGED"] for s in severities) or has_missing_key
+
+            if has_damage:
                 status = ComponentStatus.SERVICE_REQUIRED
-                label = "Key Damage / Missing"
+                label = "Key Damage / Missing" if has_missing_key else "Key Damage / Wear"
             else:
                 status = ComponentStatus.GOOD
                 label = "Intact"
-            observations.append(f"Visual inspection: {obs} ({vis_ev.source}).")
+
             if diag_ev:
                 diag_val = diag_ev.value if isinstance(diag_ev.value, dict) else {}
                 observations.append(f"Keyboard controller: {diag_val.get('device', 'HID OK')} ({diag_ev.source}).")
@@ -465,7 +492,7 @@ class AssessmentService:
 
     def _synthesize_chassis(self, evs: List[EvidenceItem], prod: ProductRecord) -> ComponentCondition:
         diag_ev = next((e for e in evs if e.type == EvidenceType.DIAGNOSTIC), None)
-        vis_ev = next((e for e in evs if e.type == EvidenceType.VISUAL), None)
+        vis_evs = [e for e in evs if e.type == EvidenceType.VISUAL]
         user_ev = next((e for e in evs if e.type == EvidenceType.USER_REPORTED), None)
         evidence_ids = [e.id for e in evs]
         sources = [e.source for e in evs]
@@ -476,20 +503,37 @@ class AssessmentService:
             ff = diag_val.get("form_factor", "Notebook / Laptop")
             observations.append(f"Chassis form factor identified: {ff} ({diag_ev.source}).")
 
-        if vis_ev:
-            val = vis_ev.value if isinstance(vis_ev.value, dict) else {}
-            severity = str(val.get("severity", val.get("visible_status", "LOW"))).upper()
-            obs = val.get("observation", val.get("description", "Chassis visual analysis"))
-            if severity in ["HIGH", "CRITICAL", "SERVICE_REQUIRED", "DAMAGED"]:
+        if vis_evs:
+            severities = []
+            obs_list = []
+            has_hinge_issue = False
+            has_port_issue = False
+            for ve in vis_evs:
+                val = ve.value if isinstance(ve.value, dict) else {}
+                severity = str(val.get("severity", val.get("visible_status", "LOW"))).upper()
+                obs = val.get("observation", val.get("description", "Chassis visual analysis"))
+                severities.append(severity)
+                if obs and obs not in obs_list:
+                    obs_list.append(obs)
+                    prefix = "Port inspection" if ve.component == "ports" else "Optical analysis"
+                    observations.append(f"{prefix}: {obs} ({ve.source}).")
+                if "hinge" in obs.lower() or ve.component in ["hinge"]:
+                    has_hinge_issue = True
+                if "port" in obs.lower() or ve.component in ["ports"]:
+                    has_port_issue = True
+
+            has_severe = any(s in ["HIGH", "CRITICAL", "SERVICE_REQUIRED", "DAMAGED"] for s in severities)
+            has_moderate = any(s in ["MODERATE", "MEDIUM", "FAIR"] for s in severities)
+
+            if has_severe:
                 status = ComponentStatus.SERVICE_REQUIRED
-                label = "Chassis Damage"
-            elif severity in ["MEDIUM", "FAIR"]:
-                status = ComponentStatus.FAIR
-                label = "Moderate Cosmetic Wear"
+                label = "Chassis / Hinge Damage" if has_hinge_issue else "Chassis Damage"
+            elif has_moderate:
+                status = ComponentStatus.SERVICE_REQUIRED if has_port_issue else ComponentStatus.FAIR
+                label = "Port / Chassis Issue" if has_port_issue else "Moderate Cosmetic Wear"
             else:
                 status = ComponentStatus.GOOD
                 label = "Solid / Minor Wear"
-            observations.append(f"Optical analysis: {obs} ({vis_ev.source}).")
             confidence = ConfidenceLevel.HIGH
         elif user_ev:
             # USER_REPORTED alone never produces GOOD

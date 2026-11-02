@@ -216,7 +216,7 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
       // 1. Try FastAPI backend proxy with Gemini client
       const activeKey = customApiKey || undefined;
       const result = await backendIdentifyProduct(
-        filesToUse.slice(0, 3),
+        filesToUse.slice(0, 6),
         fileHint,
         undefined,
         undefined,
@@ -241,6 +241,7 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
             condition: "no_visible_damage" as const,
             observation: clue,
             confidence: result.confidence || 0.9,
+            source: "MODEL_IDENTIFICATION" as const,
           })
         );
 
@@ -251,6 +252,7 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
             condition: "no_visible_damage",
             observation: `Identified ${result.identified_model.manufacturer} ${result.identified_model.model} via optical design cues`,
             confidence: result.confidence || 0.9,
+            source: "MODEL_IDENTIFICATION" as const,
           });
         }
 
@@ -349,6 +351,8 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
       rawFiles,
       identifiedProduct: updatedProduct,
       visibleObservations,
+      damageFindings: initialData?.damageFindings,
+      overallVisualCondition: initialData?.overallVisualCondition,
     });
   };
 
@@ -839,24 +843,43 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
                 {t("visual.observationsTitle", "Gemini Vision Observations")}
               </h4>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {visibleObservations.map((obs) => (
-                  <div
-                    key={obs.id}
-                    className="p-4 rounded-2xl bg-white border border-[#E5E5E7] shadow-2xs hover:border-[#D2D2D7] transition-all"
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-bold capitalize text-[#1D1D1F]">
-                        {obs.component}
-                      </span>
-                      <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-blue-50 text-[#0071E3] border border-blue-200 font-bold">
-                        OPTICAL
-                      </span>
+                {visibleObservations.map((obs) => {
+                  const isDmg = obs.source === "DAMAGE_ANALYSIS";
+                  const sev = (obs.severity || "").toUpperCase();
+                  const badgeColor =
+                    sev === "HIGH" || sev === "CRITICAL"
+                      ? "bg-red-50 text-red-700 border-red-200"
+                      : sev === "MODERATE" || sev === "MEDIUM"
+                      ? "bg-amber-50 text-amber-700 border-amber-200"
+                      : sev === "NONE"
+                      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                      : "bg-blue-50 text-[#0071E3] border-blue-200";
+
+                  const badgeText = isDmg
+                    ? (sev || "DAMAGE")
+                    : obs.source === "MODEL_IDENTIFICATION"
+                    ? "MODEL CUE"
+                    : "OPTICAL";
+
+                  return (
+                    <div
+                      key={obs.id}
+                      className="p-4 rounded-2xl bg-white border border-[#E5E5E7] shadow-2xs hover:border-[#D2D2D7] transition-all"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs font-bold capitalize text-[#1D1D1F]">
+                          {obs.component}
+                        </span>
+                        <span className={`text-[10px] font-mono uppercase px-2 py-0.5 rounded border font-bold ${badgeColor}`}>
+                          {badgeText}
+                        </span>
+                      </div>
+                      <p className="text-xs text-[#1D1D1F] font-medium leading-relaxed">
+                        {obs.observation}
+                      </p>
                     </div>
-                    <p className="text-xs text-[#1D1D1F] font-medium leading-relaxed">
-                      {obs.observation}
-                    </p>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
