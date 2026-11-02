@@ -9,6 +9,7 @@ Enforces non-negotiable rules:
 - AI failure raises AppError AI_FAILURE
 - Results persisted as VISUAL evidence records linked to product
 """
+import json
 import re
 import logging
 from typing import Any, Dict, List, Optional, Set
@@ -89,6 +90,28 @@ KNOWN_BRAND_FAMILIES: Dict[str, List[str]] = {
     "razer": ["razer", "blade"],
     "lg": ["lg", "gram"],
 }
+
+ALL_FAMILY_KEYWORDS: Set[str] = {
+    kw.lower()
+    for kw_list in KNOWN_BRAND_FAMILIES.values()
+    for kw in kw_list
+}
+
+BRANDING_KEYWORDS: Set[str] = {
+    "logo", "badge", "emblem", "branding", "trademark", "sticker", "tag"
+}
+
+DISTINCTIVE_DESIGN_CUES: Set[str] = {
+    "ergolift", "numberpad", "trackpoint", "touch bar", "magsafe", "retina", "wedge lock"
+}
+
+
+def _has_branding_or_distinctive_cues(visual_evidence: List[str]) -> bool:
+    combined_visual = " ".join(visual_evidence).lower()
+    return any(
+        re.search(r"\b" + re.escape(w) + r"\b", combined_visual)
+        for w in BRANDING_KEYWORDS | DISTINCTIVE_DESIGN_CUES
+    )
 
 
 def validate_image_roles(image_roles: Optional[List[str]], image_count: int) -> List[str]:
@@ -207,17 +230,29 @@ def _is_model_text_in_labels(
     # 1. Full model name check
     model_lower = candidate.model.lower().strip()
     if model_lower and model_lower != "unknown":
+        # Pure family/series names alone do not qualify as model-specific text
+        if model_lower in ALL_FAMILY_KEYWORDS:
+            digit_tokens = _extract_digit_tokens(candidate.model)
+            if not digit_tokens:
+                return False
+
         if model_lower in combined_labels:
-            return True
+            cleaned_tokens = [t for t in re.sub(r"[(),/\-_]", " ", model_lower).split() if t not in ALL_FAMILY_KEYWORDS]
+            if cleaned_tokens or _extract_digit_tokens(candidate.model):
+                return True
 
         full_name = f"{candidate.manufacturer.lower().strip()} {model_lower}"
         if full_name in combined_labels:
-            return True
+            cleaned_tokens = [t for t in re.sub(r"[(),/\-_]", " ", model_lower).split() if t not in ALL_FAMILY_KEYWORDS]
+            if cleaned_tokens or _extract_digit_tokens(candidate.model):
+                return True
 
         cleaned_model_full = re.sub(r"[(),/\-_]", " ", model_lower)
         cleaned_model_collapsed = " ".join(cleaned_model_full.split())
         if cleaned_model_collapsed and cleaned_model_collapsed in combined_labels:
-            return True
+            cleaned_tokens = [t for t in cleaned_model_collapsed.split() if t not in ALL_FAMILY_KEYWORDS]
+            if cleaned_tokens or _extract_digit_tokens(candidate.model):
+                return True
 
     # 2. Check key digit-bearing model identifiers and numbers (e.g. '5420', '840', 't14', 'm1', 'g7', 'a515')
     specific_identifiers = _extract_digit_tokens(candidate.model)
@@ -239,7 +274,7 @@ def _has_contradiction(
     contradictions: List[str],
 ) -> bool:
     """
-    Checks if Gemini noted contradictions or if label_evidence contradicts candidate manufacturer.
+    Checks if Gemini noted contradictions or if label/visual evidence contradicts candidate manufacturer.
     """
     if any(c.strip() for c in contradictions if c):
         return True
@@ -253,15 +288,26 @@ def _has_contradiction(
         cand_keywords = [cand_mfr] + cand_keywords
 
     combined_labels = " ".join(label_evidence).lower()
-    cand_brand_found = any(re.search(r"\b" + re.escape(bk) + r"\b", combined_labels) for bk in cand_keywords)
+    combined_visuals = " ".join(visual_evidence).lower()
+
+    # Check for explicit contradiction or mismatch indicators in visual notes
+    contradiction_indicators = ["contradiction", "conflicts with", "mismatch", "contrasting brand", "different brand"]
+    if any(ci in combined_visuals for ci in contradiction_indicators):
+        return True
+
+    cand_brand_found = any(
+        re.search(r"\b" + re.escape(bk) + r"\b", combined_labels)
+        or re.search(r"\b" + re.escape(bk) + r"\b", combined_visuals)
+        for bk in cand_keywords
+    )
 
     for other_mfr, other_keywords in KNOWN_BRAND_FAMILIES.items():
         if other_mfr == cand_mfr:
             continue
         for ok in other_keywords:
             if re.search(r"\b" + re.escape(ok) + r"\b", combined_labels):
-                if not cand_brand_found:
-                    return True
+                return True
+            if re.search(r"\b" + re.escape(ok) + r"\b", combined_visuals) and not cand_brand_found:
                 return True
 
     return False
@@ -339,14 +385,14 @@ def evaluate_identification_confidence(
     if _is_model_text_in_labels(candidate, labels, catalog_candidates=catalog_candidates):
         return ConfidenceLevel.HIGH
 
-    # 4. MEDIUM: visual-only evidence caps at MEDIUM (>= 2 visual items or manufacturer clear)
-    if _is_manufacturer_clear(candidate, labels, visuals):
+    # 4. MEDIUM: requires manufacturer brand clear in labels/visuals OR distinctive branding/visual clues (>= 2 items)
+    mfr_clear = _is_manufacturer_clear(candidate, labels, visuals)
+    distinctive_branding = _has_branding_or_distinctive_cues(visuals)
+
+    if mfr_clear or (distinctive_branding and len(visuals) >= 2):
         return ConfidenceLevel.MEDIUM
 
-    if len(visuals) >= 2:
-        return ConfidenceLevel.MEDIUM
-
-    # 5. LOW: only generic visual similarity
+    # 5. LOW: only generic visual similarity when branding is not clearly confirmed
     if len(visuals) >= 1:
         return ConfidenceLevel.LOW
 
@@ -416,6 +462,54 @@ def _is_rate_limit_error(e: Exception) -> bool:
         "exceeded your current quota",
     ]
     return any(indicator in msg for indicator in indicators)
+
+
+def _should_fallback_to_groq(e: Exception) -> bool:
+    """
+    Determines if an AI failure should attempt Groq fallback:
+    - Quota / rate-limit errors
+    - Temporary server / network errors (500, 502, 503, 504, timeout, connection)
+    - Malformed JSON / schema validation errors
+    - Missing or unconfigured Gemini API key
+    """
+    if not settings.GROQ_API_KEY:
+        return False
+
+    if _is_rate_limit_error(e):
+        return True
+
+    for attr in ["http_status", "status_code", "code"]:
+        val = getattr(e, attr, None)
+        if val in (500, 502, 503, 504, "500", "502", "503", "504"):
+            return True
+
+    if isinstance(e, (json.JSONDecodeError, ValueError)):
+        return True
+
+    msg = str(e).lower()
+    fallback_indicators = [
+        "timeout",
+        "timed out",
+        "deadline exceeded",
+        "connection reset",
+        "connection refused",
+        "service unavailable",
+        "temporary failure",
+        "internal server error",
+        "bad gateway",
+        "gateway timeout",
+        "malformed",
+        "non-json",
+        "jsondecode",
+        "unterminated",
+        "expecting value",
+        "validation error",
+        "failed schema validation",
+        "gemini api key is not configured",
+        "api key not valid",
+        "api_key_invalid",
+    ]
+    return any(ind in msg for ind in fallback_indicators)
 
 
 class VisionService:
@@ -565,8 +659,11 @@ class VisionService:
                 media_resolution=settings.GEMINI_MEDIA_RESOLUTION,
             )
         except Exception as e:
-            if _is_rate_limit_error(e) and settings.GROQ_API_KEY:
-                logger.warning("Gemini rate limit encountered. Falling back to Groq (Llama 3.2 Vision)...")
+            if _should_fallback_to_groq(e):
+                if _is_rate_limit_error(e):
+                    logger.warning("Gemini rate limit encountered. Falling back to Groq (Llama 3.2 Vision)...")
+                else:
+                    logger.warning(f"Gemini identify error ({e}). Falling back to Groq (Llama 3.2 Vision)...")
                 try:
                     ai_res = groq_client.generate_structured(
                         prompt=prompt_text,
@@ -612,6 +709,38 @@ class VisionService:
                 c_info = candidate_data["candidate"]
                 raw_mfr = c_info.manufacturer
                 raw_model = c_info.model
+
+        # Check for non-laptop indications
+        all_notes = " ".join((ai_res.visual_evidence or []) + (ai_res.contradictions or [])).lower()
+        non_laptop_indicators = ["non-laptop", "not a laptop", "no laptop", "desktop", "smartphone", "phone", "tablet", "monitor only"]
+        is_non_laptop = any(nli in all_notes for nli in non_laptop_indicators)
+
+        if is_non_laptop or (raw_mfr.upper() == "UNKNOWN" and raw_model.upper() == "UNKNOWN"):
+            unknown_msg = (
+                "Uploaded image does not appear to contain an identifiable laptop. Please upload clear photos of your laptop or select your model manually."
+                if is_non_laptop
+                else "Model could not be identified from photos. Your device may not be in the currently supported catalog. Please select your model manually to continue."
+            )
+            return ProductIdentifyResponse(
+                status=IdentificationStatus.UNKNOWN,
+                identified_model=None,
+                candidate_id="UNKNOWN",
+                is_supported=False,
+                confidence=ai_res.model_confidence,
+                confidence_level=ConfidenceLevel.UNKNOWN,
+                visible_label_text="; ".join(ai_res.label_evidence) if ai_res.label_evidence else None,
+                visual_clues=ai_res.visual_evidence,
+                label_evidence=ai_res.label_evidence,
+                visual_evidence=ai_res.visual_evidence,
+                contradictions=ai_res.contradictions,
+                needs_confirmation=True,
+                requires_user_confirmation=True,
+                supported_models=all_supported,
+                generic_fallback_available=True,
+                generic_model=generic_candidate,
+                message=unknown_msg,
+                source="live",
+            )
 
         candidate_obj = None
         is_catalog_matched = False
@@ -675,7 +804,7 @@ class VisionService:
                 supported_models=all_supported,
                 generic_fallback_available=True,
                 generic_model=generic_candidate,
-                message="Model could not be identified from photos. Your device may not be in the currently supported catalog. Please select your model manually to continue.",
+                message="Model could not be identified with sufficient certainty. Please select your model manually to continue.",
                 source="live",
             )
 
@@ -749,8 +878,11 @@ class VisionService:
                     images=image_bytes_list,
                 )
             except Exception as e:
-                if _is_rate_limit_error(e) and settings.GROQ_API_KEY:
-                    logger.warning("Gemini rate limit encountered. Falling back to Groq (Llama 3.2 Vision)...")
+                if _should_fallback_to_groq(e):
+                    if _is_rate_limit_error(e):
+                        logger.warning("Gemini rate limit encountered. Falling back to Groq (Llama 3.2 Vision)...")
+                    else:
+                        logger.warning(f"Gemini vision damage analysis error ({e}). Falling back to Groq (Llama 3.2 Vision)...")
                     try:
                         ai_res = groq_client.generate_structured(
                             prompt=prompt_text,
@@ -764,10 +896,11 @@ class VisionService:
 
                 if ai_res is None:
                     logger.warning(f"AI vision damage analysis failed ({e}).")
+                    orig_status = getattr(e, "http_status", None) or 502
                     raise AppError(
                         code=ErrorCode.AI_FAILURE.value,
-                        message=f"Vision damage analysis failed: {e}",
-                        http_status=503,
+                        message="Vision damage analysis failed.",
+                        http_status=orig_status if orig_status in (429, 500, 502, 503) else 502,
                     )
 
             # Map raw AI items to VisibleFinding

@@ -841,35 +841,28 @@ def test_analyze_gemini_failure_returns_ai_failure(client: TestClient, registere
     assert err["code"] == ErrorCode.AI_FAILURE.value
 
 
-def test_identify_demo_fallback_flag(client: TestClient, monkeypatch):
-    monkeypatch.setattr("app.config.settings.DEMO_FALLBACK", True)
+def test_identify_without_images_or_manual_selection_returns_invalid_evidence(client: TestClient):
     res = client.post("/api/products/identify", json={"hint": "Lenovo ThinkPad T14 Gen 1"})
     assert res.status_code == 200
     data = res.json()
-    assert data["is_supported"] is True
-    assert data["source"] == "sample-data"
-    assert data["identified_model"]["manufacturer"] == "Lenovo"
-    assert any("sample-data" in clue for clue in data["visual_clues"])
+    assert data["status"] == "INVALID_EVIDENCE"
+    assert data["source"] != "sample-data"
 
 
-def test_analyze_demo_fallback_flag(client: TestClient, registered_product, monkeypatch):
-    monkeypatch.setattr("app.config.settings.DEMO_FALLBACK", True)
+def test_analyze_demo_fallback_flag(client: TestClient, registered_product):
     res = client.post(
         "/api/vision/analyze",
         json={"product_id": registered_product.id, "inspection_notes": "dell latitude 5420 keyboard"},
     )
     assert res.status_code == 200
     data = res.json()
-    assert data["source"] == "sample-data"
+    assert data["source"] == "manual"
     assert len(data["findings"]) > 0
-    # Check that saved evidence is labeled source: "sample-data"
     evidence_list = store.get_evidence(registered_product.id)
-    sample_ev = [e for e in evidence_list if e.source == "sample-data"]
-    assert len(sample_ev) > 0
+    assert len(evidence_list) > 0
 
 
-def test_gemini_failure_fallback_for_demo_model(client: TestClient, monkeypatch):
-    monkeypatch.setattr("app.config.settings.DEMO_FALLBACK", True)
+def test_gemini_failure_fallback_for_demo_model(client: TestClient):
     with patch.object(
         gemini_client,
         "generate_structured",
@@ -884,11 +877,9 @@ def test_gemini_failure_fallback_for_demo_model(client: TestClient, monkeypatch)
 
     assert res.status_code == 200
     data = res.json()
-    assert data["status"] == "IDENTIFIED"
-    assert data["is_supported"] is True
-    assert data["source"] == "sample-data"
-    assert data["identified_model"]["manufacturer"] == "Lenovo"
-    assert any("sample-data" in clue for clue in data["visual_clues"])
+    assert data["status"] == "AI_UNAVAILABLE"
+    assert data["source"] != "sample-data"
+    assert data["identified_model"] is None
 
 
 # ============================================================================
@@ -1043,19 +1034,18 @@ def test_demo_fallback_false_on_gemini_failure_never_returns_sample_data(client:
     assert data["identified_model"] is None
 
 
-def test_demo_fallback_true_for_unsupported_hint_returns_unknown(client: TestClient, monkeypatch):
-    """Rule 6: When DEMO_FALLBACK=true, unsupported models like Victus or LOQ return UNKNOWN, not Dell."""
-    monkeypatch.setattr("app.config.settings.DEMO_FALLBACK", True)
+def test_demo_fallback_true_for_unsupported_hint_returns_unknown(client: TestClient):
+    """When only a descriptive hint is sent without images or manual model, requires evidence."""
     res_victus = client.post("/api/products/identify", json={"hint": "HP Victus 15"})
     assert res_victus.status_code == 200
     data_victus = res_victus.json()
-    assert data_victus["status"] == "UNKNOWN"
+    assert data_victus["status"] == "INVALID_EVIDENCE"
     assert data_victus["identified_model"] is None
 
     res_loq = client.post("/api/products/identify", json={"hint": "Lenovo LOQ 15"})
     assert res_loq.status_code == 200
     data_loq = res_loq.json()
-    assert data_loq["status"] == "UNKNOWN"
+    assert data_loq["status"] == "INVALID_EVIDENCE"
     assert data_loq["identified_model"] is None
 
 

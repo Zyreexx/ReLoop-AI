@@ -17,7 +17,9 @@ GUIDELINES:
 3. Contradictions: Explicitly list any visual contradictions (e.g. lid shows Lenovo logo but sticker says Dell, or port layout does not match).
 4. Identification:
    - Identify the manufacturer and exact model as specifically as possible.
+   - If the image does not depict a laptop or notebook computer (e.g. smartphone, tablet, desktop tower, non-electronic object), return "UNKNOWN" for both manufacturer and model, and explicitly note "Non-laptop object detected" in visual_evidence.
    - If the manufacturer or model cannot be identified or photos are too blurry/unclear, return "UNKNOWN" for manufacturer and/or model.
+   - Do not guess or fabricate an exact model number if only the brand or product family is visible.
 5. Confidence: Provide an advisory confidence score (0.0 to 1.0) reflecting your visual certainty.
 6. Boundaries: NEVER guess internal component health (battery cycles, SSD health, thermals, motherboard status).
 

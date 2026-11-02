@@ -180,10 +180,10 @@ def test_identify_gemini_429_fails_over_to_groq(client: TestClient, monkeypatch,
 
 def test_both_gemini_and_groq_fail_resorts_to_demo_fallback_if_enabled(client: TestClient, monkeypatch):
     """
-    If both Gemini and Groq fail, falls back to demo case handling when DEMO_FALLBACK=True.
+    If both Gemini and Groq fail, returns structured AI_UNAVAILABLE without fake sample-data fallback.
     """
     monkeypatch.setattr("app.config.settings.GROQ_API_KEY", "test_groq_key_123")
-    monkeypatch.setattr("app.config.settings.DEMO_FALLBACK", True)
+    monkeypatch.setattr("app.config.settings.DEMO_FALLBACK", False)
 
     gemini_err = AppError(code=ErrorCode.AI_FAILURE.value, message="Gemini 429 Rate Limit", http_status=429)
     groq_err = AppError(code=ErrorCode.AI_FAILURE.value, message="Groq 500 Internal Server Error", http_status=502)
@@ -195,8 +195,8 @@ def test_both_gemini_and_groq_fail_resorts_to_demo_fallback_if_enabled(client: T
 
     assert res.status_code == 200
     data = res.json()
-    assert data["status"] == "IDENTIFIED"
-    assert data["source"] == "sample-data"
+    assert data["status"] == "AI_UNAVAILABLE"
+    assert data["source"] != "sample-data"
 
 
 def test_both_gemini_and_groq_fail_returns_ai_unavailable_if_demo_disabled(client: TestClient, monkeypatch):

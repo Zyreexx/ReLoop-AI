@@ -255,7 +255,7 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
         setAnalyzed(true);
       } else if (result.status === "AI_UNAVAILABLE") {
         setShowModelPicker(true);
-        setErrorMsg("AI identification is temporarily unavailable. Please select your model manually to continue.");
+        setErrorMsg(result.message || "AI identification is temporarily unavailable. Please select your model manually to continue.");
         setIdentifiedProduct({
           manufacturer: "",
           model: "",
@@ -267,7 +267,7 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
         setAnalyzed(false);
       } else if (result.status === "INVALID_EVIDENCE") {
         setShowModelPicker(true);
-        setErrorMsg("Unable to analyze these photos. Please provide clearer, well-lit device photos or select your model manually.");
+        setErrorMsg(result.message || "Unable to analyze these photos. Please provide clearer, well-lit device photos or select your model manually.");
         setIdentifiedProduct({
           manufacturer: "",
           model: "",
@@ -280,7 +280,7 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
       } else {
         // UNKNOWN or unrecognized device
         setShowModelPicker(true);
-        setErrorMsg("Model could not be identified. Your device may not be in the currently supported catalog. Please select your model manually to continue.");
+        setErrorMsg(result.message || "Model could not be identified. Your device may not be in the currently supported catalog. Please select your model manually to continue.");
         setIdentifiedProduct({
           manufacturer: "",
           model: "",
