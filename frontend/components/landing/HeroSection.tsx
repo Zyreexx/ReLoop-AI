@@ -310,13 +310,13 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenAuth }) => {
   );
 
   return (
-    <section id="overview" className="relative overflow-hidden bg-[#F5F5F7] border-b border-[#E5E5E7]">
+    <section id="overview" className="relative overflow-hidden w-full max-w-full bg-[#F5F5F7] border-b border-[#E5E5E7]">
       {/* ─────────────────────────────────────────────────────────────
           HERO BANNER WITH FLOATING LAPTOPS IN THE BACKGROUND
           ───────────────────────────────────────────────────────────── */}
-      <div className="relative min-h-[85vh] sm:min-h-[88vh] flex items-center justify-center pt-14 pb-20 overflow-hidden">
+      <div className="relative min-h-[85vh] sm:min-h-[88vh] flex items-center justify-center pt-14 pb-20 overflow-hidden w-full max-w-full">
         {/* BACKGROUND LAYER: Dual Inclined Floating Laptop Lines */}
-        <div className="absolute inset-0 z-0 overflow-hidden flex flex-col justify-center pointer-events-none select-none opacity-45 marquee-mask">
+        <div className="absolute inset-0 z-0 overflow-hidden flex flex-col justify-center pointer-events-none select-none opacity-45 marquee-mask w-full max-w-full">
           {/* Gentle central text contrast mask:
               Kept soft & semi-transparent so laptops remain visible continuously across the center without hard borders */}
           <div
