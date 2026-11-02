@@ -87,11 +87,16 @@ def download_diagnostic_agent():
     """
     Serve the standalone reloop_agent.py diagnostic script.
     """
-    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../"))
-    agent_path = os.path.join(base_dir, "reloop_agent.py")
-    if not os.path.exists(agent_path):
-        agent_path = os.path.abspath("reloop_agent.py")
-    if not os.path.exists(agent_path):
+    # Search candidates across backend, frontend public, and project root
+    candidates = [
+        os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../reloop_agent.py")),
+        os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../frontend/public/reloop_agent.py")),
+        os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../../backend/reloop_agent.py")),
+        os.path.abspath("backend/reloop_agent.py"),
+        os.path.abspath("reloop_agent.py"),
+    ]
+    agent_path = next((p for p in candidates if os.path.exists(p)), None)
+    if not agent_path:
         raise HTTPException(status_code=404, detail="reloop_agent.py script not found on server.")
     return FileResponse(
         agent_path,

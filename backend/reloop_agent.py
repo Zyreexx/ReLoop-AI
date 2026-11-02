@@ -25,8 +25,9 @@ except ImportError:
     import urllib.request
     import urllib.error
 
-    # Add current directory to path and retry import
+    # Add current directory and parent repository directory to path
     sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
     try:
         from diagnostics_agent.runner import main
         if __name__ == "__main__":
