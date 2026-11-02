@@ -35,6 +35,9 @@ import {
   X,
   FileText,
   FileSpreadsheet,
+  User,
+  Download,
+  RotateCcw,
 } from "lucide-react";
 
 interface ComponentMini {
@@ -51,9 +54,18 @@ interface SavedAssessment {
   id: string;
   userId?: string;
   userEmail?: string;
+  userName?: string;
   createdAt: string;
   backendProductId?: string;
   overallHealth: "GOOD" | "FAIR" | "DEGRADED" | "CRITICAL" | string;
+  laptop?: {
+    manufacturer?: string;
+    model?: string;
+    fullName?: string;
+    category?: string;
+    ageYears?: number;
+  };
+  report?: any;
   visual?: {
     identifiedProduct?: {
       manufacturer: string;
@@ -124,15 +136,84 @@ export default function DashboardPage() {
   const [statusFilter, setStatusFilter] = useState<"all" | "good" | "attention" | "service">("all");
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "health">("newest");
   const [selectedDeviceForModal, setSelectedDeviceForModal] = useState<SavedAssessment | null>(null);
+  const [activeDraft, setActiveDraft] = useState<any>(null);
+  const [viewTab, setViewTab] = useState<"history" | "analytics">("history");
 
   const handleOpenAuth = (mode: "login" | "register") => {
     setAuthMode(mode);
     setAuthModalOpen(true);
   };
 
+  // Discard draft from localStorage
+  const handleDiscardDraft = () => {
+    if (confirm("Are you sure you want to discard this in-progress assessment?")) {
+      localStorage.removeItem("reloop_active_assessment_draft");
+      setActiveDraft(null);
+    }
+  };
+
+  // Download official condition report as a structured JSON file
+  const handleDownloadReport = (dev: SavedAssessment, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    const mfr = dev.laptop?.manufacturer || dev.visual?.identifiedProduct?.manufacturer || "Laptop";
+    const model = dev.laptop?.model || dev.visual?.identifiedProduct?.model || "Device";
+    const safeName = `${mfr}_${model}`.toLowerCase().replace(/[^a-z0-9]/g, "_");
+
+    const reportObj = dev.report || {
+      reportId: dev.id,
+      generatedAt: dev.createdAt,
+      assessedUser: {
+        name: dev.userName || (user?.email === dev.userEmail ? user?.name : "User"),
+        email: dev.userEmail || "guest@reloop.ai",
+      },
+      laptop: {
+        manufacturer: mfr,
+        model: model,
+        ageYears: dev.diagnostics?.deviceAgeYears || 4,
+        category: "LAPTOP",
+      },
+      overallHealth: dev.overallHealth,
+      circularRecommendation: dev.topPathway,
+      conditionProfile: dev.conditionProfile,
+      diagnostics: dev.diagnostics,
+      symptoms: dev.symptoms,
+    };
+
+    const blob = new Blob([JSON.stringify(reportObj, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `reloop_report_${safeName}_${dev.id}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   // Load user assessments from API & localStorage, supporting both guests and authenticated accounts
   const loadAssessments = async () => {
     setLoading(true);
+
+    // Check for active in-progress assessment draft
+    try {
+      const draftStr = localStorage.getItem("reloop_active_assessment_draft");
+      if (draftStr) {
+        const draft = JSON.parse(draftStr);
+        const hasData =
+          (draft.currentStep && draft.currentStep > 1) ||
+          Boolean(draft.visualData?.identifiedProduct?.model) ||
+          Boolean(draft.productId);
+        if (hasData) {
+          setActiveDraft(draft);
+        } else {
+          setActiveDraft(null);
+        }
+      } else {
+        setActiveDraft(null);
+      }
+    } catch {
+      setActiveDraft(null);
+    }
 
     if (user?.email) {
       const userEmail = user.email.toLowerCase().trim();
@@ -408,7 +489,49 @@ export default function DashboardPage() {
           </div>
         ) : (
           /* HARDWARE DASHBOARD (AVAILABLE BOTH FOR GUESTS WITH RECENT EVALUATION AND AUTHENTICATED USERS) */
-          <div className="space-y-10">
+          <div className="space-y-8">
+            {/* Active In-Progress Assessment Draft Alert Card */}
+            {activeDraft && (
+              <div className="p-5 rounded-3xl bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-blue-500/5 border border-[#0071E3]/30 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-10 h-10 rounded-2xl bg-[#0071E3] text-white flex items-center justify-center shrink-0 shadow-xs">
+                    <RotateCcw size={20} />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-[#0071E3] bg-[#0071E3]/15 px-2 py-0.5 rounded-full">
+                        In-Progress Assessment
+                      </span>
+                      <span className="text-xs text-[#86868B]">Step {activeDraft.currentStep || 1} of 4</span>
+                    </div>
+                    <p className="text-sm font-bold text-[#1D1D1F] dark:text-white mt-0.5">
+                      {activeDraft.visualData?.identifiedProduct?.manufacturer || "Laptop"}{" "}
+                      {activeDraft.visualData?.identifiedProduct?.model || "Assessment in progress"}
+                    </p>
+                    <p className="text-xs text-[#6E6E73] dark:text-[#A1A1A6]">
+                      You navigated away while assessing this device. All scanned diagnostics and telemetry remain intact.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={handleDiscardDraft}
+                    className="px-3.5 py-2 rounded-full text-xs font-medium text-[#FF3B30] hover:bg-[#FF3B30]/10 border border-[#FF3B30]/25 transition-all cursor-pointer"
+                  >
+                    Discard Draft
+                  </button>
+                  <Link
+                    href="/assess-device"
+                    className="inline-flex items-center gap-1.5 px-5 py-2 rounded-full bg-[#0071E3] hover:bg-[#0077ED] text-white text-xs font-semibold shadow-xs hover:shadow-sm transition-all cursor-pointer"
+                  >
+                    <span>Resume Assessment</span>
+                    <ArrowRight size={14} />
+                  </Link>
+                </div>
+              </div>
+            )}
+
             {/* Guest Banner if not signed in */}
             {!user && (
               <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/25 text-[#1D1D1F] dark:text-white flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -417,7 +540,7 @@ export default function DashboardPage() {
                     <Sparkles size={18} />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold">Guest Device Ledger</p>
+                    <p className="text-sm font-semibold">Guest Assessment Ledger</p>
                     <p className="text-xs text-[#6E6E73] dark:text-[#A1A1A6]">
                       Showing hardware evaluated in this browser. Sign in or create an account to permanently sync and save your history.
                     </p>
@@ -438,24 +561,23 @@ export default function DashboardPage() {
               <div>
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#0071E3]/10 text-[#0071E3] text-xs font-semibold tracking-wide uppercase mb-3">
                   <Laptop size={13} />
-                  <span>Hardware Ledger & Inventory</span>
+                  <span>Assessment History & Hardware Ledger</span>
                 </div>
                 <h1 className="text-3xl sm:text-4xl font-bold text-[#1D1D1F] dark:text-white tracking-tight mb-2">
-                  My Devices
+                  Assessment History
                 </h1>
                 <p className="text-sm sm:text-base text-[#6E6E73] dark:text-[#A1A1A6] max-w-2xl leading-relaxed">
                   {user ? (
                     <>
-                      Welcome back, <span className="font-semibold text-[#1D1D1F] dark:text-white">{user.name}</span>. Manage your evaluated hardware, inspect component evidence, and track circular lifecycle paths.
+                      Assessed laptops for <span className="font-semibold text-[#1D1D1F] dark:text-white">{user.name}</span> ({user.email}). Inspect comprehensive component profiles, download engineering reports, or launch circular optimization.
                     </>
                   ) : (
-                    "Manage your evaluated hardware, inspect component condition profiles, and review circular disposition pathways."
+                    "Manage your evaluated hardware, inspect component condition profiles, download assessment reports, and review circular disposition pathways."
                   )}
                 </p>
               </div>
 
               <div className="flex items-center gap-3">
-
                 <Link
                   href="/assess-device"
                   className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#0071E3] hover:bg-[#0077ED] text-white text-xs sm:text-sm font-semibold transition-all shadow-md cursor-pointer"
@@ -539,6 +661,34 @@ export default function DashboardPage() {
                   Highest economic yield
                 </div>
               </div>
+            </div>
+
+            {/* View Mode Toggle: History vs Fleet Analytics */}
+            <div className="flex items-center gap-2 border-b border-[#E5E5E7] dark:border-[#2C2C2E] pb-3">
+              <button
+                type="button"
+                onClick={() => setViewTab("history")}
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
+                  viewTab === "history"
+                    ? "bg-[#0071E3] text-white shadow-xs"
+                    : "text-[#6E6E73] dark:text-[#A1A1A6] hover:bg-black/5 dark:hover:bg-white/5"
+                }`}
+              >
+                <FileText size={15} />
+                <span>Assessed Laptops History ({assessments.length})</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewTab("analytics")}
+                className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold transition-all cursor-pointer ${
+                  viewTab === "analytics"
+                    ? "bg-[#0071E3] text-white shadow-xs"
+                    : "text-[#6E6E73] dark:text-[#A1A1A6] hover:bg-black/5 dark:hover:bg-white/5"
+                }`}
+              >
+                <Activity size={15} />
+                <span>Fleet & Impact Analytics</span>
+              </button>
             </div>
 
             {/* Filter & Search Bar */}
@@ -676,7 +826,7 @@ export default function DashboardPage() {
                     >
                       {/* Card Top: Brand Badge & Status */}
                       <div>
-                        <div className="flex items-start justify-between gap-3 mb-4">
+                        <div className="flex items-start justify-between gap-3 mb-2">
                           <div>
                             <span className="text-[11px] font-semibold text-[#86868B] uppercase tracking-wider">
                               {mfr}
@@ -691,6 +841,15 @@ export default function DashboardPage() {
                             </div>
                           </div>
                           <div>{getStatusBadge(dev.overallHealth)}</div>
+                        </div>
+
+                        {/* Assessed User Attribution Pill */}
+                        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-[#F5F5F7] dark:bg-[#2C2C2E] text-[11px] text-[#6E6E73] dark:text-[#A1A1A6] mb-3">
+                          <User size={12} className="text-[#0071E3] shrink-0" />
+                          <span className="truncate">
+                            Assessed for: <strong className="text-[#1D1D1F] dark:text-white font-medium">{dev.userName || dev.userEmail || (user?.name || "Guest User")}</strong>
+                            {dev.userEmail && <span className="opacity-75 ml-1">({dev.userEmail})</span>}
+                          </span>
                         </div>
 
                         {/* 8-Component Mini Dots Grid */}
@@ -748,20 +907,42 @@ export default function DashboardPage() {
 
                       {/* Card Actions Footer */}
                       <div className="pt-3 border-t border-[#E5E5E7] dark:border-[#2C2C2E] flex items-center justify-between gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setSelectedDeviceForModal(dev)}
-                          className="inline-flex items-center gap-1 text-xs font-medium text-[#6E6E73] dark:text-[#A1A1A6] hover:text-[#0071E3] transition-colors py-1 px-2 rounded-lg hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E] cursor-pointer"
-                        >
-                          <Eye size={14} />
-                          <span>Inspect</span>
-                        </button>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedDeviceForModal(dev)}
+                            className="inline-flex items-center gap-1 text-xs font-medium text-[#6E6E73] dark:text-[#A1A1A6] hover:text-[#0071E3] transition-colors py-1.5 px-2.5 rounded-lg hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E] cursor-pointer"
+                            title="Inspect component condition details"
+                          >
+                            <Eye size={14} />
+                            <span>Inspect</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setSelectedDeviceForModal(dev)}
+                            className="inline-flex items-center gap-1 text-xs font-semibold text-[#0071E3] hover:text-[#0077ED] transition-colors py-1.5 px-2.5 rounded-lg hover:bg-[#0071E3]/10 cursor-pointer"
+                            title="View comprehensive condition report"
+                          >
+                            <FileText size={14} />
+                            <span>Report</span>
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={(e) => handleDownloadReport(dev, e)}
+                            className="p-1.5 rounded-lg text-[#86868B] hover:text-[#0071E3] hover:bg-[#0071E3]/10 transition-colors cursor-pointer"
+                            title="Download Assessment Report (JSON)"
+                          >
+                            <Download size={14} />
+                          </button>
+                        </div>
 
                         <div className="flex items-center gap-1.5">
                           <button
                             type="button"
                             onClick={(e) => handleDeleteAssessment(dev.id, e)}
-                            title="Remove from saved devices"
+                            title="Remove from saved history"
                             className="p-1.5 rounded-lg text-[#86868B] hover:text-[#FF3B30] hover:bg-[#FF3B30]/10 transition-colors cursor-pointer"
                           >
                             <Trash2 size={15} />
@@ -801,18 +982,56 @@ export default function DashboardPage() {
             {/* Modal Header */}
             <div className="mb-6">
               <span className="text-xs font-semibold text-[#0071E3] uppercase tracking-wider">
-                Evidence Provenance Inspection
+                Evidence & Condition Assessment Report
               </span>
               <h2 className="text-2xl font-bold text-[#1D1D1F] dark:text-white tracking-tight mt-0.5">
-                {selectedDeviceForModal.visual?.identifiedProduct?.manufacturer}{" "}
-                {selectedDeviceForModal.visual?.identifiedProduct?.model}
+                {selectedDeviceForModal.laptop?.fullName || `${selectedDeviceForModal.visual?.identifiedProduct?.manufacturer || "Laptop"} ${selectedDeviceForModal.visual?.identifiedProduct?.model || "Standard Model"}`}
               </h2>
-              <div className="text-xs text-[#86868B] mt-1 flex items-center gap-3">
+              <div className="flex items-center gap-1.5 text-xs text-[#6E6E73] dark:text-[#A1A1A6] mt-1.5">
+                <User size={13} className="text-[#0071E3] shrink-0" />
+                <span>
+                  Assessed for: <strong className="text-[#1D1D1F] dark:text-white">{selectedDeviceForModal.userName || selectedDeviceForModal.userEmail || (user?.name || "Guest User")}</strong>
+                  {selectedDeviceForModal.userEmail && <span className="opacity-75 ml-1">({selectedDeviceForModal.userEmail})</span>}
+                </span>
+              </div>
+              <div className="text-xs text-[#86868B] mt-1 flex flex-wrap items-center gap-3">
                 <span>Assessment ID: {selectedDeviceForModal.id}</span>
                 <span>•</span>
-                <span>Overall: {selectedDeviceForModal.overallHealth}</span>
+                <span>Overall Condition: <strong className="text-[#1D1D1F] dark:text-white">{selectedDeviceForModal.overallHealth}</strong></span>
+                <span>•</span>
+                <span>{new Date(selectedDeviceForModal.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
               </div>
             </div>
+
+            {/* Circular Disposition Recommendation Banner */}
+            {selectedDeviceForModal.topPathway && (
+              <div className="p-4 rounded-2xl bg-[#0071E3]/5 dark:bg-[#0071E3]/10 border border-[#0071E3]/20 mb-6">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-xs font-bold text-[#0071E3] uppercase tracking-wider">
+                    Recommended Circular Strategy
+                  </span>
+                  <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-[#0071E3] text-white">
+                    {selectedDeviceForModal.topPathway.pathway}
+                  </span>
+                </div>
+                <h4 className="text-sm font-bold text-[#1D1D1F] dark:text-white">
+                  {selectedDeviceForModal.topPathway.title}
+                </h4>
+                <div className="flex flex-wrap items-center gap-4 mt-2.5 text-xs text-[#6E6E73] dark:text-[#A1A1A6]">
+                  <span className="flex items-center gap-1">
+                    <Leaf size={13} className="text-[#34C759]" />
+                    <span>Avoided CO₂e: <strong className="text-[#1D1D1F] dark:text-white">{selectedDeviceForModal.topPathway.avoidedCo2Kg} kg</strong></span>
+                  </span>
+                  <span>•</span>
+                  <span className="flex items-center gap-1">
+                    <Clock size={13} className="text-[#0071E3]" />
+                    <span>Life Extension: <strong className="text-[#1D1D1F] dark:text-white">+{selectedDeviceForModal.topPathway.lifeExtensionYears} Years</strong></span>
+                  </span>
+                  <span>•</span>
+                  <span>Est. Servicing Cost: <strong className="text-[#1D1D1F] dark:text-white">${selectedDeviceForModal.topPathway.estimatedCostUsd}</strong></span>
+                </div>
+              </div>
+            )}
 
             {/* Diagnostics Quick Snapshot */}
             {selectedDeviceForModal.diagnostics && (
@@ -909,22 +1128,34 @@ export default function DashboardPage() {
             )}
 
             {/* Modal Actions */}
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#E5E5E7] dark:border-[#2C2C2E]">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-4 border-t border-[#E5E5E7] dark:border-[#2C2C2E]">
               <button
                 type="button"
-                onClick={() => setSelectedDeviceForModal(null)}
-                className="px-4 py-2 rounded-full text-xs font-semibold text-[#6E6E73] dark:text-[#A1A1A6] hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E] transition-colors cursor-pointer"
+                onClick={() => handleDownloadReport(selectedDeviceForModal)}
+                className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full border border-[#D2D2D7] dark:border-[#3A3A3C] text-xs font-semibold text-[#1D1D1F] dark:text-white hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E] transition-colors cursor-pointer"
+                title="Download this condition report as JSON"
               >
-                Close
+                <Download size={14} className="text-[#0071E3]" />
+                <span>Download Report (JSON)</span>
               </button>
 
-              <Link
-                href={`/engine?assessment_id=${selectedDeviceForModal.id}`}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#0071E3] hover:bg-[#0077ED] text-white text-xs font-semibold transition-all shadow-md cursor-pointer"
-              >
-                <span>Launch Optimizer</span>
-                <ArrowRight size={14} />
-              </Link>
+              <div className="flex items-center justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setSelectedDeviceForModal(null)}
+                  className="px-4 py-2 rounded-full text-xs font-semibold text-[#6E6E73] dark:text-[#A1A1A6] hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E] transition-colors cursor-pointer"
+                >
+                  Close
+                </button>
+
+                <Link
+                  href={`/engine?assessment_id=${selectedDeviceForModal.id}`}
+                  className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-[#0071E3] hover:bg-[#0077ED] text-white text-xs font-semibold transition-all shadow-md cursor-pointer"
+                >
+                  <span>Launch Optimizer</span>
+                  <ArrowRight size={14} />
+                </Link>
+              </div>
             </div>
           </div>
         </div>
