@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { AuthModal } from "@/components/auth/AuthModal";
+import { exportAssessmentPDF, exportAssessmentExcel } from "@/lib/reportExport";
 import { useAuth, migrateGuestAssessmentsToUser } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import {
@@ -136,6 +137,7 @@ export default function DashboardPage() {
   const [statusFilter, setStatusFilter] = useState<"all" | "good" | "attention" | "service">("all");
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "health">("newest");
   const [selectedDeviceForModal, setSelectedDeviceForModal] = useState<SavedAssessment | null>(null);
+  const [downloadModalDevice, setDownloadModalDevice] = useState<SavedAssessment | null>(null);
   const [activeDraft, setActiveDraft] = useState<any>(null);
   const [viewTab, setViewTab] = useState<"history" | "analytics">("history");
 
@@ -152,42 +154,10 @@ export default function DashboardPage() {
     }
   };
 
-  // Download official condition report as a structured JSON file
-  const handleDownloadReport = (dev: SavedAssessment, e?: React.MouseEvent) => {
+  // Open download report options modal (PDF or Excel)
+  const handleOpenDownloadModal = (dev: SavedAssessment, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
-    const mfr = dev.laptop?.manufacturer || dev.visual?.identifiedProduct?.manufacturer || "Laptop";
-    const model = dev.laptop?.model || dev.visual?.identifiedProduct?.model || "Device";
-    const safeName = `${mfr}_${model}`.toLowerCase().replace(/[^a-z0-9]/g, "_");
-
-    const reportObj = dev.report || {
-      reportId: dev.id,
-      generatedAt: dev.createdAt,
-      assessedUser: {
-        name: dev.userName || (user?.email === dev.userEmail ? user?.name : "User"),
-        email: dev.userEmail || "guest@reloop.ai",
-      },
-      laptop: {
-        manufacturer: mfr,
-        model: model,
-        ageYears: dev.diagnostics?.deviceAgeYears || 4,
-        category: "LAPTOP",
-      },
-      overallHealth: dev.overallHealth,
-      circularRecommendation: dev.topPathway,
-      conditionProfile: dev.conditionProfile,
-      diagnostics: dev.diagnostics,
-      symptoms: dev.symptoms,
-    };
-
-    const blob = new Blob([JSON.stringify(reportObj, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `reloop_report_${safeName}_${dev.id}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    setDownloadModalDevice(dev);
   };
 
   // Load user assessments from API & localStorage, supporting both guests and authenticated accounts
@@ -907,11 +877,11 @@ export default function DashboardPage() {
 
                       {/* Card Actions Footer */}
                       <div className="pt-3 border-t border-[#E5E5E7] dark:border-[#2C2C2E] flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1.5">
                           <button
                             type="button"
                             onClick={() => setSelectedDeviceForModal(dev)}
-                            className="inline-flex items-center gap-1 text-xs font-medium text-[#6E6E73] dark:text-[#A1A1A6] hover:text-[#0071E3] transition-colors py-1.5 px-2.5 rounded-lg hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E] cursor-pointer"
+                            className="inline-flex items-center gap-1.5 text-xs font-medium text-[#6E6E73] dark:text-[#A1A1A6] hover:text-[#0071E3] transition-colors py-1.5 px-2.5 rounded-lg hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E] cursor-pointer"
                             title="Inspect component condition details"
                           >
                             <Eye size={14} />
@@ -920,21 +890,12 @@ export default function DashboardPage() {
 
                           <button
                             type="button"
-                            onClick={() => setSelectedDeviceForModal(dev)}
-                            className="inline-flex items-center gap-1 text-xs font-semibold text-[#0071E3] hover:text-[#0077ED] transition-colors py-1.5 px-2.5 rounded-lg hover:bg-[#0071E3]/10 cursor-pointer"
-                            title="View comprehensive condition report"
+                            onClick={(e) => handleOpenDownloadModal(dev, e)}
+                            className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#0071E3] hover:text-[#0077ED] transition-colors py-1.5 px-2.5 rounded-lg hover:bg-[#0071E3]/10 cursor-pointer"
+                            title="Download Assessment Report (PDF or Excel)"
                           >
-                            <FileText size={14} />
+                            <Download size={13} />
                             <span>Report</span>
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={(e) => handleDownloadReport(dev, e)}
-                            className="p-1.5 rounded-lg text-[#86868B] hover:text-[#0071E3] hover:bg-[#0071E3]/10 transition-colors cursor-pointer"
-                            title="Download Assessment Report (JSON)"
-                          >
-                            <Download size={14} />
                           </button>
                         </div>
 
@@ -1129,15 +1090,27 @@ export default function DashboardPage() {
 
             {/* Modal Actions */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-4 border-t border-[#E5E5E7] dark:border-[#2C2C2E]">
-              <button
-                type="button"
-                onClick={() => handleDownloadReport(selectedDeviceForModal)}
-                className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-full border border-[#D2D2D7] dark:border-[#3A3A3C] text-xs font-semibold text-[#1D1D1F] dark:text-white hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E] transition-colors cursor-pointer"
-                title="Download this condition report as JSON"
-              >
-                <Download size={14} className="text-[#0071E3]" />
-                <span>Download Report (JSON)</span>
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => exportAssessmentPDF(selectedDeviceForModal)}
+                  className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-full border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/40 text-xs font-semibold transition-colors cursor-pointer"
+                  title="Download official PDF audit report"
+                >
+                  <FileText size={13} />
+                  <span>Download PDF</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => exportAssessmentExcel(selectedDeviceForModal)}
+                  className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-full border border-emerald-200 dark:border-emerald-900/50 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 text-xs font-semibold transition-colors cursor-pointer"
+                  title="Export structured Excel data sheet"
+                >
+                  <FileSpreadsheet size={13} />
+                  <span>Export Excel</span>
+                </button>
+              </div>
 
               <div className="flex items-center justify-end gap-2.5">
                 <button
@@ -1156,6 +1129,112 @@ export default function DashboardPage() {
                   <ArrowRight size={14} />
                 </Link>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+            {/* ─── DOWNLOAD FORMAT SELECTION MODAL (PDF / EXCEL) ─── */}
+      {downloadModalDevice && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-[#1C1C1E] rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl border border-[#E5E5E7] dark:border-[#2C2C2E]">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-[#0071E3]/10 text-[#0071E3] flex items-center justify-center">
+                  <Download size={18} />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-[#1D1D1F] dark:text-white">
+                    Download Assessment Report
+                  </h3>
+                  <p className="text-xs text-[#86868B] truncate max-w-[240px]">
+                    {downloadModalDevice.laptop?.fullName || downloadModalDevice.laptop?.model || "Laptop Asset"}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDownloadModalDevice(null)}
+                className="w-7 h-7 rounded-full bg-[#F5F5F7] dark:bg-[#2C2C2E] text-[#86868B] hover:text-[#1D1D1F] dark:hover:text-white flex items-center justify-center transition-colors cursor-pointer"
+              >
+                <X size={14} />
+              </button>
+            </div>
+
+            <p className="text-xs text-[#6E6E73] dark:text-[#A1A1A6] mb-5">
+              Select your preferred report format to download:
+            </p>
+
+            <div className="space-y-3 mb-6">
+              {/* Option 1: PDF */}
+              <button
+                type="button"
+                onClick={() => {
+                  exportAssessmentPDF(downloadModalDevice);
+                  setDownloadModalDevice(null);
+                }}
+                className="w-full flex items-center justify-between p-4 rounded-2xl border border-[#E5E5E7] dark:border-[#2C2C2E] hover:border-[#0071E3] dark:hover:border-[#0071E3] hover:bg-blue-50/50 dark:hover:bg-blue-950/20 transition-all text-left group cursor-pointer"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-950/50 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0">
+                    <FileText size={20} />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm font-bold text-[#1D1D1F] dark:text-white group-hover:text-[#0071E3] transition-colors">
+                        PDF Document (.pdf)
+                      </span>
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300">
+                        Recommended
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-[#86868B] mt-0.5">
+                      Formatted hardware audit report & circular certificate
+                    </p>
+                  </div>
+                </div>
+                <Download size={16} className="text-[#86868B] group-hover:text-[#0071E3] group-hover:translate-y-0.5 transition-all" />
+              </button>
+
+              {/* Option 2: Excel */}
+              <button
+                type="button"
+                onClick={() => {
+                  exportAssessmentExcel(downloadModalDevice);
+                  setDownloadModalDevice(null);
+                }}
+                className="w-full flex items-center justify-between p-4 rounded-2xl border border-[#E5E5E7] dark:border-[#2C2C2E] hover:border-emerald-500 dark:hover:border-emerald-500 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/20 transition-all text-left group cursor-pointer"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                    <FileSpreadsheet size={20} />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-sm font-bold text-[#1D1D1F] dark:text-white group-hover:text-emerald-600 transition-colors">
+                        Excel Spreadsheet (.xlsx)
+                      </span>
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300">
+                        Data Sheet
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-[#86868B] mt-0.5">
+                      Structured telemetry, component health matrix & pathways
+                    </p>
+                  </div>
+                </div>
+                <Download size={16} className="text-[#86868B] group-hover:text-emerald-600 group-hover:translate-y-0.5 transition-all" />
+              </button>
+            </div>
+
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={() => setDownloadModalDevice(null)}
+                className="px-4 py-2 rounded-full text-xs font-semibold text-[#6E6E73] dark:text-[#A1A1A6] hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E] transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>
