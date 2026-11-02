@@ -99,15 +99,16 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
         onClick={() => setIsOpen((prev) => !prev)}
         aria-expanded={isOpen}
         aria-label="Select language"
-        className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[12px] font-medium transition-all duration-200 cursor-pointer ${
+        className={`inline-flex items-center gap-1.5 xl:gap-2 px-2.5 xl:px-3 py-1.5 rounded-full text-[12px] font-medium transition-all duration-200 cursor-pointer ${
           isFooter
-            ? "bg-[#E5E5E7]/70 hover:bg-[#D2D2D7] text-[#1D1D1F] border border-[#D2D2D7]/80"
-            : "bg-white/80 hover:bg-white text-[#1D1D1F] border border-[#D2D2D7]/70 shadow-2xs hover:shadow-xs backdrop-blur-xs"
+            ? "bg-[#E5E5E7]/70 hover:bg-[#D2D2D7] text-[#1D1D1F] dark:text-white border border-[#D2D2D7]/80 dark:border-[#38383A]"
+            : "bg-white/80 dark:bg-[#1C1C1E]/80 hover:bg-white dark:hover:bg-[#1C1C1E] text-[#1D1D1F] dark:text-white border border-[#D2D2D7]/70 dark:border-[#38383A] shadow-2xs hover:shadow-xs backdrop-blur-xs"
         }`}
       >
         <Globe className="w-3.5 h-3.5 text-[#0071E3]" />
         <span className="text-sm leading-none">{currentOption.flag}</span>
-        <span className="font-semibold">{currentOption.nativeName}</span>
+        <span className="hidden xl:inline font-semibold">{currentOption.nativeName}</span>
+        <span className="xl:hidden font-semibold text-[11px] uppercase tracking-wider">{currentOption.code}</span>
         <ChevronDown
           className={`w-3 h-3 text-[#86868B] transition-transform duration-200 ${
             isOpen ? "rotate-180" : ""

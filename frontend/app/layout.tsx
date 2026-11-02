@@ -53,7 +53,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="min-h-screen flex flex-col font-sans antialiased bg-[#F5F5F7] dark:bg-[#000000] text-[#1D1D1F] dark:text-[#F5F5F7] relative">
+      <body className="min-h-screen flex flex-col font-sans antialiased bg-[#F5F5F7] dark:bg-[#000000] text-[#1D1D1F] dark:text-[#F5F5F7] relative w-full max-w-full overflow-x-clip">
         <Providers>
           <BackgroundLightEffect />
           {children}
