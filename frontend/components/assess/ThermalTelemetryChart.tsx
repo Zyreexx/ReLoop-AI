@@ -9,12 +9,18 @@ import {
   Download,
   Play,
   Activity,
-  Layers,
   Sparkles,
-  Zap,
 } from "lucide-react";
 
 export type TelemetryCategory = "thermals" | "battery" | "storage" | "compute";
+
+export interface TelemetryPoint {
+  time: string;
+  timestamp: number;
+  cpuTemp: number; // °C (20 to 110)
+  gpuTemp: number; // °C (20 to 110)
+  fanRpm: number; // RPM (500 to 3500)
+}
 
 interface ChannelConfig {
   name: string;
@@ -208,11 +214,12 @@ const CATEGORIES: Record<TelemetryCategory, CategoryConfig> = {
   },
 };
 
-interface ThermalTelemetryChartProps {
+export interface ThermalTelemetryChartProps {
   initialBaseTemp?: number;
   initialMaxTemp?: number;
   hardwareModel?: string;
   isLive?: boolean;
+  telemetryData?: TelemetryPoint[];
 }
 
 export default function ThermalTelemetryChart({
@@ -220,6 +227,7 @@ export default function ThermalTelemetryChart({
   initialMaxTemp = 48,
   hardwareModel = "Hardware Sensor Bus",
   isLive = false,
+  telemetryData,
 }: ThermalTelemetryChartProps) {
   const [selectedCategory, setSelectedCategory] =
     useState<TelemetryCategory>("thermals");
@@ -258,21 +266,34 @@ export default function ThermalTelemetryChart({
 
   // Initialize rolling buffers with realistic baseline data
   useEffect(() => {
-    const now = Date.now();
-    const intervalMs = 100; // 100ms per point = 10Hz
+    // If telemetryData is provided and populated, use it for thermals
+    if (telemetryData && telemetryData.length > 0) {
+      historyRef.current.thermals = telemetryData.map((pt) => [
+        pt.timestamp || Date.now(),
+        pt.cpuTemp,
+        pt.gpuTemp,
+        pt.fanRpm,
+      ]);
+    } else {
+      const now = Date.now();
+      const intervalMs = 100; // 100ms per point = 10Hz
 
-    // Seed thermals
-    const thermals: Array<[number, number, number, number]> = [];
-    for (let i = maxSamples - 1; i >= 0; i--) {
-      const t = now - i * intervalMs;
-      const noiseCpu = Math.sin(i * 0.08) * 1.5 + Math.cos(i * 0.15) * 1.0;
-      const noiseGpu = Math.cos(i * 0.09) * 1.2 + Math.sin(i * 0.12) * 0.8;
-      const cpu = Math.max(25, initialBaseTemp + noiseCpu - 2);
-      const gpu = Math.max(24, initialBaseTemp + noiseGpu - 5);
-      const fan = Math.round(1100 + (cpu - 35) * 22 + Math.sin(i * 0.2) * 35);
-      thermals.push([t, cpu, gpu, fan]);
+      // Seed thermals
+      const thermals: Array<[number, number, number, number]> = [];
+      for (let i = maxSamples - 1; i >= 0; i--) {
+        const t = now - i * intervalMs;
+        const noiseCpu = Math.sin(i * 0.08) * 1.5 + Math.cos(i * 0.15) * 1.0;
+        const noiseGpu = Math.cos(i * 0.09) * 1.2 + Math.sin(i * 0.12) * 0.8;
+        const cpu = Math.max(25, initialBaseTemp + noiseCpu - 2);
+        const gpu = Math.max(24, initialBaseTemp + noiseGpu - 5);
+        const fan = Math.round(1100 + (cpu - 35) * 22 + Math.sin(i * 0.2) * 35);
+        thermals.push([t, cpu, gpu, fan]);
+      }
+      historyRef.current.thermals = thermals;
     }
-    historyRef.current.thermals = thermals;
+
+    const now = Date.now();
+    const intervalMs = 100;
 
     // Seed battery
     const battery: Array<[number, number, number, number]> = [];
@@ -306,7 +327,7 @@ export default function ThermalTelemetryChart({
       compute.push([t, cpuUtil, ramUtil, bus]);
     }
     historyRef.current.compute = compute;
-  }, [initialBaseTemp]);
+  }, [initialBaseTemp, telemetryData]);
 
   // High-frequency telemetry generator (updates 20 times per second for smooth glide)
   useEffect(() => {
@@ -316,9 +337,9 @@ export default function ThermalTelemetryChart({
       const now = Date.now();
       const isSim = isSimulatingRef.current;
 
-      // Update Thermals
+      // Update Thermals if no fixed external telemetryData stream
       const th = historyRef.current.thermals;
-      if (th.length > 0) {
+      if (th.length > 0 && (!telemetryData || telemetryData.length === 0)) {
         let cpuTarget = initialBaseTemp;
         let gpuTarget = initialBaseTemp - 4;
         let fanTarget = 1200;
@@ -390,7 +411,7 @@ export default function ThermalTelemetryChart({
     }, 50); // 20 updates/sec
 
     return () => clearInterval(ticker);
-  }, [initialBaseTemp]);
+  }, [initialBaseTemp, telemetryData]);
 
   // Handle simulation toggle
   const handleSimulateAction = () => {
@@ -414,6 +435,8 @@ export default function ThermalTelemetryChart({
   const handleExportLog = () => {
     const activeCategory = CATEGORIES[selectedCategory];
     const rawData = historyRef.current[selectedCategory];
+    if (rawData.length === 0) return;
+
     const formatted = rawData.map(([timestamp, v0, v1, v2]) => ({
       time: new Date(timestamp).toTimeString().split(" ")[0],
       timestamp,
@@ -450,9 +473,6 @@ export default function ThermalTelemetryChart({
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const width = canvas.width;
-    const height = canvas.height;
-
     // DPR Scaling
     const dpr = window.devicePixelRatio || 1;
     const displayWidth = canvas.clientWidth;
@@ -483,6 +503,17 @@ export default function ThermalTelemetryChart({
 
     const config = CATEGORIES[selectedCategory];
     const data = historyRef.current[selectedCategory];
+
+    if (data.length === 0) {
+      ctx.fillStyle = "#94A3B8";
+      ctx.font = "12px monospace";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText("Waiting for hardware telemetry stream...", w / 2, h / 2);
+      ctx.restore();
+      animFrameRef.current = requestAnimationFrame(renderFrame);
+      return;
+    }
 
     // Helper scale functions
     const getY = (val: number, channel: ChannelConfig) => {
@@ -709,7 +740,8 @@ export default function ThermalTelemetryChart({
             <button
               type="button"
               onClick={handleExportLog}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#D2D2D7] hover:bg-[#F5F5F7] text-xs font-semibold text-[#1D1D1F] transition-all cursor-pointer shadow-2xs"
+              disabled={historyRef.current[selectedCategory].length === 0}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#D2D2D7] hover:bg-[#F5F5F7] text-xs font-semibold text-[#1D1D1F] transition-all cursor-pointer shadow-2xs disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Download size={13} className="text-[#6E6E73]" />
               <span>Export Telemetry (JSON)</span>
@@ -775,7 +807,7 @@ export default function ThermalTelemetryChart({
       <div className="relative rounded-2xl bg-[#090D16] border border-slate-800 p-2 sm:p-4 select-none overflow-hidden shadow-inner">
         {/* Dynamic Top Legend */}
         <div className="flex flex-wrap items-center justify-center gap-6 pb-2.5 text-[11px] font-mono font-medium">
-          {activeConfig.channels.map((ch, idx) => (
+          {activeConfig.channels.map((ch) => (
             <div key={ch.name} className="flex items-center gap-2 text-slate-300">
               {ch.dashed ? (
                 <span
