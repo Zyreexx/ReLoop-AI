@@ -396,10 +396,6 @@ export default function AssessDevicePage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
   const handleGenerateProfile = async () => {
-    if (!user) {
-      handleOpenAuth("login");
-      return;
-    }
     setIsGenerating(true);
     try {
       // If we have a backend product_id, build the assessment in the backend
