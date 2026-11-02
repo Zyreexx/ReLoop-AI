@@ -352,5 +352,84 @@ describe("Visual Damage Analysis Pipeline & ReviewStep", () => {
       screen.getByText(/Visual physical damage was not assessed/i)
     ).toBeInTheDocument();
   });
+
+  it("8. ReviewStep displays 'Visual physical damage was not assessed' when visualAnalysisStatus is FAILED", () => {
+    const failedVisualData: VisualInspectionData = {
+      images: ["data:image/jpeg;base64,mock"],
+      identifiedProduct: {
+        manufacturer: "Dell",
+        model: "Latitude 5420",
+        confidence: 0.9,
+        confirmed: true,
+      },
+      visibleObservations: [],
+      damageFindings: [],
+      overallVisualCondition: "NOT_ASSESSED",
+      visualAnalysisStatus: "FAILED",
+      damageAnalysisCompleted: false,
+    };
+
+    render(
+      <LanguageProvider>
+        <ReviewStep
+          visual={failedVisualData}
+          diagnostics={dummyDiagnostics}
+          symptoms={dummySymptoms}
+          onGenerateProfile={vi.fn()}
+          isGenerating={false}
+        />
+      </LanguageProvider>
+    );
+
+    expect(
+      screen.getByText(/Visual physical damage was not assessed/i)
+    ).toBeInTheDocument();
+  });
+
+  it("9. Mandatory visual inspection: manual model picker button is disabled when images.length === 0", () => {
+    render(
+      <LanguageProvider>
+        <VisualInspectionStep
+          initialData={emptyInitialData}
+          onComplete={vi.fn()}
+        />
+      </LanguageProvider>
+    );
+
+    const manualBtn = screen.getByText(/Select Model Manually/i);
+    expect(manualBtn).toBeDisabled();
+    expect(manualBtn).toHaveAttribute("title", "Please upload laptop photos first");
+  });
+
+  it("10. Non-laptop guard: VisualInspectionStep blocks manual selection when non-laptop detected", async () => {
+    vi.mocked(api.identifyProduct).mockResolvedValueOnce({
+      status: "NON_LAPTOP_REJECTED",
+      identified_model: null,
+      is_laptop: false,
+      allow_manual_selection: false,
+      message: "Uploaded image appears to be a smartphone.",
+    } as any);
+
+    render(
+      <LanguageProvider>
+        <VisualInspectionStep
+          initialData={emptyInitialData}
+          onComplete={vi.fn()}
+        />
+      </LanguageProvider>
+    );
+
+    const input = screen.getByTestId("file-upload-input");
+    const mockFile = new File(["phone"], "phone.jpg", { type: "image/jpeg" });
+    await userEvent.upload(input, mockFile);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Uploaded image appears to be a smartphone/i)).toBeInTheDocument();
+    });
+
+    const manualBtn = screen.getByText(/Select Model Manually/i);
+    expect(manualBtn).toBeDisabled();
+    expect(screen.queryByTestId("model-picker")).not.toBeInTheDocument();
+  });
 });
 

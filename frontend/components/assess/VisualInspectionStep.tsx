@@ -339,6 +339,10 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
   };
 
   const handleConfirmModel = () => {
+    if (images.length === 0) {
+      setErrorMsg("Please upload at least one photo of your laptop to proceed.");
+      return;
+    }
     if (isNonLaptopDetected) {
       setErrorMsg("Assessment cannot proceed for a non-laptop device.");
       return;
@@ -353,10 +357,16 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
       visibleObservations,
       damageFindings: initialData?.damageFindings,
       overallVisualCondition: initialData?.overallVisualCondition,
+      damageAnalysisCompleted: initialData?.damageAnalysisCompleted,
+      visualAnalysisStatus: initialData?.visualAnalysisStatus,
     });
   };
 
   const handleSelectCustomModel = (item: { manufacturer: string; model: string }) => {
+    if (images.length === 0) {
+      setErrorMsg("Please upload at least one photo of your laptop before selecting a model.");
+      return;
+    }
     if (isNonLaptopDetected) {
       setErrorMsg("Manual selection is disabled because the uploaded image was identified as a non-laptop device. Please upload laptop photos to continue.");
       return;
@@ -571,20 +581,26 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
           <div className="flex items-center gap-2">
             <button
               type="button"
-              disabled={isNonLaptopDetected}
+              disabled={isNonLaptopDetected || images.length === 0}
               onClick={() => {
-                if (isNonLaptopDetected) return;
+                if (isNonLaptopDetected || images.length === 0) return;
                 setShowModelPicker((prev) => !prev);
                 setTimeout(() => {
                   document.getElementById("manual-model-picker")?.scrollIntoView({ behavior: "smooth" });
                 }, 50);
               }}
               className={`px-4 py-2.5 rounded-full border border-[#D2D2D7] dark:border-slate-700 text-xs font-semibold transition-all ${
-                isNonLaptopDetected
+                isNonLaptopDetected || images.length === 0
                   ? "opacity-50 cursor-not-allowed text-[#86868B]"
                   : "text-[#1D1D1F] dark:text-slate-200 hover:bg-[#F5F5F7] dark:hover:bg-slate-800 cursor-pointer"
               }`}
-              title={isNonLaptopDetected ? "Manual laptop selection is disabled for non-laptop devices" : undefined}
+              title={
+                isNonLaptopDetected
+                  ? "Manual laptop selection is disabled for non-laptop devices"
+                  : images.length === 0
+                  ? "Please upload laptop photos first"
+                  : undefined
+              }
             >
               {showModelPicker && !isNonLaptopDetected ? "Hide Manual Selection" : "Select Model Manually"}
             </button>

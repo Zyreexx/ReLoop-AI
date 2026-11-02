@@ -302,10 +302,14 @@ export default function AssessDevicePage() {
           console.log("[ReLoop] Product created in backend:", product.id);
         }
 
-        // Record visual damage analysis evidence in backend if photos available
-        // Avoid duplicate calls if damageFindings already recorded for this session
+        // Explicit analysis-completion tracking to prevent duplicate AI calls while distinguishing empty results from failures
         const alreadyAnalyzed = Boolean(
-          enrichedData.damageFindings && enrichedData.damageFindings.length > 0
+          enrichedData.damageAnalysisCompleted === true ||
+          enrichedData.visualAnalysisStatus === "COMPLETED" ||
+          (enrichedData.damageFindings !== undefined &&
+           enrichedData.overallVisualCondition !== undefined &&
+           enrichedData.overallVisualCondition !== "NOT_ASSESSED" &&
+           enrichedData.visualAnalysisStatus !== "FAILED")
         );
 
         if (data.rawFiles && data.rawFiles.length > 0 && !alreadyAnalyzed && currentProdId) {
@@ -314,7 +318,7 @@ export default function AssessDevicePage() {
             const visionRes = await analyzeVision(currentProdId, data.rawFiles, notes);
             console.log("[ReLoop] Backend vision damage analysis result:", visionRes);
 
-            if (visionRes && visionRes.findings) {
+            if (visionRes && visionRes.findings !== undefined) {
               const findingsList = Array.isArray(visionRes.findings) ? visionRes.findings : [];
               const damageObs: VisualObservation[] = findingsList.map((f: any, idx: number) => {
                 const compStr = String(f.component || "chassis").toLowerCase();
@@ -346,16 +350,20 @@ export default function AssessDevicePage() {
               enrichedData = {
                 ...data,
                 damageFindings: findingsList,
-                overallVisualCondition: visionRes.overall_visual_condition,
+                overallVisualCondition: visionRes.overall_visual_condition || (findingsList.length === 0 ? "GOOD" : "SERVICE_REQUIRED"),
+                visualAnalysisStatus: "COMPLETED",
+                damageAnalysisCompleted: true,
                 visibleObservations: damageObs.length > 0 ? [...damageObs, ...modelObs] : modelObs,
               };
             }
           } catch (vErr: any) {
             console.warn("[ReLoop] Backend vision analysis warning:", vErr.message);
-            // Non-blocking error handling
+            // Non-blocking error handling allowing safe retry
             enrichedData = {
               ...data,
               overallVisualCondition: "NOT_ASSESSED",
+              visualAnalysisStatus: "FAILED",
+              damageAnalysisCompleted: false,
             };
           }
         }

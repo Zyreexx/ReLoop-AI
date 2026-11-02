@@ -425,3 +425,69 @@ def test_vision_clean_components_and_uninspected_unknown():
     assert profile.get_component("display").status == ComponentStatus.GOOD
     assert profile.get_component("keyboard").status == ComponentStatus.UNKNOWN
     assert profile.get_component("battery").status == ComponentStatus.UNKNOWN
+
+
+def test_missing_keyboard_observation_does_not_imply_healthy():
+    """Missing keyboard observation must NOT imply healthy; status must be UNKNOWN with Untested label."""
+    prod = ProductRecord(id="prod_missing_kbd", manufacturer="Dell", model="Latitude 5420", model_year=2021)
+    store.save_product(prod)
+
+    # Only chassis and display evidence provided
+    store.add_evidence(
+        prod.id,
+        EvidenceItem(
+            type=EvidenceType.VISUAL,
+            source="Optical inspection",
+            component="display",
+            value={"condition": "GOOD", "severity": "NONE", "observation": "Display clean."},
+        ),
+    )
+    store.add_evidence(
+        prod.id,
+        EvidenceItem(
+            type=EvidenceType.VISUAL,
+            source="Optical inspection",
+            component="chassis",
+            value={"condition": "GOOD", "severity": "NONE", "observation": "Chassis clean."},
+        ),
+    )
+
+    profile = assessment_service.build_profile(prod.id)
+    kbd = profile.get_component("keyboard")
+    assert kbd is not None
+    assert kbd.status == ComponentStatus.UNKNOWN
+    assert "Untested" in kbd.label
+    assert any("Insufficient evidence" in obs for obs in kbd.observations)
+
+
+def test_clean_observation_cannot_override_severe_display_damage():
+    """A clean observation can NEVER override a severe damage finding."""
+    prod = ProductRecord(id="prod_severe_override", manufacturer="HP", model="EliteBook", model_year=2021)
+    store.save_product(prod)
+
+    # Severe crack
+    store.add_evidence(
+        prod.id,
+        EvidenceItem(
+            type=EvidenceType.VISUAL,
+            source="Optical inspection",
+            component="display",
+            value={"condition": "DAMAGED", "severity": "HIGH", "observation": "Spiderweb glass fracture across upper quadrant."},
+        ),
+    )
+    # Subsequent clean observation (e.g. from an uncracked bezel angle)
+    store.add_evidence(
+        prod.id,
+        EvidenceItem(
+            type=EvidenceType.VISUAL,
+            source="Optical inspection",
+            component="display",
+            value={"condition": "GOOD", "severity": "NONE", "observation": "Bezel inspected with no cracks."},
+        ),
+    )
+
+    profile = assessment_service.build_profile(prod.id)
+    disp = profile.get_component("display")
+    assert disp is not None
+    assert disp.status == ComponentStatus.SERVICE_REQUIRED
+    assert disp.label == "Visible Damage / Crack"

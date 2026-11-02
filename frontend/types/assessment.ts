@@ -68,6 +68,8 @@ export type VisualInspectionData = {
     evidence_type?: string;
   }>;
   overallVisualCondition?: string;
+  visualAnalysisStatus?: "PENDING" | "COMPLETED" | "FAILED" | "NOT_ASSESSED";
+  damageAnalysisCompleted?: boolean;
 };
 
 export type BatteryDiagnostic = {

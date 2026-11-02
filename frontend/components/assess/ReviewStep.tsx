@@ -143,7 +143,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
                     );
                   })}
               </div>
-            ) : visual.overallVisualCondition === "NOT_ASSESSED" ? (
+            ) : visual.visualAnalysisStatus === "FAILED" || visual.overallVisualCondition === "NOT_ASSESSED" ? (
               <div className="p-3 rounded-xl bg-[#FBFBFD] border border-[#E5E5E7] text-xs text-[#86868B] flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 text-[#86868B] shrink-0" />
                 <span>{t("review.damageNotAssessed", "Visual physical damage was not assessed. Proceeding with diagnostic telemetry.")}</span>
