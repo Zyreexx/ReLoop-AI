@@ -74,29 +74,116 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
             </div>
           </div>
 
-          <div>
+          {/* 1A. Physical Damage & Exterior Condition Findings */}
+          <div className="mb-4">
             <span className="text-xs font-bold text-[#6E6E73] uppercase tracking-wider block mb-2">
-              {t("review.observationsDetected")}
+              {t("review.damageFindingsTitle", "Physical Damage & Exterior Condition")}
             </span>
-            <div className="space-y-2">
-              {visual.visibleObservations.map((obs) => (
-                <div
-                  key={obs.id}
-                  className="p-3 rounded-xl bg-[#FBFBFD] border border-[#E5E5E7] flex items-center justify-between text-xs"
-                >
-                  <div>
-                    <span className="font-bold capitalize text-[#1D1D1F] mr-2">
-                      {localizeComponentName(obs.component, language)}:
-                    </span>
-                    <span className="text-[#6E6E73]">{localizeObservation(obs.observation, language)}</span>
-                  </div>
-                  <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-purple-50 text-purple-700 font-bold shrink-0">
-                    {t("provenance.visual", "VISUAL")}
-                  </span>
-                </div>
-              ))}
-            </div>
+            {visual.damageFindings && visual.damageFindings.length > 0 ? (
+              <div className="space-y-2">
+                {visual.damageFindings.map((finding, idx) => {
+                  const sev = (finding.severity || "LOW").toUpperCase();
+                  const badgeColor =
+                    sev === "HIGH" || sev === "CRITICAL"
+                      ? "bg-red-50 text-red-700 border-red-200"
+                      : sev === "MODERATE" || sev === "MEDIUM"
+                      ? "bg-amber-50 text-amber-700 border-amber-200"
+                      : sev === "NONE"
+                      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                      : "bg-blue-50 text-blue-700 border-blue-200";
+
+                  return (
+                    <div
+                      key={`dmg-${idx}`}
+                      className="p-3 rounded-xl bg-[#FBFBFD] border border-[#E5E5E7] flex items-center justify-between text-xs"
+                    >
+                      <div>
+                        <span className="font-bold capitalize text-[#1D1D1F] mr-2">
+                          {localizeComponentName(finding.component.toLowerCase(), language)}:
+                        </span>
+                        <span className="text-[#6E6E73]">{localizeObservation(finding.description, language)}</span>
+                      </div>
+                      <span className={`text-[10px] font-mono uppercase px-2 py-0.5 rounded font-bold border shrink-0 ${badgeColor}`}>
+                        {sev}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : visual.visibleObservations.some((o) => o.source === "DAMAGE_ANALYSIS") ? (
+              <div className="space-y-2">
+                {visual.visibleObservations
+                  .filter((o) => o.source === "DAMAGE_ANALYSIS")
+                  .map((obs) => {
+                    const sev = (obs.severity || "LOW").toUpperCase();
+                    const badgeColor =
+                      sev === "HIGH" || sev === "CRITICAL"
+                        ? "bg-red-50 text-red-700 border-red-200"
+                        : sev === "MODERATE" || sev === "MEDIUM"
+                        ? "bg-amber-50 text-amber-700 border-amber-200"
+                        : sev === "NONE"
+                        ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                        : "bg-blue-50 text-blue-700 border-blue-200";
+
+                    return (
+                      <div
+                        key={obs.id}
+                        className="p-3 rounded-xl bg-[#FBFBFD] border border-[#E5E5E7] flex items-center justify-between text-xs"
+                      >
+                        <div>
+                          <span className="font-bold capitalize text-[#1D1D1F] mr-2">
+                            {localizeComponentName(obs.component, language)}:
+                          </span>
+                          <span className="text-[#6E6E73]">{localizeObservation(obs.observation, language)}</span>
+                        </div>
+                        <span className={`text-[10px] font-mono uppercase px-2 py-0.5 rounded font-bold border shrink-0 ${badgeColor}`}>
+                          {sev}
+                        </span>
+                      </div>
+                    );
+                  })}
+              </div>
+            ) : visual.visualAnalysisStatus === "FAILED" || visual.overallVisualCondition === "NOT_ASSESSED" ? (
+              <div className="p-3 rounded-xl bg-[#FBFBFD] border border-[#E5E5E7] text-xs text-[#86868B] flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-[#86868B] shrink-0" />
+                <span>{t("review.damageNotAssessed", "Visual physical damage was not assessed. Proceeding with diagnostic telemetry.")}</span>
+              </div>
+            ) : (
+              <div className="p-3 rounded-xl bg-[#FBFBFD] border border-[#E5E5E7] text-xs text-emerald-700 font-medium flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>{t("review.noVisibleDamageDetected", "No visible physical damage detected on inspected exterior components.")}</span>
+              </div>
+            )}
           </div>
+
+          {/* 1B. Hardware Model Identification Cues */}
+          {visual.visibleObservations.filter((o) => o.source === "MODEL_IDENTIFICATION" || (!o.source && !visual.damageFindings)).length > 0 && (
+            <div>
+              <span className="text-xs font-bold text-[#6E6E73] uppercase tracking-wider block mb-2">
+                {t("review.modelCluesTitle", "Hardware Model Identification Cues")}
+              </span>
+              <div className="space-y-2">
+                {visual.visibleObservations
+                  .filter((o) => o.source === "MODEL_IDENTIFICATION" || (!o.source && !visual.damageFindings))
+                  .map((obs) => (
+                    <div
+                      key={obs.id}
+                      className="p-3 rounded-xl bg-[#FBFBFD] border border-[#E5E5E7] flex items-center justify-between text-xs"
+                    >
+                      <div>
+                        <span className="font-bold capitalize text-[#1D1D1F] mr-2">
+                          {localizeComponentName(obs.component, language)}:
+                        </span>
+                        <span className="text-[#6E6E73]">{localizeObservation(obs.observation, language)}</span>
+                      </div>
+                      <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-blue-50 text-blue-700 font-bold shrink-0 border border-blue-200">
+                        {t("provenance.modelCue", "MODEL CUE")}
+                      </span>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* 2. DIAGNOSTICS REVIEW */}

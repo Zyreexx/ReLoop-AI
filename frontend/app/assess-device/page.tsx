@@ -15,6 +15,7 @@ import {
   DiagnosticData,
   UserSymptomsData,
   VisualInspectionData,
+  VisualObservation,
 } from "@/types/assessment";
 import {
   Lock,
@@ -283,37 +284,96 @@ export default function AssessDevicePage() {
     setAuthModalOpen(true);
   };
   const handleVisualComplete = async (data: VisualInspectionData) => {
-    setVisualData(data);
+    let enrichedData: VisualInspectionData = { ...data };
     let currentProdId = productId;
     // Create product record in the backend if model identified
     if (data.identifiedProduct?.model) {
       try {
-        const product = await createProduct({
-          manufacturer: data.identifiedProduct.manufacturer || "Laptop",
-          model: data.identifiedProduct.model,
-          model_year: 2021, // Default estimate — could be enhanced
-          category: "LAPTOP",
-          age: 4.5,
-        });
-        currentProdId = product.id;
-        setProductId(product.id);
-        console.log("[ReLoop] Product created in backend:", product.id);
-        // Record visual damage analysis evidence in backend if photos/observations available
-        if (data.rawFiles && data.rawFiles.length > 0) {
+        if (!currentProdId) {
+          const product = await createProduct({
+            manufacturer: data.identifiedProduct.manufacturer || "Laptop",
+            model: data.identifiedProduct.model,
+            model_year: 2021, // Default estimate — could be enhanced
+            category: "LAPTOP",
+            age: 4.5,
+          });
+          currentProdId = product.id;
+          setProductId(product.id);
+          console.log("[ReLoop] Product created in backend:", product.id);
+        }
+
+        // Explicit analysis-completion tracking to prevent duplicate AI calls while distinguishing empty results from failures
+        const alreadyAnalyzed = Boolean(
+          enrichedData.damageAnalysisCompleted === true ||
+          enrichedData.visualAnalysisStatus === "COMPLETED" ||
+          (enrichedData.damageFindings !== undefined &&
+           enrichedData.overallVisualCondition !== undefined &&
+           enrichedData.overallVisualCondition !== "NOT_ASSESSED" &&
+           enrichedData.visualAnalysisStatus !== "FAILED")
+        );
+
+        if (data.rawFiles && data.rawFiles.length > 0 && !alreadyAnalyzed && currentProdId) {
           try {
-            const notes = data.visibleObservations.map((o) => `${o.component}: ${o.observation}`).join(". ");
-            await analyzeVision(product.id, data.rawFiles, notes);
-            console.log("[ReLoop] Visual evidence recorded in backend for product:", product.id);
+            const notes = `Model: ${data.identifiedProduct.manufacturer} ${data.identifiedProduct.model}`;
+            const visionRes = await analyzeVision(currentProdId, data.rawFiles, notes);
+            console.log("[ReLoop] Backend vision damage analysis result:", visionRes);
+
+            if (visionRes && visionRes.findings !== undefined) {
+              const findingsList = Array.isArray(visionRes.findings) ? visionRes.findings : [];
+              const damageObs: VisualObservation[] = findingsList.map((f: any, idx: number) => {
+                const compStr = String(f.component || "chassis").toLowerCase();
+                const validComp = ["chassis", "display", "keyboard", "hinge", "ports", "trackpad"].includes(compStr)
+                  ? (compStr as any)
+                  : "chassis";
+                const sevUpper = String(f.severity || "LOW").toUpperCase();
+                const cond = ["HIGH", "CRITICAL"].includes(sevUpper)
+                  ? ("visible_crack" as const)
+                  : ["MODERATE", "MEDIUM"].includes(sevUpper)
+                  ? ("loose_part" as const)
+                  : ("minor_wear" as const);
+                return {
+                  id: `vis-dmg-${idx}`,
+                  component: validComp,
+                  condition: cond,
+                  observation: f.description,
+                  confidence: f.confidence || 0.85,
+                  severity: sevUpper as any,
+                  source: "DAMAGE_ANALYSIS" as const,
+                };
+              });
+
+              // Preserve model identification clues with source explicitly set
+              const modelObs = (data.visibleObservations || [])
+                .filter((o) => o.source === "MODEL_IDENTIFICATION" || !o.source)
+                .map((o) => ({ ...o, source: "MODEL_IDENTIFICATION" as const }));
+
+              enrichedData = {
+                ...data,
+                damageFindings: findingsList,
+                overallVisualCondition: visionRes.overall_visual_condition || (findingsList.length === 0 ? "GOOD" : "SERVICE_REQUIRED"),
+                visualAnalysisStatus: "COMPLETED",
+                damageAnalysisCompleted: true,
+                visibleObservations: damageObs.length > 0 ? [...damageObs, ...modelObs] : modelObs,
+              };
+            }
           } catch (vErr: any) {
             console.warn("[ReLoop] Backend vision analysis warning:", vErr.message);
+            // Non-blocking error handling allowing safe retry
+            enrichedData = {
+              ...data,
+              overallVisualCondition: "NOT_ASSESSED",
+              visualAnalysisStatus: "FAILED",
+              damageAnalysisCompleted: false,
+            };
           }
         }
       } catch (err: any) {
         console.warn("[ReLoop] Backend product creation failed, using local flow:", err.message);
       }
     }
+    setVisualData(enrichedData);
     setCurrentStep(2);
-    saveAssessmentDraft({ step: 2, visual: data, prodId: currentProdId });
+    saveAssessmentDraft({ step: 2, visual: enrichedData, prodId: currentProdId });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
   const handleDiagnosticsComplete = async (data: DiagnosticData) => {

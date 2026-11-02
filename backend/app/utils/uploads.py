@@ -71,7 +71,7 @@ async def validate_and_process_upload_files(
     """
     Validates uploaded multipart files for count, size, and real image magic bytes.
     """
-    effective_max = max_files if max_files is not None else getattr(settings, "MAX_IDENTIFY_IMAGES", 5)
+    effective_max = max_files if max_files is not None else getattr(settings, "MAX_IDENTIFY_IMAGES", 6)
     if not files or len(files) < min_files:
         raise AppError(
             code=ErrorCode.INVALID_INPUT.value,

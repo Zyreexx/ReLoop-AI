@@ -49,7 +49,7 @@ class Settings:
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
     GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
     GEMINI_MEDIA_RESOLUTION: str = os.getenv("GEMINI_MEDIA_RESOLUTION", "HIGH")
-    MAX_IDENTIFY_IMAGES: int = int(os.getenv("MAX_IDENTIFY_IMAGES", "5"))
+    MAX_IDENTIFY_IMAGES: int = int(os.getenv("MAX_IDENTIFY_IMAGES", "6"))
 
     # Groq (Secondary fallback for vision)
     GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")

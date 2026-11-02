@@ -70,7 +70,7 @@ def test_identify_rejects_oversized_file(client: TestClient):
     assert "exceeds maximum allowed size" in err["message"].lower()
 
 
-def test_identify_accepts_up_to_5_images_and_rejects_6(client: TestClient):
+def test_identify_accepts_up_to_6_images_and_rejects_7(client: TestClient):
     mock_ai_output = CatalogIdentificationOutput(
         candidate_id="C2",
         label_evidence=["Latitude 5420"],
@@ -80,25 +80,25 @@ def test_identify_accepts_up_to_5_images_and_rejects_6(client: TestClient):
     )
 
     with patch.object(gemini_client, "generate_structured", return_value=mock_ai_output):
-        # 5 images should be accepted
-        files_5 = [
+        # 6 images should be accepted
+        files_6 = [
             ("images", (f"pic{i}.jpg", BytesIO(VALID_JPEG), "image/jpeg"))
-            for i in range(5)
+            for i in range(6)
         ]
-        res_5 = client.post("/api/products/identify", files=files_5)
-        assert res_5.status_code == 200
-        assert res_5.json()["source"] == "live"
+        res_6 = client.post("/api/products/identify", files=files_6)
+        assert res_6.status_code == 200
+        assert res_6.json()["source"] == "live"
 
-    # 6 images should be rejected
-    files_6 = [
+    # 7 images should be rejected
+    files_7 = [
         ("images", (f"pic{i}.jpg", BytesIO(VALID_JPEG), "image/jpeg"))
-        for i in range(6)
+        for i in range(7)
     ]
-    res_6 = client.post("/api/products/identify", files=files_6)
-    assert res_6.status_code == 400
-    err = res_6.json()["error"]
+    res_7 = client.post("/api/products/identify", files=files_7)
+    assert res_7.status_code == 400
+    err = res_7.json()["error"]
     assert err["code"] == ErrorCode.INVALID_INPUT.value
-    assert "maximum of 5 images" in err["message"].lower()
+    assert "maximum of 6 images" in err["message"].lower()
 
 
 def test_identify_rejects_empty_file(client: TestClient):
@@ -1146,3 +1146,46 @@ def test_identify_open_ended_with_ambiguous_bare_number_in_isolation():
     )
     assert conf != ConfidenceLevel.HIGH
 
+def test_analyze_accepts_up_to_6_images_and_rejects_7(client: TestClient, registered_product):
+    """POST /api/vision/analyze must accept up to 6 images and reject 7 with 400."""
+    mock_ai_output = DamageAssessmentOutput(
+        display_cracks=[],
+        chassis_cracks=[],
+        dents=[],
+        missing_keys=[],
+        hinge_damage=[],
+        port_damage=[],
+        visible_swelling=[],
+        observations=["Clean chassis exterior"],
+        components_inspected_clean=["chassis"],
+        components_not_assessable=[],
+    )
+
+    with patch.object(gemini_client, "generate_structured", return_value=mock_ai_output):
+        # 6 images should be accepted
+        files_6 = [
+            ("images", (f"pic{i}.jpg", BytesIO(VALID_JPEG), "image/jpeg"))
+            for i in range(6)
+        ]
+        res_6 = client.post(
+            "/api/vision/analyze",
+            data={"product_id": registered_product.id},
+            files=files_6,
+        )
+        assert res_6.status_code == 200
+        assert res_6.json()["source"] == "live"
+
+    # 7 images should be rejected
+    files_7 = [
+        ("images", (f"pic{i}.jpg", BytesIO(VALID_JPEG), "image/jpeg"))
+        for i in range(7)
+    ]
+    res_7 = client.post(
+        "/api/vision/analyze",
+        data={"product_id": registered_product.id},
+        files=files_7,
+    )
+    assert res_7.status_code == 400
+    err = res_7.json()["error"]
+    assert err["code"] == ErrorCode.INVALID_INPUT.value
+    assert "maximum of 6 images" in err["message"].lower()
