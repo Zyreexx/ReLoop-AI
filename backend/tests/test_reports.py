@@ -148,6 +148,7 @@ def test_download_report_as_json_attachment(client: TestClient):
         manufacturer="HP",
         model="EliteBook 840 G7",
         model_year=2020,
+        age=4.0,
     )
     store.save_product(prod)
     assessment_service.build_profile(prod.id)

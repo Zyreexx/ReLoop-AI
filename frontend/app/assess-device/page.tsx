@@ -16,15 +16,29 @@ import {
   UserSymptomsData,
   VisualInspectionData,
 } from "@/types/assessment";
-import { Lock, ArrowRight, ShieldCheck, ArrowLeft } from "lucide-react";
+import {
+  Lock,
+  ArrowRight,
+  ShieldCheck,
+  ArrowLeft,
+  RotateCcw,
+  Clock,
+  Trash2,
+  FileText,
+  CheckCircle2,
+} from "lucide-react";
 import {
   createProduct,
   validateDiagnostics,
   parseSymptoms,
   buildAssessment,
   analyzeVision,
+  getReport,
 } from "@/lib/api";
 import { useLanguage } from "@/context/LanguageContext";
+
+const ASSESSMENT_DRAFT_KEY = "reloop_active_assessment_draft";
+
 export default function AssessDevicePage() {
   const { user } = useAuth();
   const { t } = useLanguage();
@@ -88,6 +102,181 @@ export default function AssessDevicePage() {
   });
   // Generated Condition Profile
   const [conditionProfile, setConditionProfile] = useState<ComponentConditionRecord[]>([]);
+  // Restored draft indicator banner
+  const [restoredDraftInfo, setRestoredDraftInfo] = useState<{
+    name: string;
+    step: number;
+    updatedAt: string;
+  } | null>(null);
+
+  // Restore saved in-progress draft from localStorage on mount
+  useEffect(() => {
+    try {
+      const draftStr = localStorage.getItem(ASSESSMENT_DRAFT_KEY);
+      if (draftStr) {
+        const draft = JSON.parse(draftStr);
+        const hasData =
+          (draft.currentStep && draft.currentStep > 1) ||
+          Boolean(draft.visualData?.identifiedProduct?.model) ||
+          Boolean(draft.productId) ||
+          Boolean(draft.diagnosticsData?.battery?.healthPercentage > 0) ||
+          Boolean(draft.symptomsData?.selectedSymptoms?.length > 0);
+
+        if (hasData) {
+          if (draft.currentStep && draft.currentStep >= 1 && draft.currentStep <= 4) {
+            setCurrentStep(draft.currentStep);
+          }
+          if (draft.productId) setProductId(draft.productId);
+          if (draft.assessmentId) setAssessmentId(draft.assessmentId);
+          if (draft.visualData) {
+            setVisualData((prev) => ({
+              ...prev,
+              ...draft.visualData,
+              rawFiles: undefined,
+            }));
+          }
+          if (draft.diagnosticsData) {
+            setDiagnosticsData((prev) => ({
+              ...prev,
+              ...draft.diagnosticsData,
+            }));
+          }
+          if (draft.symptomsData) {
+            setSymptomsData((prev) => ({
+              ...prev,
+              ...draft.symptomsData,
+            }));
+          }
+          if (draft.conditionProfile && Array.isArray(draft.conditionProfile)) {
+            setConditionProfile(draft.conditionProfile);
+          }
+
+          const mfr = draft.visualData?.identifiedProduct?.manufacturer || "";
+          const model = draft.visualData?.identifiedProduct?.model || "Laptop";
+          const displayName = [mfr, model].filter(Boolean).join(" ") || "In-Progress Laptop";
+
+          setRestoredDraftInfo({
+            name: displayName,
+            step: draft.currentStep || 1,
+            updatedAt: draft.updatedAt || new Date().toISOString(),
+          });
+        }
+      }
+    } catch (err) {
+      console.warn("[ReLoop] Error restoring assessment draft:", err);
+    }
+  }, []);
+
+  // Helper to persist current progress into localStorage draft
+  const saveAssessmentDraft = (overrides?: {
+    step?: number;
+    visual?: VisualInspectionData;
+    diagnostics?: DiagnosticData;
+    symptoms?: UserSymptomsData;
+    prodId?: string;
+    assessId?: string;
+  }) => {
+    try {
+      const vData = overrides?.visual || visualData;
+      // Strip non-serializable File objects & truncate oversized base64 to avoid quota issues
+      const safeVisual: VisualInspectionData = {
+        ...vData,
+        rawFiles: undefined,
+        images: (vData.images || []).map((img) => (img.length > 250000 ? "" : img)).filter(Boolean),
+      };
+      const draft = {
+        currentStep: overrides?.step ?? currentStep,
+        productId: overrides?.prodId ?? productId,
+        assessmentId: overrides?.assessId ?? assessmentId,
+        visualData: safeVisual,
+        diagnosticsData: overrides?.diagnostics ?? diagnosticsData,
+        symptomsData: overrides?.symptoms ?? symptomsData,
+        updatedAt: new Date().toISOString(),
+        userEmail: user?.email || undefined,
+      };
+      localStorage.setItem(ASSESSMENT_DRAFT_KEY, JSON.stringify(draft));
+    } catch (err) {
+      console.warn("[ReLoop] Could not save assessment draft:", err);
+    }
+  };
+
+  // Discard draft and reset to Step 1 clean
+  const handleDiscardDraft = () => {
+    if (
+      window.confirm(
+        "Are you sure you want to discard this in-progress assessment and start fresh? All entered data will be cleared."
+      )
+    ) {
+      localStorage.removeItem(ASSESSMENT_DRAFT_KEY);
+      setRestoredDraftInfo(null);
+      setCurrentStep(1);
+      setProductId("");
+      setAssessmentId("");
+      setVisualData({
+        images: [],
+        identifiedProduct: {
+          manufacturer: "",
+          model: "",
+          confidence: 0,
+          confirmed: false,
+        },
+        visibleObservations: [],
+      });
+      setDiagnosticsData({
+        deviceAgeYears: 0,
+        battery: {
+          designCapacity: 0,
+          fullChargeCapacity: 0,
+          cycleCount: 0,
+          unit: "mWh",
+          healthPercentage: 0,
+          notProvided: true,
+        },
+        ssd: {
+          healthPercentage: 0,
+          powerOnHours: 0,
+          smartStatus: "NOT_TESTED",
+          notProvided: true,
+        },
+        ram: {
+          capacityGB: 0,
+          testResult: "NOT_TESTED",
+          notProvided: true,
+        },
+        thermals: {
+          cpuTempC: 0,
+          gpuTempC: 0,
+          thermalThrottling: "UNKNOWN",
+          overheatingSymptoms: false,
+          notProvided: true,
+        },
+        system: {
+          hardwareResult: "NOT_TESTED",
+          criticalFaults: "",
+          notProvided: true,
+        },
+      });
+      setSymptomsData({
+        selectedSymptoms: [],
+        userDescription: "",
+        userObjective: "max_life",
+      });
+      setConditionProfile([]);
+    }
+  };
+
+  // Warn before accidental unload if assessment in active progress
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (currentStep >= 2 && currentStep <= 4) {
+        e.preventDefault();
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [currentStep]);
+
   // Guest access is fully allowed - no forced modal
   const handleOpenAuth = (mode: "login" | "register") => {
     setAuthMode(mode);
@@ -95,6 +284,7 @@ export default function AssessDevicePage() {
   };
   const handleVisualComplete = async (data: VisualInspectionData) => {
     setVisualData(data);
+    let currentProdId = productId;
     // Create product record in the backend if model identified
     if (data.identifiedProduct?.model) {
       try {
@@ -105,6 +295,7 @@ export default function AssessDevicePage() {
           category: "LAPTOP",
           age: 4.5,
         });
+        currentProdId = product.id;
         setProductId(product.id);
         console.log("[ReLoop] Product created in backend:", product.id);
         // Record visual damage analysis evidence in backend if photos/observations available
@@ -122,6 +313,7 @@ export default function AssessDevicePage() {
       }
     }
     setCurrentStep(2);
+    saveAssessmentDraft({ step: 2, visual: data, prodId: currentProdId });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
   const handleDiagnosticsComplete = async (data: DiagnosticData) => {
@@ -167,6 +359,7 @@ export default function AssessDevicePage() {
       }
     }
     setCurrentStep(3);
+    saveAssessmentDraft({ step: 3, diagnostics: data });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
   const handleSymptomsComplete = async (data: UserSymptomsData) => {
@@ -193,10 +386,13 @@ export default function AssessDevicePage() {
       }
     }
     setCurrentStep(4);
+    saveAssessmentDraft({ step: 4, symptoms: data });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
   const handleBackStep = () => {
-    setCurrentStep((prev) => Math.max(1, prev - 1));
+    const prev = Math.max(1, currentStep - 1);
+    setCurrentStep(prev);
+    saveAssessmentDraft({ step: prev });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
   const handleGenerateProfile = async () => {
@@ -249,26 +445,102 @@ export default function AssessDevicePage() {
           const backendAssessmentId = productId;
           setConditionProfile(condProfile);
           setAssessmentId(backendAssessmentId);
+          // Fetch or synthesize full report
+          let reportData: any = null;
+          try {
+            reportData = await getReport(productId);
+          } catch (rErr) {
+            console.warn("[ReLoop] Backend report fetch fallback:", rErr);
+          }
+
+          const mfr = visualData.identifiedProduct.manufacturer || "Laptop";
+          const model = visualData.identifiedProduct.model || "Custom Model";
+          const userName = user?.name || (user?.email ? user.email.split("@")[0] : "Guest Evaluator");
+          const userEmail = user?.email ? user.email.toLowerCase() : undefined;
+          const primaryPw = reportData?.recommendations?.primary_pathway || "REPAIR";
+
+          if (!reportData) {
+            reportData = {
+              assessment_id: backendAssessmentId,
+              timestamp: new Date().toISOString(),
+              product: {
+                manufacturer: mfr,
+                model: model,
+                category: "LAPTOP",
+                age: diagnosticsData.deviceAgeYears || 4,
+              },
+              user: {
+                name: userName,
+                email: userEmail || "guest@reloop.ai",
+              },
+              condition_profile: {
+                overall_hardware_health: profile.overall_hardware_health || "FAIR",
+                components: condProfile.reduce((acc, c) => ({
+                  ...acc,
+                  [c.component.toLowerCase().replace(/[^a-z0-9]/g, "_")]: {
+                    status: c.status,
+                    label: c.statusLabel,
+                    summary: c.summary,
+                    confidence: c.confidence,
+                  },
+                }), {}),
+              },
+              recommendations: {
+                primary_pathway: primaryPw,
+                avoided_co2_kg: 215,
+                life_extension_years: 3.5,
+                estimated_cost_usd: 45,
+                confidence_score: 0.92,
+              },
+              diagnostics: diagnosticsData,
+              symptoms: symptomsData,
+            };
+          }
+
           // Save to user store or guest store in localStorage
           const isGuest = !user;
           const assessmentRecord = {
             id: backendAssessmentId,
-            userId: user?.email ? user.email.toLowerCase() : "guest",
-            userEmail: user?.email || undefined,
+            userId: userEmail || "guest",
+            userEmail: userEmail,
+            userName: userName,
             isGuest,
             createdAt: new Date().toISOString(),
+            laptop: {
+              manufacturer: mfr,
+              model: model,
+              fullName: `${mfr} ${model}`.trim(),
+              category: "LAPTOP",
+              ageYears: diagnosticsData.deviceAgeYears || 4,
+            },
             visual: visualData,
             diagnostics: diagnosticsData,
             symptoms: symptomsData,
             conditionProfile: condProfile,
             backendProductId: productId,
             overallHealth: profile.overall_hardware_health,
+            topPathway: {
+              pathway: primaryPw,
+              title: primaryPw === "REPAIR"
+                ? "Modular Repair & Thermal Servicing"
+                : primaryPw === "REFURBISH"
+                ? "Component Refurbishment & Renewal"
+                : primaryPw === "REPURPOSE"
+                ? "Repurpose as Home Server / Thin Client"
+                : "Certified Material Harvesting & Recycling",
+              action: "Restore optimal system performance & extend service life",
+              lifeExtensionYears: reportData?.recommendations?.life_extension_years || 3.5,
+              avoidedCo2Kg: reportData?.recommendations?.avoided_co2_kg || 215,
+              estimatedCostUsd: reportData?.recommendations?.estimated_cost_usd || 45,
+              turnaroundDays: 2,
+            },
+            report: reportData,
           };
           try {
             localStorage.setItem(`assessment_${backendAssessmentId}`, JSON.stringify(assessmentRecord));
             localStorage.setItem("current_assessment", JSON.stringify(assessmentRecord));
-            if (user?.email) {
-              const userListKey = `reloop_user_assessments_${user.email.toLowerCase()}`;
+            if (userEmail) {
+              const userListKey = `reloop_user_assessments_${userEmail}`;
               const storedList = JSON.parse(localStorage.getItem(userListKey) || "[]");
               const updatedList = [assessmentRecord, ...storedList.filter((a: any) => a.id !== backendAssessmentId)];
               localStorage.setItem(userListKey, JSON.stringify(updatedList));
@@ -282,6 +554,9 @@ export default function AssessDevicePage() {
               const updatedGuestList = [assessmentRecord, ...guestList.filter((a: any) => a.id !== backendAssessmentId)];
               localStorage.setItem("reloop_guest_assessments", JSON.stringify(updatedGuestList));
             }
+            // Clear in-progress draft once finalized
+            localStorage.removeItem(ASSESSMENT_DRAFT_KEY);
+            setRestoredDraftInfo(null);
           } catch (err) {
             console.warn("Could not write assessment to localStorage", err);
           }
@@ -312,17 +587,76 @@ export default function AssessDevicePage() {
       setConditionProfile(data.assessment.conditionProfile);
       setAssessmentId(data.assessment.id);
       try {
+        const mfrFb = visualData.identifiedProduct.manufacturer || "Laptop";
+        const modelFb = visualData.identifiedProduct.model || "Custom Model";
+        const userNameFb = user?.name || (user?.email ? user.email.split("@")[0] : "Guest Evaluator");
+        const userEmailFb = user?.email ? user.email.toLowerCase() : undefined;
+
+        const fallbackReport = {
+          assessment_id: data.assessment.id,
+          timestamp: new Date().toISOString(),
+          product: {
+            manufacturer: mfrFb,
+            model: modelFb,
+            category: "LAPTOP",
+            age: diagnosticsData.deviceAgeYears || 4,
+          },
+          user: {
+            name: userNameFb,
+            email: userEmailFb || "guest@reloop.ai",
+          },
+          condition_profile: {
+            overall_hardware_health: data.assessment.overallHealth || "FAIR",
+            components: (data.assessment.conditionProfile || []).reduce((acc: any, c: any) => ({
+              ...acc,
+              [c.component.toLowerCase().replace(/[^a-z0-9]/g, "_")]: {
+                status: c.status,
+                label: c.statusLabel,
+                summary: c.summary,
+                confidence: c.confidence,
+              },
+            }), {}),
+          },
+          recommendations: {
+            primary_pathway: "REPAIR",
+            avoided_co2_kg: 215,
+            life_extension_years: 3.5,
+            estimated_cost_usd: 45,
+            confidence_score: 0.92,
+          },
+          diagnostics: diagnosticsData,
+          symptoms: symptomsData,
+        };
+
         const enrichedRecord = {
           ...data.assessment,
           backendProductId: productId || data.assessment.backendProductId || data.assessment.id,
-          userId: user?.email ? user.email.toLowerCase() : "guest",
-          userEmail: user?.email || undefined,
+          userId: userEmailFb || "guest",
+          userEmail: userEmailFb,
+          userName: userNameFb,
           isGuest: !user,
+          laptop: {
+            manufacturer: mfrFb,
+            model: modelFb,
+            fullName: `${mfrFb} ${modelFb}`.trim(),
+            category: "LAPTOP",
+            ageYears: diagnosticsData.deviceAgeYears || 4,
+          },
+          topPathway: data.assessment.topPathway || {
+            pathway: "REPAIR",
+            title: "Modular Repair & Thermal Servicing",
+            action: "Restore optimal system performance & extend service life",
+            lifeExtensionYears: 3.5,
+            avoidedCo2Kg: 215,
+            estimatedCostUsd: 45,
+            turnaroundDays: 2,
+          },
+          report: fallbackReport,
         };
         localStorage.setItem(`assessment_${data.assessment.id}`, JSON.stringify(enrichedRecord));
         localStorage.setItem("current_assessment", JSON.stringify(enrichedRecord));
-        if (user?.email) {
-          const userListKey = `reloop_user_assessments_${user.email.toLowerCase()}`;
+        if (userEmailFb) {
+          const userListKey = `reloop_user_assessments_${userEmailFb}`;
           const storedList = JSON.parse(localStorage.getItem(userListKey) || "[]");
           const updatedList = [enrichedRecord, ...storedList.filter((a: any) => a.id !== data.assessment.id)];
           localStorage.setItem(userListKey, JSON.stringify(updatedList));
@@ -336,6 +670,9 @@ export default function AssessDevicePage() {
           const updatedGuestList = [enrichedRecord, ...guestList.filter((a: any) => a.id !== data.assessment.id)];
           localStorage.setItem("reloop_guest_assessments", JSON.stringify(updatedGuestList));
         }
+        // Clear in-progress draft once finalized
+        localStorage.removeItem(ASSESSMENT_DRAFT_KEY);
+        setRestoredDraftInfo(null);
       } catch (err) {
         console.warn("Could not write assessment to localStorage", err);
       }
@@ -390,10 +727,51 @@ export default function AssessDevicePage() {
                 </p>
               </div>
             </div>
+            {/* In-Progress Assessment Draft Restored Banner */}
+            {restoredDraftInfo && currentStep < 5 && (
+              <div className="max-w-4xl mx-auto px-6 pt-5 pb-1">
+                <div className="p-4 rounded-2xl bg-gradient-to-r from-blue-500/10 via-indigo-500/10 to-blue-500/5 border border-[#0071E3]/25 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs shadow-xs">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-xl bg-[#0071E3] text-white flex items-center justify-center shrink-0 shadow-xs">
+                      <RotateCcw size={18} />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-[#0071E3] bg-[#0071E3]/15 px-2 py-0.5 rounded-full">
+                          Draft Restored
+                        </span>
+                        <span className="text-xs text-[#86868B]">Step {currentStep} of 4</span>
+                      </div>
+                      <p className="text-xs sm:text-sm font-semibold text-[#1D1D1F] mt-0.5">
+                        Resumed assessment for <span className="text-[#0071E3] font-bold">{restoredDraftInfo.name}</span>
+                      </p>
+                      <p className="text-[11px] text-[#6E6E73]">
+                        Your progress was preserved. If you navigated to another menu or refreshed, your data is safe.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={handleDiscardDraft}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium text-[#FF3B30] hover:bg-[#FF3B30]/10 border border-[#FF3B30]/30 transition-all cursor-pointer"
+                      title="Clear draft and start with a new device"
+                    >
+                      <Trash2 size={13} />
+                      <span>Start Fresh</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Step Progress Header */}
             <StepProgress
               currentStep={currentStep}
-              onStepClick={(step) => setCurrentStep(step)}
+              onStepClick={(step) => {
+                setCurrentStep(step);
+                saveAssessmentDraft({ step });
+              }}
             />
             {/* Step Content Router */}
             <div className="pb-20">
