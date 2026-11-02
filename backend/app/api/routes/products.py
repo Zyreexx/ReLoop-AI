@@ -29,7 +29,7 @@ async def identify_product(request: Request):
     """
     api_key_header = request.headers.get("x-gemini-api-key")
     content_type = request.headers.get("content-type", "")
-    if "multipart/form-data" in content_type:
+    if "multipart/form-data" in content_type or "application/x-www-form-urlencoded" in content_type:
         form = await request.form()
         raw_files = form.getlist("images") + form.getlist("files")
         uploaded_files = [f for f in raw_files if hasattr(f, "filename") and hasattr(f, "read")]
@@ -75,8 +75,50 @@ async def identify_product(request: Request):
     body = await request.json() if request.headers.get("content-length", "0") != "0" else {}
     req = ProductIdentifyRequest(**body)
     custom_key = body.get("api_key") or body.get("gemini_api_key") or api_key_header
+
+    image_bytes = None
+    if req.image_base64:
+        import base64
+        from app.errors import AppError, ErrorCode
+        from app.utils.uploads import detect_image_type, ProcessedImage
+        max_bytes = settings.MAX_UPLOAD_MB * 1024 * 1024
+        processed = []
+        for idx, b64_str in enumerate(req.image_base64):
+            if not b64_str:
+                continue
+            raw_str = b64_str
+            if "base64," in raw_str:
+                raw_str = raw_str.split("base64,")[1]
+            try:
+                decoded = base64.b64decode(raw_str)
+            except Exception:
+                raise AppError(
+                    code=ErrorCode.INVALID_INPUT.value,
+                    message=f"Image at index {idx} contains invalid base64 data.",
+                    field=f"image_base64[{idx}]",
+                    http_status=400,
+                )
+            if len(decoded) == 0:
+                raise AppError(
+                    code=ErrorCode.INVALID_INPUT.value,
+                    message=f"Image at index {idx} is empty.",
+                    field=f"image_base64[{idx}]",
+                    http_status=400,
+                )
+            if len(decoded) > max_bytes:
+                raise AppError(
+                    code=ErrorCode.INVALID_INPUT.value,
+                    message=f"Image at index {idx} exceeds maximum allowed size of {settings.MAX_UPLOAD_MB}MB.",
+                    field=f"image_base64[{idx}]",
+                    http_status=400,
+                )
+            mime_type, _ = detect_image_type(decoded[:16])
+            processed.append(ProcessedImage(filename=f"image_{idx}", mime_type=mime_type, data=decoded))
+        if processed:
+            image_bytes = processed
+
     return vision_service.identify(
-        image_bytes_list=None,
+        image_bytes_list=image_bytes,
         image_roles=req.image_roles,
         manual_model=req.manual_model,
         model_id=req.model_id,

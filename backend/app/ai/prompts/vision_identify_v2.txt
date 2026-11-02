@@ -8,6 +8,15 @@ Identify the laptop manufacturer (make) and specific model name/number as accura
 {image_roles_context}
 {hint_context}
 
+CRITICAL DEVICE CLASSIFICATION:
+ReLoop AI ONLY evaluates laptop and notebook computers (portable clamshell computers with an integrated display attached via hinge to an integrated physical keyboard base).
+- Laptops: Set is_laptop=true, detected_device_type="LAPTOP". Genuine laptops (even if logo-less, unbranded, closed lid, open display, bottom base, or keyboard) are valid laptops.
+- Smartphones / Mobile Phones: (e.g. iPhone, Samsung Galaxy, Pixel, etc.) Set is_laptop=false, detected_device_type="SMARTPHONE", manufacturer="UNKNOWN", model="UNKNOWN".
+- Standalone Monitors / Displays: (e.g. desktop monitor, standalone screen without integrated keyboard chassis, TV) Set is_laptop=false, detected_device_type="MONITOR", manufacturer="UNKNOWN", model="UNKNOWN".
+- Tablets / iPads: (e.g. iPad, Galaxy Tab without permanently attached laptop chassis) Set is_laptop=false, detected_device_type="TABLET", manufacturer="UNKNOWN", model="UNKNOWN".
+- Other Non-Laptops: (desktop tower, mini PC, printer, non-electronic item) Set is_laptop=false, detected_device_type="OTHER_NON_LAPTOP", manufacturer="UNKNOWN", model="UNKNOWN".
+- Blurry, Dark, or Ambiguous Images: Handle cautiously! Do NOT automatically classify as non-laptop unless you clearly confirm a non-laptop object. Set is_laptop=true, detected_device_type="UNKNOWN".
+
 GUIDELINES:
 1. Label Evidence: Read and extract all text literally visible in the photos:
    - Brand logos (e.g. Dell, Lenovo, HP, Apple, Acer, ASUS, Microsoft, Samsung, etc.)
@@ -17,12 +26,16 @@ GUIDELINES:
 3. Contradictions: Explicitly list any visual contradictions (e.g. lid shows Lenovo logo but sticker says Dell, or port layout does not match).
 4. Identification:
    - Identify the manufacturer and exact model as specifically as possible.
+   - If the image depicts a non-laptop object, return "UNKNOWN" for both manufacturer and model, and explicitly note the non-laptop device type in visual_evidence.
    - If the manufacturer or model cannot be identified or photos are too blurry/unclear, return "UNKNOWN" for manufacturer and/or model.
+   - Do not guess or fabricate an exact model number if only the brand or product family is visible.
 5. Confidence: Provide an advisory confidence score (0.0 to 1.0) reflecting your visual certainty.
 6. Boundaries: NEVER guess internal component health (battery cycles, SSD health, thermals, motherboard status).
 
 Return pure JSON:
 {
+  "is_laptop": true,
+  "detected_device_type": "LAPTOP",
   "manufacturer": "<Manufacturer name e.g. 'Dell', 'Lenovo', 'Apple', 'HP', 'Acer', 'ASUS' or 'UNKNOWN'>",
   "model": "<Specific model name e.g. 'Latitude 5420', 'Aspire 5 A515-56', 'ThinkPad T14 Gen 1', or 'UNKNOWN'>",
   "model_year": 2021,

@@ -4,7 +4,7 @@ Product: id, manufacturer, model, model_year, category, serial_or_identifier, ag
 And section 9 endpoint contracts.
 """
 from datetime import datetime, timezone
-from typing import List, Optional
+from typing import List, Optional, Union
 from uuid import uuid4
 from pydantic import BaseModel, Field, model_validator
 from app.schemas.enums import DeviceCategory, ConfidenceLevel, IdentificationStatus
@@ -71,7 +71,7 @@ class ProductCandidate(BaseModel):
 
 class ProductIdentifyRequest(BaseModel):
     image_names: Optional[List[str]] = Field(default_factory=list)
-    image_base64: Optional[List[str]] = Field(default_factory=list)
+    image_base64: Optional[Union[str, List[str]]] = Field(default_factory=list)
     image_roles: Optional[List[str]] = None
     hint: Optional[str] = None
     manual_model: Optional[str] = None
@@ -82,14 +82,15 @@ class ProductIdentifyRequest(BaseModel):
     @classmethod
     def reconcile_hints(cls, values):
         if isinstance(values, dict):
-            target = values.get("manual_model") or values.get("model_id") or values.get("hint")
-            if target:
+            b64 = values.get("image_base64")
+            if isinstance(b64, str):
+                values["image_base64"] = [b64]
+            manual = values.get("manual_model") or values.get("model_id")
+            if manual:
                 if not values.get("manual_model"):
-                    values["manual_model"] = target
-                if not values.get("hint"):
-                    values["hint"] = target
+                    values["manual_model"] = manual
                 if not values.get("model_id"):
-                    values["model_id"] = target
+                    values["model_id"] = manual
         return values
 
 
@@ -113,6 +114,9 @@ class ProductIdentifyResponse(BaseModel):
     generic_model: Optional[ProductCandidate] = None
     message: Optional[str] = None
     source: str = Field("live", description="live | sample-data | manual")
+    is_laptop: bool = True
+    device_category: Optional[str] = "LAPTOP"
+    allow_manual_selection: bool = True
 
 
 

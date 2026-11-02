@@ -65,6 +65,7 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
   );
 
   const [showModelPicker, setShowModelPicker] = useState(false);
+  const [isNonLaptopDetected, setIsNonLaptopDetected] = useState(false);
   const [modelSearchQuery, setModelSearchQuery] = useState("");
   const [customBrand, setCustomBrand] = useState("");
   const [customModel, setCustomModel] = useState("");
@@ -78,6 +79,7 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
       setAnalyzed(false);
       setErrorMsg(null);
       setShowModelPicker(false);
+      setIsNonLaptopDetected(false);
       setIdentifiedProduct({
         manufacturer: "",
         model: "",
@@ -126,6 +128,7 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
   const processFiles = (files: File[]) => {
     setErrorMsg(null);
     setShowModelPicker(false);
+    setIsNonLaptopDetected(false);
     const validFormats = ["image/jpeg", "image/png", "image/webp", "image/jpg"];
     const addedFiles: File[] = [];
 
@@ -174,6 +177,7 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
       setAnalyzed(false);
       setErrorMsg(null);
       setShowModelPicker(false);
+      setIsNonLaptopDetected(false);
       setVisibleObservations([]);
       setIdentifiedProduct({
         manufacturer: "",
@@ -194,6 +198,7 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
     setAnalyzing(true);
     setErrorMsg(null);
     setShowModelPicker(false);
+    setIsNonLaptopDetected(false);
     setScanStatusText("Uploading image to Gemini Vision API...");
 
     const fileHint = undefined;
@@ -253,9 +258,29 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
         setErrorMsg(null);
         setShowModelPicker(false);
         setAnalyzed(true);
+      } else if (
+        result.status === "NON_LAPTOP_REJECTED" ||
+        result.is_laptop === false ||
+        result.allow_manual_selection === false
+      ) {
+        setShowModelPicker(false);
+        setIsNonLaptopDetected(true);
+        setErrorMsg(
+          result.message ||
+            "A non-laptop device was detected. ReLoop AI only assesses laptop computers. Please upload photos of a laptop to proceed."
+        );
+        setIdentifiedProduct({
+          manufacturer: "",
+          model: "",
+          confidence: 0,
+          confirmed: false,
+          visible_label_text: null,
+        });
+        setVisibleObservations([]);
+        setAnalyzed(false);
       } else if (result.status === "AI_UNAVAILABLE") {
         setShowModelPicker(true);
-        setErrorMsg("AI identification is temporarily unavailable. Please select your model manually to continue.");
+        setErrorMsg(result.message || "AI identification is temporarily unavailable. Please select your model manually to continue.");
         setIdentifiedProduct({
           manufacturer: "",
           model: "",
@@ -267,7 +292,7 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
         setAnalyzed(false);
       } else if (result.status === "INVALID_EVIDENCE") {
         setShowModelPicker(true);
-        setErrorMsg("Unable to analyze these photos. Please provide clearer, well-lit device photos or select your model manually.");
+        setErrorMsg(result.message || "Unable to analyze these photos. Please provide clearer, well-lit device photos or select your model manually.");
         setIdentifiedProduct({
           manufacturer: "",
           model: "",
@@ -280,7 +305,7 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
       } else {
         // UNKNOWN or unrecognized device
         setShowModelPicker(true);
-        setErrorMsg("Model could not be identified. Your device may not be in the currently supported catalog. Please select your model manually to continue.");
+        setErrorMsg(result.message || "Model could not be identified. Your device may not be in the currently supported catalog. Please select your model manually to continue.");
         setIdentifiedProduct({
           manufacturer: "",
           model: "",
@@ -312,6 +337,10 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
   };
 
   const handleConfirmModel = () => {
+    if (isNonLaptopDetected) {
+      setErrorMsg("Assessment cannot proceed for a non-laptop device.");
+      return;
+    }
     const updatedProduct = { ...identifiedProduct, confirmed: true };
     setIdentifiedProduct(updatedProduct);
 
@@ -324,6 +353,10 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
   };
 
   const handleSelectCustomModel = (item: { manufacturer: string; model: string }) => {
+    if (isNonLaptopDetected) {
+      setErrorMsg("Manual selection is disabled because the uploaded image was identified as a non-laptop device. Please upload laptop photos to continue.");
+      return;
+    }
     const updated = {
       manufacturer: item.manufacturer,
       model: item.model,
@@ -400,18 +433,20 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
             <span>{errorMsg}</span>
           </div>
           <div className="flex items-center gap-3 shrink-0">
-            <button
-              type="button"
-              onClick={() => {
-                setShowModelPicker(true);
-                setTimeout(() => {
-                  document.getElementById("manual-model-picker")?.scrollIntoView({ behavior: "smooth" });
-                }, 50);
-              }}
-              className="px-3.5 py-1.5 rounded-full bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
-            >
-              Select Model Manually ↓
-            </button>
+            {!isNonLaptopDetected && (
+              <button
+                type="button"
+                onClick={() => {
+                  setShowModelPicker(true);
+                  setTimeout(() => {
+                    document.getElementById("manual-model-picker")?.scrollIntoView({ behavior: "smooth" });
+                  }, 50);
+                }}
+                className="px-3.5 py-1.5 rounded-full bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+              >
+                Select Model Manually ↓
+              </button>
+            )}
             <button
               type="button"
               data-testid="retry-detection-btn"
@@ -532,15 +567,22 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
           <div className="flex items-center gap-2">
             <button
               type="button"
+              disabled={isNonLaptopDetected}
               onClick={() => {
+                if (isNonLaptopDetected) return;
                 setShowModelPicker((prev) => !prev);
                 setTimeout(() => {
                   document.getElementById("manual-model-picker")?.scrollIntoView({ behavior: "smooth" });
                 }, 50);
               }}
-              className="px-4 py-2.5 rounded-full border border-[#D2D2D7] dark:border-slate-700 text-xs font-semibold text-[#1D1D1F] dark:text-slate-200 hover:bg-[#F5F5F7] dark:hover:bg-slate-800 transition-all cursor-pointer"
+              className={`px-4 py-2.5 rounded-full border border-[#D2D2D7] dark:border-slate-700 text-xs font-semibold transition-all ${
+                isNonLaptopDetected
+                  ? "opacity-50 cursor-not-allowed text-[#86868B]"
+                  : "text-[#1D1D1F] dark:text-slate-200 hover:bg-[#F5F5F7] dark:hover:bg-slate-800 cursor-pointer"
+              }`}
+              title={isNonLaptopDetected ? "Manual laptop selection is disabled for non-laptop devices" : undefined}
             >
-              {showModelPicker ? "Hide Manual Selection" : "Select Model Manually"}
+              {showModelPicker && !isNonLaptopDetected ? "Hide Manual Selection" : "Select Model Manually"}
             </button>
             <button
               type="button"
@@ -575,7 +617,7 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
       </div>
 
       {/* Manual Model Picker Section — Rendered prominently whenever showModelPicker is true */}
-      {showModelPicker && (
+      {showModelPicker && !isNonLaptopDetected && (
         <div id="manual-model-picker" className="apple-card p-6 sm:p-8 mb-8 bg-[#F5F5F7] dark:bg-slate-900 border-2 border-[#0071E3]/40 rounded-3xl shadow-md animate-in fade-in slide-in-from-top-3 duration-300">
           <div className="flex items-center justify-between mb-4">
             <div>
@@ -691,7 +733,7 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
       )}
 
       {/* Manual Catalog Model Picker (Renders on UNKNOWN / AI_UNAVAILABLE / INVALID_EVIDENCE or when Change Model is clicked) */}
-      {images.length > 0 && !analyzing && showModelPicker && (
+      {images.length > 0 && !analyzing && showModelPicker && !isNonLaptopDetected && (
         <div data-testid="model-picker" className="mb-8 p-6 rounded-3xl bg-[#F5F5F7] border border-[#D2D2D7] animate-in fade-in duration-200">
           <div className="flex items-center justify-between mb-4">
             <div>

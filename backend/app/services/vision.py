@@ -9,6 +9,7 @@ Enforces non-negotiable rules:
 - AI failure raises AppError AI_FAILURE
 - Results persisted as VISUAL evidence records linked to product
 """
+import json
 import re
 import logging
 from typing import Any, Dict, List, Optional, Set
@@ -89,6 +90,116 @@ KNOWN_BRAND_FAMILIES: Dict[str, List[str]] = {
     "razer": ["razer", "blade"],
     "lg": ["lg", "gram"],
 }
+
+ALL_FAMILY_KEYWORDS: Set[str] = {
+    kw.lower()
+    for kw_list in KNOWN_BRAND_FAMILIES.values()
+    for kw in kw_list
+}
+
+NON_LAPTOP_DEVICE_PATTERNS = [
+    ("smartphone", [
+        r"\biphone\b", r"\bsmartphone\b", r"\bsmart phone\b", r"\bmobile phone\b",
+        r"\bcell phone\b", r"\bcellular\b", r"\bhandset\b", r"\bgalaxy s\d+\b",
+        r"\bgalaxy z\b", r"\bgalaxy note\b", r"\bgoogle pixel\b", r"\bpixel [3-9]\b",
+        r"\bredmi\b", r"\boneplus\b"
+    ]),
+    ("monitor", [
+        r"\bdesktop monitor\b", r"\bstandalone monitor\b", r"\bexternal monitor\b",
+        r"\bcomputer monitor\b", r"\bultrasharp monitor\b", r"\bultrasharp\b",
+        r"\bproart display\b", r"\bstudio display\b", r"\bpro display\b",
+        r"\bcurved monitor\b", r"\boled monitor\b", r"\blcd monitor\b",
+        r"\btelevision\b", r"\btv screen\b", r"\bmonitor display\b", r"\bmonitor stand\b",
+        r"\bstandalone display\b", r"\bmonitor\b"
+    ]),
+    ("tablet", [
+        r"\bipad\b", r"\bgalaxy tab\b", r"\btablet\b", r"\bslate device\b",
+        r"\bkindle\b", r"\be-reader\b", r"\bereader\b"
+    ]),
+    ("desktop", [
+        r"\bdesktop pc\b", r"\bdesktop tower\b", r"\bcomputer tower\b",
+        r"\bmac mini\b", r"\bmac studio\b", r"\bmac pro\b", r"\bimac\b",
+        r"\bpc tower\b"
+    ]),
+    ("non-laptop object", [
+        r"\bnon-laptop\b", r"\bnot a laptop\b", r"\bno laptop\b", r"\bnon laptop\b"
+    ]),
+]
+
+
+def _detect_non_laptop(
+    ai_res: Optional[OpenIdentificationOutput],
+    raw_mfr: str = "",
+    raw_model: str = "",
+) -> Tuple[bool, Optional[str]]:
+    """
+    Determines if an image or identification output is confirmed to be a non-laptop device.
+    Strictly preserves genuine laptops (including logo-less, unbranded, or blurry/ambiguous images).
+    """
+    if not ai_res:
+        return False, None
+
+    # 1. Explicit AI schema flags
+    is_laptop_flag = getattr(ai_res, "is_laptop", None)
+    detected_type = (getattr(ai_res, "detected_device_type", None) or "").strip().upper()
+
+    if is_laptop_flag is False:
+        dev = detected_type if detected_type and detected_type != "LAPTOP" else "NON_LAPTOP"
+        return True, dev.lower().replace("_", " ")
+
+    if detected_type in ("SMARTPHONE", "MONITOR", "TABLET", "DESKTOP", "OTHER_NON_LAPTOP"):
+        return True, detected_type.lower().replace("_", " ")
+
+    # 2. Check manufacturer and model
+    mfr_str = (raw_mfr or ai_res.manufacturer or "").strip().lower()
+    model_str = (raw_model or ai_res.model or "").strip().lower()
+    combined_name = f"{mfr_str} {model_str}".strip()
+
+    # Laptop exceptions: Galaxy Book, Pixelbook, Surface Laptop/Book, etc.
+    laptop_exceptions = [
+        "galaxy book", "pixelbook", "chromebook", "surface laptop",
+        "surface book", "zenbook", "thinkpad", "elitebook", "macbook", "latitude"
+    ]
+    if any(le in combined_name for le in laptop_exceptions):
+        return False, None
+
+    # Check model names against non-laptop patterns
+    for dev_name, patterns in NON_LAPTOP_DEVICE_PATTERNS:
+        for p in patterns:
+            if re.search(p, combined_name):
+                return True, dev_name
+
+    # 3. Check notes: visual_evidence, contradictions, label_evidence
+    all_notes = " ".join((ai_res.visual_evidence or []) + (ai_res.contradictions or []) + (ai_res.label_evidence or [])).lower()
+
+    if any(le in all_notes for le in laptop_exceptions):
+        return False, None
+
+    for dev_name, patterns in NON_LAPTOP_DEVICE_PATTERNS:
+        for p in patterns:
+            if re.search(p, all_notes):
+                # Ensure it's not a negated reference
+                if not any(neg in all_notes for neg in ["not a smartphone", "unlike a phone", "connected to monitor", "phone camera"]):
+                    return True, dev_name
+
+    return False, None
+
+
+BRANDING_KEYWORDS: Set[str] = {
+    "logo", "badge", "emblem", "branding", "trademark", "sticker", "tag"
+}
+
+DISTINCTIVE_DESIGN_CUES: Set[str] = {
+    "ergolift", "numberpad", "trackpoint", "touch bar", "magsafe", "retina", "wedge lock"
+}
+
+
+def _has_branding_or_distinctive_cues(visual_evidence: List[str]) -> bool:
+    combined_visual = " ".join(visual_evidence).lower()
+    return any(
+        re.search(r"\b" + re.escape(w) + r"\b", combined_visual)
+        for w in BRANDING_KEYWORDS | DISTINCTIVE_DESIGN_CUES
+    )
 
 
 def validate_image_roles(image_roles: Optional[List[str]], image_count: int) -> List[str]:
@@ -207,17 +318,29 @@ def _is_model_text_in_labels(
     # 1. Full model name check
     model_lower = candidate.model.lower().strip()
     if model_lower and model_lower != "unknown":
+        # Pure family/series names alone do not qualify as model-specific text
+        if model_lower in ALL_FAMILY_KEYWORDS:
+            digit_tokens = _extract_digit_tokens(candidate.model)
+            if not digit_tokens:
+                return False
+
         if model_lower in combined_labels:
-            return True
+            cleaned_tokens = [t for t in re.sub(r"[(),/\-_]", " ", model_lower).split() if t not in ALL_FAMILY_KEYWORDS]
+            if cleaned_tokens or _extract_digit_tokens(candidate.model):
+                return True
 
         full_name = f"{candidate.manufacturer.lower().strip()} {model_lower}"
         if full_name in combined_labels:
-            return True
+            cleaned_tokens = [t for t in re.sub(r"[(),/\-_]", " ", model_lower).split() if t not in ALL_FAMILY_KEYWORDS]
+            if cleaned_tokens or _extract_digit_tokens(candidate.model):
+                return True
 
         cleaned_model_full = re.sub(r"[(),/\-_]", " ", model_lower)
         cleaned_model_collapsed = " ".join(cleaned_model_full.split())
         if cleaned_model_collapsed and cleaned_model_collapsed in combined_labels:
-            return True
+            cleaned_tokens = [t for t in cleaned_model_collapsed.split() if t not in ALL_FAMILY_KEYWORDS]
+            if cleaned_tokens or _extract_digit_tokens(candidate.model):
+                return True
 
     # 2. Check key digit-bearing model identifiers and numbers (e.g. '5420', '840', 't14', 'm1', 'g7', 'a515')
     specific_identifiers = _extract_digit_tokens(candidate.model)
@@ -239,7 +362,7 @@ def _has_contradiction(
     contradictions: List[str],
 ) -> bool:
     """
-    Checks if Gemini noted contradictions or if label_evidence contradicts candidate manufacturer.
+    Checks if Gemini noted contradictions or if label/visual evidence contradicts candidate manufacturer.
     """
     if any(c.strip() for c in contradictions if c):
         return True
@@ -253,15 +376,26 @@ def _has_contradiction(
         cand_keywords = [cand_mfr] + cand_keywords
 
     combined_labels = " ".join(label_evidence).lower()
-    cand_brand_found = any(re.search(r"\b" + re.escape(bk) + r"\b", combined_labels) for bk in cand_keywords)
+    combined_visuals = " ".join(visual_evidence).lower()
+
+    # Check for explicit contradiction or mismatch indicators in visual notes
+    contradiction_indicators = ["contradiction", "conflicts with", "mismatch", "contrasting brand", "different brand"]
+    if any(ci in combined_visuals for ci in contradiction_indicators):
+        return True
+
+    cand_brand_found = any(
+        re.search(r"\b" + re.escape(bk) + r"\b", combined_labels)
+        or re.search(r"\b" + re.escape(bk) + r"\b", combined_visuals)
+        for bk in cand_keywords
+    )
 
     for other_mfr, other_keywords in KNOWN_BRAND_FAMILIES.items():
         if other_mfr == cand_mfr:
             continue
         for ok in other_keywords:
             if re.search(r"\b" + re.escape(ok) + r"\b", combined_labels):
-                if not cand_brand_found:
-                    return True
+                return True
+            if re.search(r"\b" + re.escape(ok) + r"\b", combined_visuals) and not cand_brand_found:
                 return True
 
     return False
@@ -339,14 +473,14 @@ def evaluate_identification_confidence(
     if _is_model_text_in_labels(candidate, labels, catalog_candidates=catalog_candidates):
         return ConfidenceLevel.HIGH
 
-    # 4. MEDIUM: visual-only evidence caps at MEDIUM (>= 2 visual items or manufacturer clear)
-    if _is_manufacturer_clear(candidate, labels, visuals):
+    # 4. MEDIUM: requires manufacturer brand clear in labels/visuals OR distinctive branding/visual clues (>= 2 items)
+    mfr_clear = _is_manufacturer_clear(candidate, labels, visuals)
+    distinctive_branding = _has_branding_or_distinctive_cues(visuals)
+
+    if mfr_clear or (distinctive_branding and len(visuals) >= 2):
         return ConfidenceLevel.MEDIUM
 
-    if len(visuals) >= 2:
-        return ConfidenceLevel.MEDIUM
-
-    # 5. LOW: only generic visual similarity
+    # 5. LOW: only generic visual similarity when branding is not clearly confirmed
     if len(visuals) >= 1:
         return ConfidenceLevel.LOW
 
@@ -416,6 +550,54 @@ def _is_rate_limit_error(e: Exception) -> bool:
         "exceeded your current quota",
     ]
     return any(indicator in msg for indicator in indicators)
+
+
+def _should_fallback_to_groq(e: Exception) -> bool:
+    """
+    Determines if an AI failure should attempt Groq fallback:
+    - Quota / rate-limit errors
+    - Temporary server / network errors (500, 502, 503, 504, timeout, connection)
+    - Malformed JSON / schema validation errors
+    - Missing or unconfigured Gemini API key
+    """
+    if not settings.GROQ_API_KEY:
+        return False
+
+    if _is_rate_limit_error(e):
+        return True
+
+    for attr in ["http_status", "status_code", "code"]:
+        val = getattr(e, attr, None)
+        if val in (500, 502, 503, 504, "500", "502", "503", "504"):
+            return True
+
+    if isinstance(e, (json.JSONDecodeError, ValueError)):
+        return True
+
+    msg = str(e).lower()
+    fallback_indicators = [
+        "timeout",
+        "timed out",
+        "deadline exceeded",
+        "connection reset",
+        "connection refused",
+        "service unavailable",
+        "temporary failure",
+        "internal server error",
+        "bad gateway",
+        "gateway timeout",
+        "malformed",
+        "non-json",
+        "jsondecode",
+        "unterminated",
+        "expecting value",
+        "validation error",
+        "failed schema validation",
+        "gemini api key is not configured",
+        "api key not valid",
+        "api_key_invalid",
+    ]
+    return any(ind in msg for ind in fallback_indicators)
 
 
 class VisionService:
@@ -502,7 +684,30 @@ class VisionService:
                     source="manual",
                 )
             else:
-                # Unsupported manual model
+                # Check if manual model represents a non-laptop device
+                for dev_name, patterns in NON_LAPTOP_DEVICE_PATTERNS:
+                    for p in patterns:
+                        if re.search(p, target_model.lower()):
+                            return ProductIdentifyResponse(
+                                status=IdentificationStatus.NON_LAPTOP_REJECTED,
+                                identified_model=None,
+                                candidate_id="UNKNOWN",
+                                is_supported=False,
+                                confidence=0.0,
+                                confidence_level=ConfidenceLevel.UNKNOWN,
+                                needs_confirmation=False,
+                                requires_user_confirmation=False,
+                                supported_models=[],
+                                generic_fallback_available=False,
+                                generic_model=None,
+                                message=f"'{target_model}' is a non-laptop device ({dev_name}). ReLoop AI only evaluates laptop computers.",
+                                source="manual",
+                                is_laptop=False,
+                                device_category=dev_name.upper(),
+                                allow_manual_selection=False,
+                            )
+
+                # Unsupported manual laptop model
                 return ProductIdentifyResponse(
                     status=IdentificationStatus.UNKNOWN,
                     identified_model=None,
@@ -517,6 +722,9 @@ class VisionService:
                     generic_model=generic_candidate,
                     message=f"Model '{target_model}' is not in the supported catalog. Please select a supported model or continue with a general laptop assessment.",
                     source="manual",
+                    is_laptop=True,
+                    device_category="LAPTOP",
+                    allow_manual_selection=True,
                 )
 
         if not image_bytes_list:
@@ -565,8 +773,11 @@ class VisionService:
                 media_resolution=settings.GEMINI_MEDIA_RESOLUTION,
             )
         except Exception as e:
-            if _is_rate_limit_error(e) and settings.GROQ_API_KEY:
-                logger.warning("Gemini rate limit encountered. Falling back to Groq (Llama 3.2 Vision)...")
+            if _should_fallback_to_groq(e):
+                if _is_rate_limit_error(e):
+                    logger.warning("Gemini rate limit encountered. Falling back to Groq (Llama 3.2 Vision)...")
+                else:
+                    logger.warning(f"Gemini identify error ({e}). Falling back to Groq (Llama 3.2 Vision)...")
                 try:
                     ai_res = groq_client.generate_structured(
                         prompt=prompt_text,
@@ -612,6 +823,66 @@ class VisionService:
                 c_info = candidate_data["candidate"]
                 raw_mfr = c_info.manufacturer
                 raw_model = c_info.model
+
+        # Check for non-laptop indications
+        is_non_laptop, dev_type = _detect_non_laptop(ai_res, raw_mfr=raw_mfr, raw_model=raw_model)
+
+        if is_non_laptop:
+            dev_label = dev_type or "non-laptop device"
+            reject_msg = (
+                f"The uploaded image was identified as a {dev_label}. "
+                f"ReLoop AI only assesses laptop computers. "
+                f"Please upload photos of a laptop to continue."
+            )
+            return ProductIdentifyResponse(
+                status=IdentificationStatus.NON_LAPTOP_REJECTED,
+                identified_model=None,
+                candidate_id="UNKNOWN",
+                is_supported=False,
+                confidence=0.0,
+                confidence_level=ConfidenceLevel.UNKNOWN,
+                visible_label_text="; ".join(ai_res.label_evidence) if ai_res.label_evidence else None,
+                visual_clues=ai_res.visual_evidence,
+                label_evidence=ai_res.label_evidence,
+                visual_evidence=ai_res.visual_evidence,
+                contradictions=ai_res.contradictions,
+                needs_confirmation=False,
+                requires_user_confirmation=False,
+                supported_models=[],
+                generic_fallback_available=False,
+                generic_model=None,
+                message=reject_msg,
+                source="live",
+                is_laptop=False,
+                device_category=dev_label.upper(),
+                allow_manual_selection=False,
+            )
+
+        if raw_mfr.upper() == "UNKNOWN" and raw_model.upper() == "UNKNOWN":
+            unknown_msg = "Model could not be identified from photos. Your device may not be in the currently supported catalog. Please select your model manually to continue."
+            return ProductIdentifyResponse(
+                status=IdentificationStatus.UNKNOWN,
+                identified_model=None,
+                candidate_id="UNKNOWN",
+                is_supported=False,
+                confidence=ai_res.model_confidence,
+                confidence_level=ConfidenceLevel.UNKNOWN,
+                visible_label_text="; ".join(ai_res.label_evidence) if ai_res.label_evidence else None,
+                visual_clues=ai_res.visual_evidence,
+                label_evidence=ai_res.label_evidence,
+                visual_evidence=ai_res.visual_evidence,
+                contradictions=ai_res.contradictions,
+                needs_confirmation=True,
+                requires_user_confirmation=True,
+                supported_models=all_supported,
+                generic_fallback_available=True,
+                generic_model=generic_candidate,
+                message=unknown_msg,
+                source="live",
+                is_laptop=True,
+                device_category="LAPTOP",
+                allow_manual_selection=True,
+            )
 
         candidate_obj = None
         is_catalog_matched = False
@@ -675,7 +946,7 @@ class VisionService:
                 supported_models=all_supported,
                 generic_fallback_available=True,
                 generic_model=generic_candidate,
-                message="Model could not be identified from photos. Your device may not be in the currently supported catalog. Please select your model manually to continue.",
+                message="Model could not be identified with sufficient certainty. Please select your model manually to continue.",
                 source="live",
             )
 
@@ -733,6 +1004,15 @@ class VisionService:
                 http_status=404,
             )
 
+        cat_val = (product.category.value if hasattr(product.category, "value") else str(product.category)).upper() if product.category else "LAPTOP"
+        if cat_val not in ("LAPTOP", "DEVICECATEGORY.LAPTOP"):
+            raise AppError(
+                code=ErrorCode.INVALID_INPUT.value,
+                message=f"Product is not a laptop (category: {product.category}) and cannot undergo laptop damage analysis.",
+                field="product_id",
+                http_status=400,
+            )
+
         raw_findings: List[VisibleFinding] = []
 
         if image_bytes_list:
@@ -749,8 +1029,11 @@ class VisionService:
                     images=image_bytes_list,
                 )
             except Exception as e:
-                if _is_rate_limit_error(e) and settings.GROQ_API_KEY:
-                    logger.warning("Gemini rate limit encountered. Falling back to Groq (Llama 3.2 Vision)...")
+                if _should_fallback_to_groq(e):
+                    if _is_rate_limit_error(e):
+                        logger.warning("Gemini rate limit encountered. Falling back to Groq (Llama 3.2 Vision)...")
+                    else:
+                        logger.warning(f"Gemini vision damage analysis error ({e}). Falling back to Groq (Llama 3.2 Vision)...")
                     try:
                         ai_res = groq_client.generate_structured(
                             prompt=prompt_text,
@@ -764,10 +1047,11 @@ class VisionService:
 
                 if ai_res is None:
                     logger.warning(f"AI vision damage analysis failed ({e}).")
+                    orig_status = getattr(e, "http_status", None) or 502
                     raise AppError(
                         code=ErrorCode.AI_FAILURE.value,
-                        message=f"Vision damage analysis failed: {e}",
-                        http_status=503,
+                        message="Vision damage analysis failed.",
+                        http_status=orig_status if orig_status in (429, 500, 502, 503) else 502,
                     )
 
             # Map raw AI items to VisibleFinding

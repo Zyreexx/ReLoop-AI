@@ -32,6 +32,30 @@ class AssessmentService:
                 status_code=404,
             )
 
+        cat_val = (product.category.value if hasattr(product.category, "value") else str(product.category)).upper() if product.category else "LAPTOP"
+        if cat_val not in ("LAPTOP", "DEVICECATEGORY.LAPTOP"):
+            raise AppException(
+                code="INVALID_DEVICE_CATEGORY",
+                message=f"ReLoop AI circular assessment only supports laptops. Device '{product.manufacturer} {product.model}' ({product.category}) cannot be assessed.",
+                field="product_id",
+                status_code=400,
+            )
+
+        import re
+        from app.services.vision import NON_LAPTOP_DEVICE_PATTERNS
+        combined_dev = f"{product.manufacturer} {product.model}".lower()
+        laptop_exceptions = ["galaxy book", "pixelbook", "chromebook", "surface laptop", "surface book", "zenbook", "thinkpad", "elitebook", "macbook", "latitude"]
+        if not any(le in combined_dev for le in laptop_exceptions):
+            for dev_name, patterns in NON_LAPTOP_DEVICE_PATTERNS:
+                for p in patterns:
+                    if re.search(p, combined_dev):
+                        raise AppException(
+                            code="INVALID_DEVICE_CATEGORY",
+                            message=f"ReLoop AI circular assessment only supports laptops. Non-laptop device '{product.manufacturer} {product.model}' cannot be assessed.",
+                            field="product_id",
+                            status_code=400,
+                        )
+
         evidence_list = store.get_evidence(product_id)
         if not evidence_list and db:
             evidence_list = evidence_repo.get_by_product_id(db, product_id)

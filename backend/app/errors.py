@@ -73,14 +73,15 @@ class AppError(Exception):
         message: str,
         field: Optional[str] = None,
         http_status: int = 400,
+        status_code: Optional[int] = None,
     ):
         super().__init__(message)
         self.code = code
         self.message = message
         self.field = field
-        self.http_status = http_status
+        self.http_status = status_code if status_code is not None else http_status
         # Backwards compatibility property
-        self.status_code = http_status
+        self.status_code = self.http_status
 
     def to_dict(self) -> dict:
         return {

@@ -13,6 +13,8 @@ class ModelIdentificationOutput(BaseModel):
 
 
 class OpenIdentificationOutput(BaseModel):
+    is_laptop: bool = Field(True, description="True if the device is a laptop/notebook computer. False if it is a smartphone, tablet, standalone monitor, desktop PC, or other non-laptop.")
+    detected_device_type: str = Field("LAPTOP", description="'LAPTOP', 'SMARTPHONE', 'TABLET', 'MONITOR', 'DESKTOP', 'OTHER_NON_LAPTOP', or 'UNKNOWN'")
     manufacturer: str = Field("UNKNOWN", description="Identified laptop manufacturer (e.g. Dell, Lenovo, Apple, HP, Acer, ASUS) or 'UNKNOWN'")
     model: str = Field("UNKNOWN", description="Identified laptop model line and number (e.g. Latitude 5420, Aspire 5 A515-56, ThinkPad T14 Gen 1) or 'UNKNOWN'")
     model_year: Optional[int] = Field(None, description="Estimated release model year if discernible")
