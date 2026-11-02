@@ -114,6 +114,9 @@ class ProductIdentifyResponse(BaseModel):
     generic_model: Optional[ProductCandidate] = None
     message: Optional[str] = None
     source: str = Field("live", description="live | sample-data | manual")
+    is_laptop: bool = True
+    device_category: Optional[str] = "LAPTOP"
+    allow_manual_selection: bool = True
 
 
 

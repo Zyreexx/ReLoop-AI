@@ -30,7 +30,29 @@ class ProductService:
         )
 
     def create_or_confirm(self, data: ProductCreate, db: Optional[Session] = None) -> ProductRecord:
+        import re
         from app.knowledge.loader import match_catalog_model, get_generic_laptop_profile
+        from app.services.vision import NON_LAPTOP_DEVICE_PATTERNS
+
+        cat_val = (data.category.value if hasattr(data.category, "value") else str(data.category)).upper() if data.category else "LAPTOP"
+        if cat_val not in ("LAPTOP", "DEVICECATEGORY.LAPTOP"):
+            raise AppException(
+                code="INVALID_INPUT",
+                message=f"ReLoop AI only evaluates laptop computers. Device category '{data.category}' is not supported.",
+                status_code=400,
+            )
+
+        combined_dev = f"{data.manufacturer} {data.model}".lower()
+        laptop_exceptions = ["galaxy book", "pixelbook", "chromebook", "surface laptop", "surface book", "zenbook", "thinkpad", "elitebook", "macbook", "latitude"]
+        if not any(le in combined_dev for le in laptop_exceptions):
+            for dev_name, patterns in NON_LAPTOP_DEVICE_PATTERNS:
+                for p in patterns:
+                    if re.search(p, combined_dev):
+                        raise AppException(
+                            code="INVALID_INPUT",
+                            message=f"ReLoop AI only evaluates laptop computers. Confirmed non-laptop device '{data.manufacturer} {data.model}' cannot be registered for assessment.",
+                            status_code=400,
+                        )
         catalog_match = match_catalog_model(data.manufacturer, data.model)
         if catalog_match:
             specs_data = catalog_match.get("specs", {})

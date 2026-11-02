@@ -97,6 +97,10 @@ ObjectiveType = Objective
 
 class DeviceCategory(str, Enum):
     LAPTOP = "LAPTOP"
+    SMARTPHONE = "SMARTPHONE"
+    TABLET = "TABLET"
+    MONITOR = "MONITOR"
+    OTHER = "OTHER"
 
 
 class ConfidenceLevel(str, Enum):
@@ -112,4 +116,5 @@ class IdentificationStatus(str, Enum):
     AI_UNAVAILABLE = "AI_UNAVAILABLE"
     INVALID_EVIDENCE = "INVALID_EVIDENCE"
     CONFIRMATION_REQUIRED = "CONFIRMATION_REQUIRED"
+    NON_LAPTOP_REJECTED = "NON_LAPTOP_REJECTED"
 

@@ -29,7 +29,7 @@ async def identify_product(request: Request):
     """
     api_key_header = request.headers.get("x-gemini-api-key")
     content_type = request.headers.get("content-type", "")
-    if "multipart/form-data" in content_type:
+    if "multipart/form-data" in content_type or "application/x-www-form-urlencoded" in content_type:
         form = await request.form()
         raw_files = form.getlist("images") + form.getlist("files")
         uploaded_files = [f for f in raw_files if hasattr(f, "filename") and hasattr(f, "read")]

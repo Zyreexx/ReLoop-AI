@@ -97,6 +97,94 @@ ALL_FAMILY_KEYWORDS: Set[str] = {
     for kw in kw_list
 }
 
+NON_LAPTOP_DEVICE_PATTERNS = [
+    ("smartphone", [
+        r"\biphone\b", r"\bsmartphone\b", r"\bsmart phone\b", r"\bmobile phone\b",
+        r"\bcell phone\b", r"\bcellular\b", r"\bhandset\b", r"\bgalaxy s\d+\b",
+        r"\bgalaxy z\b", r"\bgalaxy note\b", r"\bgoogle pixel\b", r"\bpixel [3-9]\b",
+        r"\bredmi\b", r"\boneplus\b"
+    ]),
+    ("monitor", [
+        r"\bdesktop monitor\b", r"\bstandalone monitor\b", r"\bexternal monitor\b",
+        r"\bcomputer monitor\b", r"\bultrasharp monitor\b", r"\bultrasharp\b",
+        r"\bproart display\b", r"\bstudio display\b", r"\bpro display\b",
+        r"\bcurved monitor\b", r"\boled monitor\b", r"\blcd monitor\b",
+        r"\btelevision\b", r"\btv screen\b", r"\bmonitor display\b", r"\bmonitor stand\b",
+        r"\bstandalone display\b", r"\bmonitor\b"
+    ]),
+    ("tablet", [
+        r"\bipad\b", r"\bgalaxy tab\b", r"\btablet\b", r"\bslate device\b",
+        r"\bkindle\b", r"\be-reader\b", r"\bereader\b"
+    ]),
+    ("desktop", [
+        r"\bdesktop pc\b", r"\bdesktop tower\b", r"\bcomputer tower\b",
+        r"\bmac mini\b", r"\bmac studio\b", r"\bmac pro\b", r"\bimac\b",
+        r"\bpc tower\b"
+    ]),
+    ("non-laptop object", [
+        r"\bnon-laptop\b", r"\bnot a laptop\b", r"\bno laptop\b", r"\bnon laptop\b"
+    ]),
+]
+
+
+def _detect_non_laptop(
+    ai_res: Optional[OpenIdentificationOutput],
+    raw_mfr: str = "",
+    raw_model: str = "",
+) -> Tuple[bool, Optional[str]]:
+    """
+    Determines if an image or identification output is confirmed to be a non-laptop device.
+    Strictly preserves genuine laptops (including logo-less, unbranded, or blurry/ambiguous images).
+    """
+    if not ai_res:
+        return False, None
+
+    # 1. Explicit AI schema flags
+    is_laptop_flag = getattr(ai_res, "is_laptop", None)
+    detected_type = (getattr(ai_res, "detected_device_type", None) or "").strip().upper()
+
+    if is_laptop_flag is False:
+        dev = detected_type if detected_type and detected_type != "LAPTOP" else "NON_LAPTOP"
+        return True, dev.lower().replace("_", " ")
+
+    if detected_type in ("SMARTPHONE", "MONITOR", "TABLET", "DESKTOP", "OTHER_NON_LAPTOP"):
+        return True, detected_type.lower().replace("_", " ")
+
+    # 2. Check manufacturer and model
+    mfr_str = (raw_mfr or ai_res.manufacturer or "").strip().lower()
+    model_str = (raw_model or ai_res.model or "").strip().lower()
+    combined_name = f"{mfr_str} {model_str}".strip()
+
+    # Laptop exceptions: Galaxy Book, Pixelbook, Surface Laptop/Book, etc.
+    laptop_exceptions = [
+        "galaxy book", "pixelbook", "chromebook", "surface laptop",
+        "surface book", "zenbook", "thinkpad", "elitebook", "macbook", "latitude"
+    ]
+    if any(le in combined_name for le in laptop_exceptions):
+        return False, None
+
+    # Check model names against non-laptop patterns
+    for dev_name, patterns in NON_LAPTOP_DEVICE_PATTERNS:
+        for p in patterns:
+            if re.search(p, combined_name):
+                return True, dev_name
+
+    # 3. Check notes: visual_evidence, contradictions, label_evidence
+    all_notes = " ".join((ai_res.visual_evidence or []) + (ai_res.contradictions or []) + (ai_res.label_evidence or [])).lower()
+
+    if any(le in all_notes for le in laptop_exceptions):
+        return False, None
+
+    for dev_name, patterns in NON_LAPTOP_DEVICE_PATTERNS:
+        for p in patterns:
+            if re.search(p, all_notes):
+                # Ensure it's not a negated reference
+                if not any(neg in all_notes for neg in ["not a smartphone", "unlike a phone", "connected to monitor", "phone camera"]):
+                    return True, dev_name
+
+    return False, None
+
+
 BRANDING_KEYWORDS: Set[str] = {
     "logo", "badge", "emblem", "branding", "trademark", "sticker", "tag"
 }
@@ -596,7 +684,30 @@ class VisionService:
                     source="manual",
                 )
             else:
-                # Unsupported manual model
+                # Check if manual model represents a non-laptop device
+                for dev_name, patterns in NON_LAPTOP_DEVICE_PATTERNS:
+                    for p in patterns:
+                        if re.search(p, target_model.lower()):
+                            return ProductIdentifyResponse(
+                                status=IdentificationStatus.NON_LAPTOP_REJECTED,
+                                identified_model=None,
+                                candidate_id="UNKNOWN",
+                                is_supported=False,
+                                confidence=0.0,
+                                confidence_level=ConfidenceLevel.UNKNOWN,
+                                needs_confirmation=False,
+                                requires_user_confirmation=False,
+                                supported_models=[],
+                                generic_fallback_available=False,
+                                generic_model=None,
+                                message=f"'{target_model}' is a non-laptop device ({dev_name}). ReLoop AI only evaluates laptop computers.",
+                                source="manual",
+                                is_laptop=False,
+                                device_category=dev_name.upper(),
+                                allow_manual_selection=False,
+                            )
+
+                # Unsupported manual laptop model
                 return ProductIdentifyResponse(
                     status=IdentificationStatus.UNKNOWN,
                     identified_model=None,
@@ -611,6 +722,9 @@ class VisionService:
                     generic_model=generic_candidate,
                     message=f"Model '{target_model}' is not in the supported catalog. Please select a supported model or continue with a general laptop assessment.",
                     source="manual",
+                    is_laptop=True,
+                    device_category="LAPTOP",
+                    allow_manual_selection=True,
                 )
 
         if not image_bytes_list:
@@ -711,16 +825,41 @@ class VisionService:
                 raw_model = c_info.model
 
         # Check for non-laptop indications
-        all_notes = " ".join((ai_res.visual_evidence or []) + (ai_res.contradictions or [])).lower()
-        non_laptop_indicators = ["non-laptop", "not a laptop", "no laptop", "desktop", "smartphone", "phone", "tablet", "monitor only"]
-        is_non_laptop = any(nli in all_notes for nli in non_laptop_indicators)
+        is_non_laptop, dev_type = _detect_non_laptop(ai_res, raw_mfr=raw_mfr, raw_model=raw_model)
 
-        if is_non_laptop or (raw_mfr.upper() == "UNKNOWN" and raw_model.upper() == "UNKNOWN"):
-            unknown_msg = (
-                "Uploaded image does not appear to contain an identifiable laptop. Please upload clear photos of your laptop or select your model manually."
-                if is_non_laptop
-                else "Model could not be identified from photos. Your device may not be in the currently supported catalog. Please select your model manually to continue."
+        if is_non_laptop:
+            dev_label = dev_type or "non-laptop device"
+            reject_msg = (
+                f"The uploaded image was identified as a {dev_label}. "
+                f"ReLoop AI only assesses laptop computers. "
+                f"Please upload photos of a laptop to continue."
             )
+            return ProductIdentifyResponse(
+                status=IdentificationStatus.NON_LAPTOP_REJECTED,
+                identified_model=None,
+                candidate_id="UNKNOWN",
+                is_supported=False,
+                confidence=0.0,
+                confidence_level=ConfidenceLevel.UNKNOWN,
+                visible_label_text="; ".join(ai_res.label_evidence) if ai_res.label_evidence else None,
+                visual_clues=ai_res.visual_evidence,
+                label_evidence=ai_res.label_evidence,
+                visual_evidence=ai_res.visual_evidence,
+                contradictions=ai_res.contradictions,
+                needs_confirmation=False,
+                requires_user_confirmation=False,
+                supported_models=[],
+                generic_fallback_available=False,
+                generic_model=None,
+                message=reject_msg,
+                source="live",
+                is_laptop=False,
+                device_category=dev_label.upper(),
+                allow_manual_selection=False,
+            )
+
+        if raw_mfr.upper() == "UNKNOWN" and raw_model.upper() == "UNKNOWN":
+            unknown_msg = "Model could not be identified from photos. Your device may not be in the currently supported catalog. Please select your model manually to continue."
             return ProductIdentifyResponse(
                 status=IdentificationStatus.UNKNOWN,
                 identified_model=None,
@@ -740,6 +879,9 @@ class VisionService:
                 generic_model=generic_candidate,
                 message=unknown_msg,
                 source="live",
+                is_laptop=True,
+                device_category="LAPTOP",
+                allow_manual_selection=True,
             )
 
         candidate_obj = None
@@ -860,6 +1002,15 @@ class VisionService:
                 message=f"No product registered with ID '{product_id}'",
                 field="product_id",
                 http_status=404,
+            )
+
+        cat_val = (product.category.value if hasattr(product.category, "value") else str(product.category)).upper() if product.category else "LAPTOP"
+        if cat_val not in ("LAPTOP", "DEVICECATEGORY.LAPTOP"):
+            raise AppError(
+                code=ErrorCode.INVALID_INPUT.value,
+                message=f"Product is not a laptop (category: {product.category}) and cannot undergo laptop damage analysis.",
+                field="product_id",
+                http_status=400,
             )
 
         raw_findings: List[VisibleFinding] = []

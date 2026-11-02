@@ -25,7 +25,8 @@ export type IdentificationStatus =
   | "UNKNOWN"
   | "AI_UNAVAILABLE"
   | "INVALID_EVIDENCE"
-  | "CONFIRMATION_REQUIRED";
+  | "CONFIRMATION_REQUIRED"
+  | "NON_LAPTOP_REJECTED";
 
 export interface ProductIdentifyResponse {
   status: IdentificationStatus;
@@ -55,6 +56,9 @@ export interface ProductIdentifyResponse {
   }>;
   message: string | null;
   source?: string;
+  is_laptop?: boolean;
+  device_category?: string;
+  allow_manual_selection?: boolean;
 }
 
 export async function identifyProduct(

@@ -238,7 +238,7 @@ def test_scenario_08_unsupported_file_format(client: TestClient):
 
 
 # 9. Image contains a non-laptop object
-def test_scenario_09_non_laptop_object_returns_unknown(client: TestClient):
+def test_scenario_09_non_laptop_object_returns_rejected(client: TestClient):
     ai_output_phone = OpenIdentificationOutput(
         manufacturer="Apple",
         model="iPhone 13",
@@ -247,6 +247,8 @@ def test_scenario_09_non_laptop_object_returns_unknown(client: TestClient):
         visual_evidence=["Smartphone device on desk, not a laptop"],
         contradictions=["Non-laptop object detected"],
         model_confidence=0.85,
+        is_laptop=False,
+        detected_device_type="SMARTPHONE",
     )
     with patch.object(gemini_client, "generate_structured", return_value=ai_output_phone):
         files = [("images", ("phone.jpg", BytesIO(VALID_JPEG), "image/jpeg"))]
@@ -254,9 +256,11 @@ def test_scenario_09_non_laptop_object_returns_unknown(client: TestClient):
 
     assert res.status_code == 200
     data = res.json()
-    assert data["status"] == IdentificationStatus.UNKNOWN.value
+    assert data["status"] == IdentificationStatus.NON_LAPTOP_REJECTED.value
     assert data["identified_model"] is None
-    assert "does not appear to contain an identifiable laptop" in data["message"].lower()
+    assert data["is_laptop"] is False
+    assert data["allow_manual_selection"] is False
+    assert "smartphone" in data["message"].lower() or "laptop" in data["message"].lower()
 
 
 # 10. Image does not provide enough evidence for exact model
