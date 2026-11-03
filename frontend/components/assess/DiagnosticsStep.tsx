@@ -36,6 +36,7 @@ import {
   createDiagnosticSession,
   getDiagnosticSessionStatus,
   submitDiagnosticSession,
+  runLocalHardwareScan,
   DiagnosticSessionReport,
   SubsystemFinding,
 } from "@/lib/api";
@@ -69,9 +70,10 @@ export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
   const [subsystemsProgress, setSubsystemsProgress] = useState<Record<string, string>>({});
   const [sessionReport, setSessionReport] = useState<DiagnosticSessionReport | null>(null);
   const [isInitializing, setIsInitializing] = useState<boolean>(false);
+  const [isScanning, setIsScanning] = useState<boolean>(false);
+  const [scanTimeElapsed, setScanTimeElapsed] = useState<number>(0);
   const [copiedCmd, setCopiedCmd] = useState<boolean>(false);
   const [sessionError, setSessionError] = useState<string | null>(null);
-  const [isSimulatingAgent, setIsSimulatingAgent] = useState<boolean>(false);
   const [copiedVenvCmd, setCopiedVenvCmd] = useState<boolean>(false);
 
   // Client OS detection
@@ -84,6 +86,19 @@ export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
       else setDetectedOS("Windows");
     }
   }, []);
+
+  // Timer while scanning
+  useEffect(() => {
+    let timer: NodeJS.Timeout | null = null;
+    if (isScanning && sessionStatus === "RUNNING") {
+      timer = setInterval(() => {
+        setScanTimeElapsed((prev) => prev + 1);
+      }, 1000);
+    }
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [isScanning, sessionStatus]);
 
   // Manual Form State
   const [deviceAge, setDeviceAge] = useState<number>(initialData.deviceAgeYears || 0);
@@ -125,18 +140,42 @@ export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
   const calculatedBatteryHealth =
     (designCap > 0 && fullCap > 0) ? Math.min(100, Math.round((fullCap / designCap) * 100)) : 0;
 
-  // Initialize or fetch session on consent
-  const handleStartSession = async () => {
+  // Real Hardware Diagnostic Trigger
+  const handleStartHardwareScan = async () => {
     setIsInitializing(true);
+    setIsScanning(true);
     setSessionError(null);
+    setScanTimeElapsed(0);
     try {
-      const session = await createDiagnosticSession(productId);
-      setSessionToken(session.session_token);
-      setSessionStatus(session.status);
-      setSubsystemsProgress(session.subsystems_progress);
+      let token = sessionToken;
+      if (!token) {
+        const session = await createDiagnosticSession(productId);
+        token = session.session_token;
+        setSessionToken(token);
+      }
       setConsentGranted(true);
+      setSessionStatus("RUNNING");
+
+      // Set initial subsystem progress states
+      const initialProgress: Record<string, string> = {
+        battery: "Running",
+        ssd: "Running",
+        ram: "Running",
+        thermals: "Running",
+        cpu: "Running",
+        display: "Running",
+        keyboard: "Running",
+        chassis: "Running",
+        system: "Running",
+      };
+      setSubsystemsProgress(initialProgress);
+
+      // Trigger the genuine hardware scan on the machine (parallel threads, ~8s)
+      await runLocalHardwareScan(token);
     } catch (err: any) {
-      setSessionError(err.message || "Could not initialize diagnostic session.");
+      setSessionError(err.message || "Failed to start hardware diagnostics.");
+      setIsScanning(false);
+      setSessionStatus("FAILED");
     } finally {
       setIsInitializing(false);
     }
@@ -158,19 +197,23 @@ export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
         if (statusRes.report) {
           setSessionReport(statusRes.report);
           setSessionStatus("COMPLETED");
+          setIsScanning(false);
 
-          // Sync manual state fields from report findings
+          // Sync manual state fields from genuine hardware report findings
           const subs = statusRes.report.subsystems || {};
           if (subs.battery?.evidence) {
             const ev = subs.battery.evidence;
             if (ev.design_capacity_mwh) setDesignCap(Math.round(ev.design_capacity_mwh));
             if (ev.full_charge_capacity_mwh) setFullCap(Math.round(ev.full_charge_capacity_mwh));
             if (ev.cycle_count !== undefined) setCycleCount(ev.cycle_count);
+            setNoBatteryInfo(false);
           }
           if (subs.ssd?.evidence) {
             const ev = subs.ssd.evidence;
             if (ev.health_percentage !== undefined) setSsdHealth(Math.round(ev.health_percentage));
+            if (ev.power_on_hours !== undefined) setPowerHours(Math.round(ev.power_on_hours));
             if (ev.smart_status) setSmartStatus(ev.smart_status === "PASS" ? "PASS" : "FAIL");
+            setNoSsdInfo(false);
           }
           if (subs.ram?.evidence) {
             const ev = subs.ram.evidence;
@@ -180,6 +223,7 @@ export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
           if (subs.thermals?.evidence) {
             const ev = subs.thermals.evidence;
             if (ev.max_temp_c) setCpuTemp(Math.round(ev.max_temp_c));
+            if (ev.cpu_idle_temp_c) setGpuTemp(Math.round(ev.cpu_idle_temp_c));
             if (ev.throttling_detected !== undefined) {
               setThrottling(ev.throttling_detected ? "DETECTED" : "NOT_DETECTED");
             }
@@ -187,15 +231,24 @@ export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
           if (subs.system?.evidence) {
             const ev = subs.system.evidence;
             setHardwareResult(ev.post_successful ? "PASS" : "FAIL");
-            if (subs.system.faults && subs.system.faults.length > 0) {
-              setCriticalFaults(subs.system.faults.join("; "));
-            }
+          }
+
+          // Gather all detected faults
+          const collectedFaults: string[] = [];
+          if (statusRes.report.faults && statusRes.report.faults.length > 0) {
+            statusRes.report.faults.forEach((f: any) => {
+              const desc = typeof f === "string" ? f : f.description || f.component;
+              if (desc) collectedFaults.push(desc);
+            });
+          }
+          if (collectedFaults.length > 0) {
+            setCriticalFaults(collectedFaults.join("; "));
           }
         }
       } catch (err) {
         console.warn("[ReLoop] Diagnostics status poll error:", err);
       }
-    }, 2000);
+    }, 1000);
 
     return () => clearInterval(interval);
   }, [sessionToken, sessionStatus]);
@@ -224,135 +277,6 @@ export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
     }
   };
 
-  // Instant In-Browser Prototype Hardware Scan
-  const handleSimulateInstantDiagnostics = async () => {
-    if (isSimulatingAgent) return;
-    setIsSimulatingAgent(true);
-
-    const subsKeys = ["battery", "ssd", "ram", "thermals", "cpu", "display", "keyboard", "system"];
-    for (let i = 0; i < subsKeys.length; i++) {
-      const k = subsKeys[i];
-      setSubsystemsProgress((prev) => ({ ...prev, [k]: "Running" }));
-      await new Promise((r) => setTimeout(r, 180));
-      setSubsystemsProgress((prev) => ({
-        ...prev,
-        [k]: k === "battery" ? "Fault Detected" : "Passed",
-      }));
-    }
-
-    const samplePayload = {
-      timestamp: new Date().toISOString(),
-      overall_status: "DEGRADED",
-      subsystems: {
-        battery: {
-          evidence: {
-            design_capacity_mwh: 51000,
-            full_charge_capacity_mwh: 38250,
-            cycle_count: 342,
-            health_percentage: 75.0,
-          },
-          faults: [
-            {
-              severity: "MEDIUM",
-              component: "battery",
-              description: "Battery capacity degraded to 75.0% of original design capacity (342 cycles).",
-            },
-          ],
-          status: "FAULT_DETECTED",
-          component_status: "WEAR",
-        },
-        ssd: {
-          evidence: {
-            health_percentage: 96.0,
-            smart_status: "PASS",
-            power_on_hours: 2840,
-          },
-          faults: [],
-          status: "PASSED",
-          component_status: "GOOD",
-        },
-        ram: {
-          evidence: {
-            installed_gb: 16,
-            test_result: "PASS",
-          },
-          faults: [],
-          status: "PASSED",
-          component_status: "GOOD",
-        },
-        thermals: {
-          evidence: {
-            cpu_idle_temp_c: 42.0,
-            max_temp_c: 58.0,
-            throttling_detected: false,
-          },
-          faults: [],
-          status: "PASSED",
-          component_status: "GOOD",
-        },
-        cpu: {
-          evidence: {
-            model: confirmedModelName || "Intel Core i7 Processor",
-            cores: 8,
-            threads: 16,
-          },
-          faults: [],
-          status: "PASSED",
-          component_status: "GOOD",
-        },
-        display: {
-          evidence: {
-            resolution: "1920x1080",
-            refresh_rate_hz: 60,
-          },
-          faults: [],
-          status: "PASSED",
-          component_status: "GOOD",
-        },
-        keyboard: {
-          evidence: {
-            keys_tested: "ALL_PASSED",
-          },
-          faults: [],
-          status: "PASSED",
-          component_status: "GOOD",
-        },
-        system: {
-          evidence: {
-            post_successful: true,
-            bios_version: "UEFI v1.28",
-          },
-          faults: [],
-          status: "PASSED",
-          component_status: "GOOD",
-        },
-      },
-    };
-
-    if (sessionToken) {
-      try {
-        const report = await submitDiagnosticSession(sessionToken, samplePayload);
-        setSessionReport(report);
-      } catch (e) {
-        console.warn("Could not submit simulated session to backend:", e);
-      }
-    }
-
-    setDesignCap(51000);
-    setFullCap(38250);
-    setCycleCount(342);
-    setSsdHealth(96);
-    setSmartStatus("PASS");
-    setRamCapacity(16);
-    setRamTest("PASS");
-    setCpuTemp(42);
-    setGpuTemp(40);
-    setThrottling("NOT_DETECTED");
-    setHardwareResult("PASS");
-    setSessionStatus("COMPLETED");
-    setIsSimulatingAgent(false);
-  };
-
   // Handle direct JSON upload if user ran agent with --json-output
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -366,6 +290,7 @@ export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
         const report = await submitDiagnosticSession(sessionToken, parsed);
         setSessionReport(report);
         setSessionStatus("COMPLETED");
+        setIsScanning(false);
       } catch (err: any) {
         setSessionError(`JSON upload failed: ${err.message}`);
       }
@@ -497,12 +422,11 @@ export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-[#1D1D1F] tracking-tight">
-                    Cross-Platform Hardware Evaluation
+                    Automated Hardware Diagnostics (~8 Seconds)
                   </h3>
                   <p className="text-sm text-[#6E6E73] mt-1 leading-relaxed">
-                    Browser security models cannot access low-level hardware sensors directly.
-                    ReLoop uses a lightweight, read-only local diagnostic script to evaluate all 8
-                    internal subsystems with zero external dependencies.
+                    Evaluates your laptop&apos;s real internal hardware sensors using read-only OS queries.
+                    Scans 9 hardware subsystems in parallel with zero third-party software installation.
                   </p>
                 </div>
               </div>
@@ -512,10 +436,10 @@ export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
                 <div className="p-3.5 rounded-xl bg-[#F5F5F7] border border-[#E5E5E7]/60">
                   <div className="flex items-center gap-2 text-xs font-bold text-[#1D1D1F] mb-1">
                     <Battery size={14} className="text-[#0071E3]" />
-                    <span>Battery Health & Cycles</span>
+                    <span>Battery Health & Degradation</span>
                   </div>
                   <p className="text-[11px] text-[#6E6E73]">
-                    Measures full charge vs design capacity (mWh) and cycle counts to detect degradation.
+                    Measures full charge vs design capacity (mWh) and cycle count to detect genuine wear.
                   </p>
                 </div>
 
@@ -525,7 +449,7 @@ export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
                     <span>Storage (SSD/NVMe) SMART</span>
                   </div>
                   <p className="text-[11px] text-[#6E6E73]">
-                    Non-destructive read-only check of SMART failure predictions and drive health.
+                    Non-destructive read-only check of SMART failure predictions and drive health percentage.
                   </p>
                 </div>
 
@@ -535,7 +459,7 @@ export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
                     <span>RAM & Memory Integrity</span>
                   </div>
                   <p className="text-[11px] text-[#6E6E73]">
-                    Verifies installed SO-DIMM capacity and scans OS hardware error logs (WHEA / EDAC).
+                    Verifies installed physical RAM capacity and queries OS hardware fault logs.
                   </p>
                 </div>
 
@@ -555,7 +479,7 @@ export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
                     <span>Processor & System Board</span>
                   </div>
                   <p className="text-[11px] text-[#6E6E73]">
-                    Queries CPU cores, UEFI POST sequence status, and motherboard power rail stability.
+                    Queries real CPU model, core/thread count, UEFI POST status, and system board enclosure.
                   </p>
                 </div>
 
@@ -565,7 +489,7 @@ export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
                     <span>Display, Keyboard & Chassis</span>
                   </div>
                   <p className="text-[11px] text-[#6E6E73]">
-                    Checks display driver, keyboard controller status, and prompts visual hinge checks.
+                    Inspects display resolution, keyboard controller responsiveness, and chassis form factor.
                   </p>
                 </div>
               </div>
@@ -576,8 +500,8 @@ export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
                 <div className="space-y-1">
                   <span className="font-bold block">Zero Privacy Risk & Read-Only Guarantee:</span>
                   <p className="text-emerald-800">
-                    The agent never touches personal documents, browser history, or credentials. It executes
-                    standard OS hardware queries with zero software installations or system modifications.
+                    The diagnostics never touches personal files, browser data, or credentials. It uses
+                    standard OS hardware APIs (WMI/PowerShell, system_profiler, or sysfs) to read hardware telemetry.
                   </p>
                 </div>
               </div>
@@ -593,19 +517,19 @@ export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
 
                 <button
                   type="button"
-                  onClick={handleStartSession}
-                  disabled={isInitializing}
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#0071E3] hover:bg-[#0077ED] text-white text-sm font-semibold transition-all shadow-md cursor-pointer disabled:opacity-50"
+                  onClick={handleStartHardwareScan}
+                  disabled={isInitializing || isScanning}
+                  className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-[#0071E3] hover:bg-[#0077ED] text-white text-sm font-semibold transition-all shadow-md cursor-pointer disabled:opacity-50"
                 >
-                  {isInitializing ? (
+                  {isScanning || isInitializing ? (
                     <>
-                      <RefreshCw size={15} className="animate-spin" />
-                      <span>Initializing Session...</span>
+                      <RefreshCw size={16} className="animate-spin" />
+                      <span>Scanning Laptop Hardware ({scanTimeElapsed}s)...</span>
                     </>
                   ) : (
                     <>
-                      <ShieldCheck size={16} />
-                      <span>Allow & Start Smart Diagnostics</span>
+                      <Zap size={17} className="text-amber-300" />
+                      <span>Scan This Laptop&apos;s Hardware (Automated • ~8s)</span>
                     </>
                   )}
                 </button>
@@ -614,35 +538,41 @@ export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
           ) : sessionStatus !== "COMPLETED" ? (
             /* Substage 2: Active Session & Runner Instructions */
             <div className="space-y-6">
-              {/* Quick Action & Simulation Banner */}
+              {/* Scan Status Banner */}
               <div className="p-4 rounded-xl bg-blue-50/80 border border-blue-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs">
                 <div>
                   <div className="flex items-center gap-2">
-                    <Zap size={16} className="text-[#0071E3]" />
+                    <Zap size={16} className={`text-[#0071E3] ${isScanning ? "animate-bounce" : ""}`} />
                     <span className="text-xs font-bold text-blue-900">
-                      Waiting for Local Agent Telemetry
+                      {isScanning
+                        ? `Live Hardware Diagnostic in Progress (${scanTimeElapsed}s elapsed)`
+                        : sessionStatus === "RUNNING"
+                        ? "Diagnostic Runner Active"
+                        : "Diagnostic Session Active"}
                     </span>
                   </div>
                   <p className="text-[11px] text-blue-700 mt-0.5 leading-relaxed">
-                    The collector is listening for your local terminal agent. Want instant findings without terminal commands?
+                    {isScanning
+                      ? "Measuring real ACPI battery health, NVMe SMART status, thermal zones, and UEFI logs. Genuine hardware telemetry with zero mock data."
+                      : "Directly runs diagnostics on this laptop's internal subsystems in ~8 seconds."}
                   </p>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <button
                     type="button"
-                    onClick={handleSimulateInstantDiagnostics}
-                    disabled={isSimulatingAgent}
+                    onClick={handleStartHardwareScan}
+                    disabled={isScanning}
                     className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#0071E3] hover:bg-[#0077ED] text-white text-xs font-semibold transition-all shadow-xs cursor-pointer disabled:opacity-60"
                   >
-                    {isSimulatingAgent ? (
+                    {isScanning ? (
                       <>
                         <RefreshCw size={12} className="animate-spin" />
-                        <span>Scanning Telemetry...</span>
+                        <span>Running ({scanTimeElapsed}s)...</span>
                       </>
                     ) : (
                       <>
-                        <Zap size={13} />
-                        <span>⚡ Run Prototype Scan (3s)</span>
+                        <Zap size={13} className="text-amber-300" />
+                        <span>Run Real Hardware Scan (~8s)</span>
                       </>
                     )}
                   </button>
@@ -651,107 +581,8 @@ export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
                     onClick={() => setConsentGranted(false)}
                     className="px-3 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 text-xs font-medium transition-colors cursor-pointer"
                   >
-                    Manual Form
+                    Back to Info
                   </button>
-                </div>
-              </div>
-
-              {/* Instructions Card */}
-              <div className="apple-card p-6 bg-white border border-[#E5E5E7] space-y-5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2.5">
-                    <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse" />
-                    <h3 className="text-base font-bold text-[#1D1D1F]">
-                      Diagnostic Session Active
-                    </h3>
-                  </div>
-                  <span className="text-xs font-mono font-semibold px-2.5 py-1 rounded bg-[#F5F5F7] text-[#6E6E73]">
-                    Token: {sessionToken}
-                  </span>
-                </div>
-
-                <p className="text-xs sm:text-sm text-[#6E6E73] leading-relaxed">
-                  Run the diagnostic utility in your terminal to collect telemetry for your{" "}
-                  <strong className="text-[#1D1D1F]">
-                    {manufacturer} {confirmedModelName}
-                  </strong>
-                  . The findings will appear here automatically.
-                </p>
-
-                {/* Step-by-step Execution Box */}
-                <div className="p-4 rounded-xl bg-[#1D1D1F] text-white space-y-3 font-mono text-xs">
-                  <div className="flex items-center justify-between text-[#86868B] pb-1 border-b border-white/10">
-                    <div className="flex items-center gap-1.5">
-                      <Terminal size={13} />
-                      <span>Detected OS: {detectedOS}</span>
-                    </div>
-                    <span className="text-[10px]">Zero Dependencies Required</span>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <span className="text-[#86868B] text-[11px] block">
-                      # 1. Download the agent (or run from existing repository):
-                    </span>
-                    <a
-                      href="/backend-api/diagnostics/agent/download"
-                      download="reloop_agent.py"
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-sans font-semibold transition-colors"
-                    >
-                      <Download size={13} />
-                      <span>Download reloop_agent.py</span>
-                    </a>
-                  </div>
-
-                  <div className="space-y-1 pt-1">
-                    <span className="text-[#86868B] text-[11px] block">
-                      # 2. Run in terminal:
-                    </span>
-                    <div className="flex items-center justify-between bg-black/40 p-2.5 rounded-lg border border-white/10">
-                      <code className="text-emerald-400 select-all">{agentRunCommand}</code>
-                      <button
-                        type="button"
-                        onClick={handleCopyCommand}
-                        className="ml-2 inline-flex items-center gap-1 px-2.5 py-1 rounded bg-white/10 hover:bg-white/20 text-[11px] text-white transition-colors cursor-pointer shrink-0"
-                      >
-                        {copiedCmd ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
-                        <span>{copiedCmd ? "Copied" : "Copy"}</span>
-                      </button>
-                    </div>
-
-                    {detectedOS === "Windows" && (
-                      <div className="pt-2 text-[11px] text-[#86868B] font-sans border-t border-white/10 mt-2">
-                        <span>If </span>
-                        <code className="text-zinc-300 font-mono">python</code>
-                        <span> is not recognized in Command Prompt, use the project virtual environment:</span>
-                        <div className="mt-1 flex items-center justify-between bg-black/50 p-2 rounded border border-white/5 font-mono text-[10px] text-emerald-400">
-                          <code className="select-all">{venvRunCommand}</code>
-                          <button
-                            type="button"
-                            onClick={handleCopyVenvCommand}
-                            className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[10px] text-white transition-colors cursor-pointer shrink-0"
-                          >
-                            {copiedVenvCmd ? <Check size={11} className="text-emerald-400" /> : <Copy size={11} />}
-                            <span>{copiedVenvCmd ? "Copied" : "Copy"}</span>
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* File Upload Option */}
-                <div className="flex items-center justify-between text-xs text-[#6E6E73] pt-2">
-                  <span>Ran diagnostics offline?</span>
-                  <label className="inline-flex items-center gap-1 text-[#0071E3] font-semibold hover:underline cursor-pointer">
-                    <UploadCloud size={14} />
-                    <span>Upload report.json file</span>
-                    <input
-                      type="file"
-                      accept=".json"
-                      onChange={handleFileUpload}
-                      className="hidden"
-                    />
-                  </label>
                 </div>
               </div>
 
@@ -760,30 +591,21 @@ export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
                   <div>
                     <h4 className="text-xs font-bold uppercase tracking-wider text-[#6E6E73]">
-                      Live Telemetry Collector Status
+                      Subsystem Sensor Telemetry
                     </h4>
                     <p className="text-[11px] text-[#86868B] mt-0.5">
-                      Waiting for hardware sensor stream from local terminal runner.
+                      Executing parallel diagnostics across all 9 internal subsystems.
                     </p>
                   </div>
                   <div className="flex items-center gap-2.5">
-                    <button
-                      type="button"
-                      onClick={handleSimulateInstantDiagnostics}
-                      disabled={isSimulatingAgent}
-                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-blue-50 hover:bg-blue-100 text-[#0071E3] text-[11px] font-semibold border border-blue-200 transition-all cursor-pointer disabled:opacity-50"
-                    >
-                      <Zap size={11} />
-                      <span>{isSimulatingAgent ? "Simulating..." : "Auto-Fill Telemetry"}</span>
-                    </button>
                     <div className="flex items-center gap-1.5 text-xs text-[#0071E3]">
-                      <RefreshCw size={12} className={isSimulatingAgent ? "animate-spin text-amber-500" : "animate-spin"} />
-                      <span>{isSimulatingAgent ? "Capturing hardware..." : "Listening for agent stream..."}</span>
+                      <RefreshCw size={12} className={isScanning ? "animate-spin text-amber-500" : "animate-spin"} />
+                      <span>{isScanning ? `Testing hardware subsystems (${scanTimeElapsed}s)...` : "Awaiting runner completion..."}</span>
                     </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   {[
                     { key: "battery", name: "Battery Subsystem", icon: Battery },
                     { key: "ssd", name: "Storage (SSD/NVMe)", icon: HardDrive },
@@ -792,12 +614,13 @@ export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
                     { key: "cpu", name: "CPU Architecture", icon: Cpu },
                     { key: "display", name: "Display Panel", icon: Monitor },
                     { key: "keyboard", name: "Keyboard Controller", icon: Keyboard },
+                    { key: "chassis", name: "Chassis & Enclosure", icon: Laptop },
                     { key: "system", name: "System Board & POST", icon: ShieldCheck },
                   ].map(({ key, name, icon: Icon }) => {
                     const status = subsystemsProgress[key] || "Pending";
-                    const isPassed = status === "Passed";
-                    const isFault = status === "Fault Detected";
-                    const isRunning = status === "Running";
+                    const isPassed = status === "Passed" || status === "PASSED";
+                    const isFault = status === "Fault Detected" || status === "FAULT_DETECTED";
+                    const isRunning = status === "Running" || status === "RUNNING";
 
                     return (
                       <div
@@ -853,15 +676,80 @@ export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
                 hardwareModel={`${manufacturer} ${confirmedModelName}`}
                 isLive={sessionStatus === "RUNNING"}
               />
+
+              {/* Optional: Terminal CLI / Offline Runner Accordion */}
+              <details className="apple-card p-4 bg-slate-50 border border-slate-200 text-xs">
+                <summary className="font-semibold text-slate-700 cursor-pointer select-none">
+                  Advanced: Terminal CLI Runner & Offline Report Upload (Optional)
+                </summary>
+                <div className="mt-4 space-y-4 pt-3 border-t border-slate-200 font-sans">
+                  <p className="text-slate-600">
+                    If you prefer running diagnostics manually in your terminal or on an air-gapped machine:
+                  </p>
+
+                  <div className="p-3 rounded-xl bg-[#1D1D1F] text-white space-y-2 font-mono text-xs">
+                    <div className="flex items-center justify-between text-[#86868B] pb-1 border-b border-white/10">
+                      <div className="flex items-center gap-1.5">
+                        <Terminal size={13} />
+                        <span>Command (OS: {detectedOS})</span>
+                      </div>
+                      <span className="text-[10px]">Zero Dependencies</span>
+                    </div>
+
+                    <div className="flex items-center justify-between bg-black/40 p-2 rounded-lg border border-white/10">
+                      <code className="text-emerald-400 select-all">{agentRunCommand}</code>
+                      <button
+                        type="button"
+                        onClick={handleCopyCommand}
+                        className="ml-2 inline-flex items-center gap-1 px-2.5 py-1 rounded bg-white/10 hover:bg-white/20 text-[11px] text-white transition-colors cursor-pointer shrink-0"
+                      >
+                        {copiedCmd ? <Check size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                        <span>{copiedCmd ? "Copied" : "Copy"}</span>
+                      </button>
+                    </div>
+
+                    {detectedOS === "Windows" && (
+                      <div className="pt-2 text-[11px] text-[#86868B] font-sans border-t border-white/10">
+                        <span>Project virtualenv command:</span>
+                        <div className="mt-1 flex items-center justify-between bg-black/50 p-2 rounded border border-white/5 font-mono text-[10px] text-emerald-400">
+                          <code className="select-all">{venvRunCommand}</code>
+                          <button
+                            type="button"
+                            onClick={handleCopyVenvCommand}
+                            className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded bg-white/10 hover:bg-white/20 text-[10px] text-white transition-colors cursor-pointer shrink-0"
+                          >
+                            {copiedVenvCmd ? <Check size={11} className="text-emerald-400" /> : <Copy size={11} />}
+                            <span>{copiedVenvCmd ? "Copied" : "Copy"}</span>
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1">
+                    <span className="text-slate-600">Have an offline report.json?</span>
+                    <label className="inline-flex items-center gap-1 text-[#0071E3] font-semibold hover:underline cursor-pointer">
+                      <UploadCloud size={14} />
+                      <span>Upload report.json file</span>
+                      <input
+                        type="file"
+                        accept=".json"
+                        onChange={handleFileUpload}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                </div>
+              </details>
             </div>
           ) : (
-            /* Substage 3: Comprehensive Findings & 8 Subsystem Cards */
+            /* Substage 3: Comprehensive Findings & 9 Subsystem Cards */
             <div className="space-y-6">
               {/* Overall Summary Card */}
               <div className="apple-card p-6 bg-white border border-[#E5E5E7]">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-4 border-b border-[#E5E5E7]">
                   <div>
-                    <span className="text-xs text-[#86868B] block">Hardware Condition Profile</span>
+                    <span className="text-xs text-[#86868B] block">Genuine Hardware Condition Profile</span>
                     <h3 className="text-2xl font-bold text-[#1D1D1F]">
                       Overall Status:{" "}
                       <span
@@ -885,9 +773,30 @@ export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
                         : "bg-emerald-100 text-emerald-800 border border-emerald-200"
                     }`}
                   >
-                    {sessionReport?.faults?.length || 0} Anomaly/Wear Indicator(s) Detected
+                    {sessionReport?.faults?.length || 0} Hardware Anomaly/Wear Issue(s) Detected
                   </span>
                 </div>
+
+                {/* Primary Detected Faults Alert Banner */}
+                {sessionReport?.faults && sessionReport.faults.length > 0 && (
+                  <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 mb-4 space-y-2">
+                    <div className="flex items-center gap-2 font-bold text-sm">
+                      <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                      <span>Actual Detected Hardware Faults:</span>
+                    </div>
+                    <ul className="text-xs space-y-1.5 pl-6 list-disc">
+                      {sessionReport.faults.map((f: any, idx: number) => {
+                        const faultMsg = typeof f === "string" ? f : f.description || f.component || JSON.stringify(f);
+                        const sev = typeof f === "object" && f.severity ? `[${f.severity}] ` : "";
+                        return (
+                          <li key={idx} className="font-semibold text-amber-950">
+                            {sev}{faultMsg}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+                )}
 
                 {/* Plain-Language Grounded Explanation */}
                 {sessionReport?.ai_explanation && (
@@ -898,12 +807,11 @@ export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
                 )}
 
                 {/* Physical Inspection Notice */}
-                <div className="p-3.5 rounded-xl bg-amber-50/60 border border-amber-200 text-amber-900 text-xs flex items-start gap-2.5">
-                  <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 text-xs flex items-start gap-2.5">
+                  <Info className="w-4 h-4 text-[#0071E3] shrink-0 mt-0.5" />
                   <div>
-                    <span className="font-bold">Physical Guardrail Notice:</span> Battery swelling,
-                    chassis drop dents, and physical keyboard switch travel cannot be verified by
-                    telemetry alone and are validated in the next step.
+                    <span className="font-bold">Next Steps:</span> Physical enclosure scratches,
+                    screen cracks, and hinge tightness will be validated in Step 3 (Visual Symptoms).
                   </div>
                 </div>
               </div>
@@ -916,7 +824,7 @@ export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
                 isLive={false}
               />
 
-              {/* 8 Subsystems Detailed Grid */}
+              {/* 9 Subsystems Detailed Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {sessionReport?.subsystems &&
                   Object.entries(sessionReport.subsystems).map(([key, sub]) => {
@@ -953,21 +861,24 @@ export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
                           {/* Faults if any */}
                           {sub.faults && sub.faults.length > 0 && (
                             <div className="mb-2 space-y-1">
-                              {sub.faults.map((f, i) => (
-                                <span
-                                  key={i}
-                                  className="text-[11px] text-red-600 font-semibold block leading-tight"
-                                >
-                                  ⚠️ {f}
-                                </span>
-                              ))}
+                              {sub.faults.map((f: any, i: number) => {
+                                const faultText = typeof f === "string" ? f : f.description || f.component || JSON.stringify(f);
+                                return (
+                                  <span
+                                    key={i}
+                                    className="text-[11px] text-red-600 font-semibold block leading-tight"
+                                  >
+                                    ⚠️ {faultText}
+                                  </span>
+                                );
+                              })}
                             </div>
                           )}
 
                           {/* Observations */}
                           {sub.observations && sub.observations.length > 0 && (
                             <ul className="text-xs text-[#6E6E73] space-y-1 mb-3">
-                              {sub.observations.map((obs, idx) => (
+                              {sub.observations.map((obs: string, idx: number) => (
                                 <li key={idx}>• {obs}</li>
                               ))}
                             </ul>

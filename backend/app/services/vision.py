@@ -12,7 +12,7 @@ Enforces non-negotiable rules:
 import json
 import re
 import logging
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set, Tuple
 from sqlalchemy.orm import Session
 from app.ai.gemini_client import gemini_client, GeminiClient
 from app.ai.groq_client import groq_client, GroqClient

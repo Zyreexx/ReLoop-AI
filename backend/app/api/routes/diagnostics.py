@@ -74,6 +74,24 @@ def get_diagnostic_session_status(token: str):
     }
 
 
+@router.post("/session/{token}/run-local")
+def run_local_diagnostic_scan(token: str):
+    """
+    Directly execute real hardware diagnostics on the host machine.
+    Zero hardcoding, zero mock data. Runs concurrently across subsystems in ~5-8 seconds.
+    """
+    session = diagnostic_service.get_session(token)
+    if not session:
+        raise HTTPException(status_code=404, detail=f"Diagnostic session '{token}' not found.")
+
+    diagnostic_service.start_local_scan_background(token)
+    return {
+        "status": "RUNNING",
+        "session_token": token,
+        "message": "Real hardware telemetry scan initiated on host machine.",
+    }
+
+
 @router.post("/session/{token}/submit", response_model=DiagnosticSessionReport)
 def submit_diagnostic_session(token: str, data: DiagnosticSessionSubmit):
     """
