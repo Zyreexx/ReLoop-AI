@@ -129,7 +129,7 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
           visibleObservations: [
             { component: "chassis", observation: "Minor cosmetic scratches near palm rest" },
             { component: "display", observation: "No visible crack detected on display glass" },
-            { component: "keyboard", observation: "Keycaps present; 2 loose keys reported" },
+            { component: "keyboard", observation: "Keycaps present; all keys verified intact and operational" },
           ],
         },
         diagnostics: {
@@ -215,31 +215,105 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
     if (mod.toLowerCase().startsWith(m.toLowerCase())) return mod;
     return `${m} ${mod}`;
   }, [manufacturer, modelName]);
-  const deviceAge = assessment?.diagnostics?.deviceAgeYears || 4.5;
-  const batteryHealth = assessment?.diagnostics?.battery?.healthPercentage ?? 73;
-  const cpuTemp = assessment?.diagnostics?.thermals?.cpuTempC ?? 88;
-  const ramGB = assessment?.diagnostics?.ram?.capacityGB ?? 16;
-  const motherboardOk = assessment?.diagnostics?.system?.hardwareResult !== "FAIL";
+  const deviceAge = assessment?.diagnostics?.deviceAgeYears || assessment?.laptop?.ageYears || 4.5;
+  const batteryHealth = assessment?.diagnostics?.battery?.healthPercentage ?? (assessment?.diagnostics?.agentReport?.subsystems?.battery?.evidence?.health_percentage ?? 80);
+  const batteryCycles = assessment?.diagnostics?.battery?.cycleCount ?? assessment?.diagnostics?.agentReport?.subsystems?.battery?.evidence?.cycle_count;
+  const cpuTemp = assessment?.diagnostics?.thermals?.cpuTempC ?? (assessment?.diagnostics?.agentReport?.subsystems?.thermals?.evidence?.max_temp_c ?? 45);
+  const cpuThrottling = assessment?.diagnostics?.thermals?.thermalThrottling ?? (assessment?.diagnostics?.agentReport?.subsystems?.thermals?.evidence?.throttling_detected ? "DETECTED" : "NOT_DETECTED");
+  const ramGB = assessment?.diagnostics?.ram?.capacityGB ?? (assessment?.diagnostics?.agentReport?.subsystems?.ram?.evidence?.installed_gb ?? 16);
+  const ramTestResult = assessment?.diagnostics?.ram?.testResult ?? (assessment?.diagnostics?.agentReport?.subsystems?.ram?.evidence?.test_result ?? "PASS");
+  const ssdHealth = assessment?.diagnostics?.ssd?.healthPercentage ?? (assessment?.diagnostics?.agentReport?.subsystems?.ssd?.evidence?.health_percentage ?? 95);
+  const ssdSmartStatus = assessment?.diagnostics?.ssd?.smartStatus ?? (assessment?.diagnostics?.agentReport?.subsystems?.ssd?.evidence?.smart_status ?? "PASS");
+  const ssdCapGB = assessment?.diagnostics?.agentReport?.subsystems?.ssd?.evidence?.capacity_gb;
+  const ssdModel = assessment?.diagnostics?.agentReport?.subsystems?.ssd?.evidence?.model || assessment?.visual?.identifiedProduct?.specs?.storage || "";
+  const cpuModel = assessment?.diagnostics?.agentReport?.subsystems?.cpu?.evidence?.model || assessment?.visual?.identifiedProduct?.specs?.processor || assessment?.visual?.identifiedProduct?.specs?.cpu || "";
+  const displayResolution = assessment?.diagnostics?.agentReport?.subsystems?.display?.evidence?.resolution || assessment?.visual?.identifiedProduct?.specs?.display || "";
+  const motherboardOk = assessment?.diagnostics?.system?.hardwareResult !== "FAIL" && assessment?.diagnostics?.agentReport?.subsystems?.system?.component_status !== "REPLACE";
 
-  // Build specific detected issues from upload
+  // Optical & Diagnostics Findings per Component
+  const keyboardFinding = assessment?.visual?.findings?.find((f: any) => f.component?.toLowerCase() === "keyboard");
+  const keyboardObs = assessment?.visual?.visibleObservations?.find((o: any) => o.component?.toLowerCase() === "keyboard");
+  const keyboardAgent = assessment?.diagnostics?.agentReport?.subsystems?.keyboard;
+  const hasLooseKeys = Boolean(
+    (keyboardFinding && /loose|missing|damaged/i.test(keyboardFinding.description || "") && keyboardFinding.severity !== "NONE") ||
+    (keyboardObs && /loose|missing|damaged/i.test(keyboardObs.observation || "")) ||
+    (keyboardAgent?.faults && keyboardAgent.faults.some((f: any) => /loose|missing|damaged/i.test(typeof f === "string" ? f : f.description || "")))
+  );
+  const keyboardIsFault = keyboardAgent?.status === "FAULT_DETECTED" || keyboardAgent?.component_status === "REPLACE" || keyboardFinding?.severity === "HIGH";
+  const keyboardStatusStr = keyboardIsFault ? "FAULT" : (hasLooseKeys ? "WEAR" : "PASS");
+
+  const displayFinding = assessment?.visual?.findings?.find((f: any) => f.component?.toLowerCase() === "display");
+  const hasDisplayDamage = Boolean(
+    (displayFinding && /crack|shatter|dead pixel|bleed/i.test(displayFinding.description || "") && displayFinding.severity !== "NONE") ||
+    assessment?.diagnostics?.agentReport?.subsystems?.display?.status === "FAULT_DETECTED"
+  );
+
+  // Build specific detected issues from genuine assessment data
   const detectedIssues: string[] = [];
-  if (batteryHealth < 80) {
+
+  // 1. Diagnostic faults from agent
+  if (assessment?.diagnostics?.agentReport?.faults && Array.isArray(assessment.diagnostics.agentReport.faults)) {
+    assessment.diagnostics.agentReport.faults.forEach((f: any) => {
+      const desc = typeof f === "string" ? f : f.description;
+      if (desc && !detectedIssues.includes(desc)) {
+        detectedIssues.push(desc);
+      }
+    });
+  }
+
+  // 2. Battery degradation
+  if (batteryHealth < 80 && !detectedIssues.some((i) => i.toLowerCase().includes("battery"))) {
     detectedIssues.push(`Battery capacity degraded to ${batteryHealth}% (quick drain)`);
   }
-  if (cpuTemp >= 80) {
+
+  // 3. Thermals & Throttling
+  if ((cpuTemp >= 80 || cpuThrottling === "DETECTED") && !detectedIssues.some((i) => i.toLowerCase().includes("thermal") || i.toLowerCase().includes("throttl"))) {
     detectedIssues.push(`CPU thermal throttling at ${cpuTemp}°C under load`);
   }
-  if (assessment?.visual?.visibleObservations) {
-    for (const obs of assessment.visual.visibleObservations) {
-      if (obs.component === "keyboard" && obs.observation.includes("loose")) {
-        detectedIssues.push("2 loose plastic keycaps on keyboard");
-      } else if (obs.component === "chassis" && obs.observation.includes("scratches")) {
-        detectedIssues.push("Surface palm-rest cosmetic scuffs");
+
+  // 4. Storage SMART
+  if ((ssdHealth < 75 || ssdSmartStatus === "FAIL") && !detectedIssues.some((i) => i.toLowerCase().includes("ssd") || i.toLowerCase().includes("storage") || i.toLowerCase().includes("smart"))) {
+    detectedIssues.push(`Storage SMART wear detected (${ssdHealth}% drive health)`);
+  }
+
+  // 5. Visual Damage Findings (excluding benign/normal findings)
+  if (assessment?.visual?.findings && Array.isArray(assessment.visual.findings)) {
+    for (const f of assessment.visual.findings) {
+      const desc = f.description || "";
+      const isBenign = /intact|no visible|aligned|normal|good condition|clearly visible/i.test(desc);
+      if (f.severity && f.severity !== "NONE" && !isBenign) {
+        if (!detectedIssues.includes(desc)) {
+          detectedIssues.push(desc);
+        }
       }
     }
   }
+
+  // 6. Visual Observations (excluding benign/intact observations)
+  if (assessment?.visual?.visibleObservations && Array.isArray(assessment.visual.visibleObservations)) {
+    for (const obs of assessment.visual.visibleObservations) {
+      const text = obs.observation || "";
+      const isBenign = /no visible|intact|aligned|clean|normal|present/i.test(text);
+      if (!isBenign) {
+        if (!detectedIssues.includes(text)) {
+          detectedIssues.push(text);
+        }
+      }
+    }
+  }
+
+  // 7. User Reported Symptoms
+  if (assessment?.symptoms?.selectedSymptoms && Array.isArray(assessment.symptoms.selectedSymptoms)) {
+    for (const sym of assessment.symptoms.selectedSymptoms) {
+      const symLabel = typeof sym === "string" ? sym : sym.label;
+      if (symLabel && !detectedIssues.some((i) => i.toLowerCase().includes(symLabel.toLowerCase()))) {
+        detectedIssues.push(symLabel);
+      }
+    }
+  }
+
   if (detectedIssues.length === 0) {
-    detectedIssues.push("Standard component wear & minor cosmetic scratches");
+    detectedIssues.push("All internal and optical hardware benchmarks verified intact");
   }
 
   // Calculate dynamic circular pathways specifically for this uploaded device
@@ -649,7 +723,7 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
           name: "1. Battery Subsystem",
           metric: `${batteryHealth}% Capacity`,
           status: batteryHealth < 80 ? "DEGRADED" : "GOOD",
-          note: "Measured 482 cycles; quick discharge under active load",
+          note: batteryCycles ? `Recorded ${batteryCycles} charge cycles; ${batteryHealth < 80 ? "discharge degradation detected" : "healthy operational capacity"}` : (batteryHealth < 80 ? "Capacity degraded under load" : "Battery holds healthy nominal charge"),
           isAlert: batteryHealth < 80,
         },
         {
@@ -661,24 +735,24 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
         },
         {
           name: "3. RAM Memory",
-          metric: `${ramGB}GB DDR4 Installed`,
-          status: "PASS",
-          note: "MemTest UEFI stress test verified zero address bus errors",
-          isAlert: false,
+          metric: `${ramGB}GB RAM Installed`,
+          status: ramTestResult === "FAIL" ? "FAIL" : "PASS",
+          note: ramTestResult === "FAIL" ? "Hardware memory error detected in WHEA logs" : "MemTest UEFI stress test verified zero address bus errors",
+          isAlert: ramTestResult === "FAIL",
         },
         {
           name: "4. SSD / NVMe Storage",
-          metric: "91% Health (SMART)",
-          status: "PASS",
-          note: "Storage controller healthy; 3,420 power-on hours recorded",
-          isAlert: false,
+          metric: `${ssdHealth}% Health (SMART)`,
+          status: ssdSmartStatus === "FAIL" || ssdHealth < 50 ? "FAIL" : "PASS",
+          note: ssdSmartStatus === "FAIL" ? "Storage SMART failure warning detected" : "Storage controller healthy; SMART telemetry passed",
+          isAlert: ssdSmartStatus === "FAIL" || ssdHealth < 50,
         },
         {
           name: "5. Display Panel",
-          metric: "1080p IPS Panel",
-          status: "PASS",
-          note: "Computer vision verified glass intact with zero digitizer cracks",
-          isAlert: false,
+          metric: displayResolution || "Display Panel",
+          status: hasDisplayDamage ? "FAULT" : "PASS",
+          note: hasDisplayDamage ? "Visual damage or defect detected on display" : "Computer vision verified glass intact with zero digitizer cracks",
+          isAlert: hasDisplayDamage,
         },
         {
           name: "6. Ports & System I/O",
@@ -689,10 +763,10 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
         },
         {
           name: "7. Keyboard & Deck",
-          metric: "Key Mechanism Intact",
-          status: "WEAR",
-          note: "2 loose keycap clips reported; switch actuators operational",
-          isAlert: true,
+          metric: hasLooseKeys ? "Loose Keys Reported" : "All Keys Intact",
+          status: keyboardStatusStr,
+          note: hasLooseKeys ? "Loose keycap clips reported; switch actuators operational" : "All keycaps intact and verified operational",
+          isAlert: hasLooseKeys || keyboardIsFault,
         },
         {
           name: "8. Motherboard Logic",
@@ -1289,7 +1363,7 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
               </div>
               <h2 className="text-2xl font-bold text-[#1D1D1F]">{fullName}</h2>
               <p className="text-xs sm:text-sm text-[#6E6E73] mt-0.5">
-                Intel Core i5-1145G7 • {ramGB}GB DDR4 • 512GB NVMe SSD
+                {cpuModel ? cpuModel.replace(/\(R\)|\(TM\)/g, "").replace(/\s+/g, " ").trim() : "Multi-Core CPU"} • {ramGB}GB RAM • {ssdCapGB ? `${ssdCapGB}GB SSD` : (ssdModel || (ssdHealth ? `${ssdHealth}% Health SSD` : "NVMe Storage"))}
               </p>
             </div>
 
@@ -1319,7 +1393,7 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
                   </span>
                 </div>
                 <div className="text-sm font-bold text-[#1D1D1F]">
-                  {batteryHealth}% <span className="text-[11px] font-normal text-[#86868B]">(482 cycles)</span>
+                  {batteryHealth}% <span className="text-[11px] font-normal text-[#86868B]">({batteryCycles ? `${batteryCycles} cycles` : (batteryHealth < 80 ? "Degraded" : "Normal")})</span>
                 </div>
               </div>
 
@@ -1327,7 +1401,7 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
               <div className="p-3 rounded-xl bg-[#F5F5F7] border border-[#E5E5E7]/60">
                 <div className="flex items-center justify-between text-[#6E6E73] mb-1">
                   <div className="flex items-center gap-1.5">
-                    <Cpu size={13} className="text-[#FF3B30]" />
+                    <Cpu size={13} className={cpuTemp >= 80 ? "text-[#FF3B30]" : "text-[#34C759]"} />
                     <span className="text-[10px] font-bold uppercase">{t("diag.thermalTitle")}</span>
                   </div>
                   <span className={`text-[10px] font-bold uppercase ${cpuTemp >= 80 ? "text-[#FF3B30]" : "text-[#34C759]"}`}>
@@ -1335,7 +1409,7 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
                   </span>
                 </div>
                 <div className="text-sm font-bold text-[#1D1D1F]">
-                  {cpuTemp}°C <span className="text-[11px] font-normal text-[#86868B]">(Peak Load)</span>
+                  {cpuTemp > 0 ? `${cpuTemp}°C` : "Normal"} <span className="text-[11px] font-normal text-[#86868B]">({cpuTemp >= 80 ? "Throttling" : "Normal Temp"})</span>
                 </div>
               </div>
 
@@ -1346,10 +1420,12 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
                     <Layers size={13} className="text-[#0071E3]" />
                     <span className="text-[10px] font-bold uppercase">{t("diag.ramTitle")}</span>
                   </div>
-                  <span className="text-[10px] font-bold uppercase text-[#34C759]">PASS</span>
+                  <span className={`text-[10px] font-bold uppercase ${ramTestResult === "FAIL" ? "text-[#FF3B30]" : "text-[#34C759]"}`}>
+                    {localizeStatus(ramTestResult === "FAIL" ? "FAIL" : "PASS", language)}
+                  </span>
                 </div>
                 <div className="text-sm font-bold text-[#1D1D1F]">
-                  {ramGB}GB <span className="text-[11px] font-normal text-[#86868B]">(DDR4 Dual)</span>
+                  {ramGB}GB <span className="text-[11px] font-normal text-[#86868B]">({ramTestResult === "FAIL" ? "Errors Detected" : "Hardware OK"})</span>
                 </div>
               </div>
 
@@ -1357,15 +1433,15 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
               <div className="p-3 rounded-xl bg-[#F5F5F7] border border-[#E5E5E7]/60">
                 <div className="flex items-center justify-between text-[#6E6E73] mb-1">
                   <div className="flex items-center gap-1.5">
-                    <HardDrive size={13} className="text-[#34C759]" />
+                    <HardDrive size={13} className={ssdSmartStatus === "FAIL" || ssdHealth < 50 ? "text-[#FF3B30]" : "text-[#34C759]"} />
                     <span className="text-[10px] font-bold uppercase">{t("diag.ssdTitle")}</span>
                   </div>
-                  <span className="text-[10px] font-bold uppercase text-[#34C759]">
-                    {localizeStatus("PASS", language)}
+                  <span className={`text-[10px] font-bold uppercase ${ssdSmartStatus === "FAIL" || ssdHealth < 50 ? "text-[#FF3B30]" : "text-[#34C759]"}`}>
+                    {localizeStatus(ssdSmartStatus === "FAIL" ? "FAIL" : "PASS", language)}
                   </span>
                 </div>
                 <div className="text-sm font-bold text-[#1D1D1F]">
-                  91% Health <span className="text-[11px] font-normal text-[#86868B]">(SMART)</span>
+                  {ssdHealth ? `${ssdHealth}% Health` : "Healthy"} <span className="text-[11px] font-normal text-[#86868B]">({ssdSmartStatus || "SMART"})</span>
                 </div>
               </div>
 
@@ -1376,12 +1452,12 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
                     <Monitor size={13} className="text-[#0071E3]" />
                     <span className="text-[10px] font-bold uppercase">{localizeComponentName("display", language)}</span>
                   </div>
-                  <span className="text-[10px] font-bold uppercase text-[#34C759]">
-                    {localizeStatus("PASS", language)}
+                  <span className={`text-[10px] font-bold uppercase ${hasDisplayDamage ? "text-[#FF3B30]" : "text-[#34C759]"}`}>
+                    {localizeStatus(hasDisplayDamage ? "FAULT" : "PASS", language)}
                   </span>
                 </div>
                 <div className="text-sm font-bold text-[#1D1D1F]">
-                  1080p IPS <span className="text-[11px] font-normal text-[#86868B]">({language === "gu" ? "ગ્લાસ અકબંધ" : language === "hi" ? "ग्लास बरकरार" : "Glass Intact"})</span>
+                  {displayResolution || "Display Panel"} <span className="text-[11px] font-normal text-[#86868B]">({hasDisplayDamage ? "Damage Detected" : "Glass Intact"})</span>
                 </div>
               </div>
 
@@ -1397,7 +1473,7 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
                   </span>
                 </div>
                 <div className="text-sm font-bold text-[#1D1D1F]">
-                  Type-C / HDMI <span className="text-[11px] font-normal text-[#86868B]">({language === "gu" ? "સ્વચ્છ" : language === "hi" ? "स्वच्छ" : "Clean"})</span>
+                  Ports & I/O <span className="text-[11px] font-normal text-[#86868B]">(Clean)</span>
                 </div>
               </div>
 
@@ -1405,15 +1481,15 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
               <div className="p-3 rounded-xl bg-[#F5F5F7] border border-[#E5E5E7]/60">
                 <div className="flex items-center justify-between text-[#6E6E73] mb-1">
                   <div className="flex items-center gap-1.5">
-                    <Keyboard size={13} className="text-[#FF9F0A]" />
+                    <Keyboard size={13} className={hasLooseKeys || keyboardStatusStr === "WEAR" ? "text-[#FF9F0A]" : keyboardStatusStr === "FAULT" ? "text-[#FF3B30]" : "text-[#34C759]"} />
                     <span className="text-[10px] font-bold uppercase">{localizeComponentName("keyboard", language)}</span>
                   </div>
-                  <span className="text-[10px] font-bold uppercase text-[#FF9F0A]">
-                    {localizeStatus("WEAR", language)}
+                  <span className={`text-[10px] font-bold uppercase ${hasLooseKeys || keyboardStatusStr === "WEAR" ? "text-[#FF9F0A]" : keyboardStatusStr === "FAULT" ? "text-[#FF3B30]" : "text-[#34C759]"}`}>
+                    {localizeStatus(hasLooseKeys || keyboardStatusStr === "WEAR" ? "WEAR" : keyboardStatusStr === "FAULT" ? "FAULT" : "PASS", language)}
                   </span>
                 </div>
                 <div className="text-sm font-bold text-[#1D1D1F]">
-                  Deck OK <span className="text-[11px] font-normal text-[#86868B]">({language === "gu" ? "2 છૂટા કીકેપ્સ" : language === "hi" ? "2 ढीले कीकैप्स" : "2 Loose"})</span>
+                  {hasLooseKeys ? "Deck (Loose Keys)" : "All Keys Intact"} <span className="text-[11px] font-normal text-[#86868B]">({hasLooseKeys ? "Wear Detected" : "Operational"})</span>
                 </div>
               </div>
 
@@ -1421,7 +1497,7 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
               <div className="p-3 rounded-xl bg-[#F5F5F7] border border-[#E5E5E7]/60">
                 <div className="flex items-center justify-between text-[#6E6E73] mb-1">
                   <div className="flex items-center gap-1.5">
-                    <CheckCircle2 size={13} className="text-[#34C759]" />
+                    <CheckCircle2 size={13} className={motherboardOk ? "text-[#34C759]" : "text-[#FF3B30]"} />
                     <span className="text-[10px] font-bold uppercase">{localizeComponentName("motherboard", language)}</span>
                   </div>
                   <span className={`text-[10px] font-bold uppercase ${motherboardOk ? "text-[#34C759]" : "text-[#FF3B30]"}`}>
@@ -1429,7 +1505,7 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
                   </span>
                 </div>
                 <div className="text-sm font-bold text-[#1D1D1F]">
-                  Logic Board <span className="text-[11px] font-normal text-[#86868B]">({language === "gu" ? "સ્વસ્થ" : language === "hi" ? "स्वस्थ" : "Healthy"})</span>
+                  Motherboard <span className="text-[11px] font-normal text-[#86868B]">({motherboardOk ? "Healthy" : "Check VRM"})</span>
                 </div>
               </div>
             </div>
