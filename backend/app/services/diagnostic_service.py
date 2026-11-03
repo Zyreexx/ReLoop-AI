@@ -87,6 +87,78 @@ class DiagnosticService:
         with self._lock:
             return self._sessions.get(session_token)
 
+    def start_local_scan_background(self, session_token: str):
+        """
+        Execute real, non-mock hardware diagnostics on the host system asynchronously.
+        Streams subsystem status into session progress, then saves the complete report.
+        Runs in parallel across subsystems in ~5-8 seconds.
+        """
+        import threading
+
+        with self._lock:
+            session = self._sessions.get(session_token)
+            if not session:
+                now = datetime.now(timezone.utc)
+                session = {
+                    "session_token": session_token,
+                    "product_id": "default",
+                    "status": "RUNNING",
+                    "created_at": now.isoformat(),
+                    "expires_at": (now + timedelta(hours=2)).isoformat(),
+                    "subsystems_progress": {},
+                    "report": None,
+                }
+                self._sessions[session_token] = session
+            session["status"] = "RUNNING"
+            for k in [
+                "battery", "ssd", "ram", "thermals", "cpu", "display", "keyboard", "chassis", "system"
+            ]:
+                session.setdefault("subsystems_progress", {})[k] = "Pending"
+
+        def _worker():
+            try:
+                import sys
+                import os
+
+                root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../"))
+                if root_dir not in sys.path:
+                    sys.path.insert(0, root_dir)
+
+                from diagnostics_agent.os_detect import detect_os
+                from diagnostics_agent.collector import StructuredCollector
+
+                os_info = detect_os()
+                collector = StructuredCollector(os_info)
+
+                def on_progress(key: str, status: str, details: Dict[str, Any]):
+                    with self._lock:
+                        sess = self._sessions.get(session_token)
+                        if sess:
+                            if status == "Running":
+                                display_status = "Running"
+                                sess["status"] = "RUNNING"
+                            elif status == "PASSED":
+                                display_status = "Passed"
+                            else:
+                                display_status = "Fault Detected"
+                            sess.setdefault("subsystems_progress", {})[key] = display_status
+
+                results = collector.collect_all(progress_cb=on_progress)
+                submit_data = DiagnosticSessionSubmit(**results)
+                self.submit_session(session_token, submit_data)
+            except Exception as e:
+                import traceback
+                print(f"[ReLoop] Error in background local diagnostic scan: {e}")
+                traceback.print_exc()
+                with self._lock:
+                    sess = self._sessions.get(session_token)
+                    if sess:
+                        sess["status"] = "FAILED"
+                        sess["error"] = str(e)
+
+        thread = threading.Thread(target=_worker, daemon=True)
+        thread.start()
+
     def submit_session(
         self, session_token: str, data: DiagnosticSessionSubmit
     ) -> DiagnosticSessionReport:

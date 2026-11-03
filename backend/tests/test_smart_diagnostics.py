@@ -241,3 +241,21 @@ def test_agent_download_endpoint():
     res = client.get("/api/diagnostics/agent/download")
     assert res.status_code == 200
     assert "ReLoop AI" in res.text or "diagnostics_agent" in res.text
+
+
+def test_run_local_diagnostic_scan():
+    # 1. Create a session
+    res = client.post("/api/diagnostics/session", json={"product_id": "prod-local-001"})
+    assert res.status_code == 200
+    token = res.json()["session_token"]
+
+    # 2. Trigger local scan endpoint
+    scan_res = client.post(f"/api/diagnostics/session/{token}/run-local")
+    assert scan_res.status_code == 200
+    assert scan_res.json()["status"] == "RUNNING"
+    assert scan_res.json()["session_token"] == token
+
+    # 3. Verify status polling shows running or completed
+    status_res = client.get(f"/api/diagnostics/session/{token}/status")
+    assert status_res.status_code == 200
+    assert status_res.json()["status"] in ["RUNNING", "COMPLETED"]
