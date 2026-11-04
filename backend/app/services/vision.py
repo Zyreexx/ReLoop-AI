@@ -994,7 +994,7 @@ class VisionService:
         """
         product = store.get_product(product_id)
         if not product and db:
-            product = product_repo.get(db, product_id)
+            product = product_repo.get_by_id(db, product_id)
 
         if not product:
             raise AppError(
