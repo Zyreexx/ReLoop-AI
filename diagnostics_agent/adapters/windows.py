@@ -119,6 +119,34 @@ class WindowsAdapter(BaseDiagnosticAdapter):
             full_cap = design_cap
 
         health_pct = round((full_cap / design_cap) * 100.0, 1)
+
+        # Query live discharge rate and cell voltage from ACPI
+        discharge_w: Optional[float] = None
+        voltage_v: Optional[float] = None
+        try:
+            batt_wmi = self._run_ps_json(
+                "Get-CimInstance -Namespace root/wmi -ClassName BatteryStatus -ErrorAction SilentlyContinue | Select-Object DischargeRate, Voltage, PowerOnline"
+            )
+            if isinstance(batt_wmi, dict):
+                dr = batt_wmi.get("DischargeRate")
+                volt = batt_wmi.get("Voltage")
+                if dr is not None and float(dr) > 0:
+                    discharge_w = round(float(dr) / 1000.0, 2)
+                if volt is not None and float(volt) > 0:
+                    voltage_v = round(float(volt) / 1000.0, 2)
+        except Exception:
+            pass
+
+        if not voltage_v:
+            try:
+                cim_volt = self._run_ps_json(
+                    "Get-CimInstance Win32_Battery | Select-Object -ExpandProperty DesignVoltage -ErrorAction SilentlyContinue"
+                )
+                if cim_volt and float(cim_volt) > 0:
+                    voltage_v = round(float(cim_volt) / 1000.0, 2)
+            except Exception:
+                pass
+
         faults: List[str] = []
 
         if health_pct < 50.0:
@@ -149,6 +177,8 @@ class WindowsAdapter(BaseDiagnosticAdapter):
                 "full_charge_capacity_mwh": full_cap,
                 "cycle_count": cycles or 0,
                 "health_percentage": health_pct,
+                "discharge_rate_w": discharge_w,
+                "voltage_v": voltage_v,
             },
             "source": "Windows PowerCfg & ACPI Battery Diagnostic",
             "observations": [
@@ -272,6 +302,19 @@ class WindowsAdapter(BaseDiagnosticAdapter):
                     has_memory_fault = True
                     faults.append(f"WHEA hardware memory fault logged: {err.get('Message')}")
 
+        active_ram_pct: Optional[float] = None
+        try:
+            os_mem = self._run_ps_json(
+                "Get-CimInstance Win32_OperatingSystem | Select-Object TotalVisibleMemorySize, FreePhysicalMemory"
+            )
+            if isinstance(os_mem, dict) and os_mem.get("TotalVisibleMemorySize") and os_mem.get("FreePhysicalMemory"):
+                tot = float(os_mem["TotalVisibleMemorySize"])
+                free = float(os_mem["FreePhysicalMemory"])
+                if tot > 0:
+                    active_ram_pct = round(((tot - free) / tot) * 100.0, 1)
+        except Exception:
+            pass
+
         if has_memory_fault:
             status = "FAULT_DETECTED"
             comp_status = "REPLACE"
@@ -292,6 +335,7 @@ class WindowsAdapter(BaseDiagnosticAdapter):
                 "total_slots": total_slots,
                 "memory_test_status": "FAIL" if has_memory_fault else "PASS",
                 "test_result": "FAIL" if has_memory_fault else "PASS",
+                "active_ram_pct": active_ram_pct,
             },
             "source": "Windows SMBIOS Physical Memory Telemetry",
             "observations": [
@@ -368,7 +412,7 @@ class WindowsAdapter(BaseDiagnosticAdapter):
         Query CPU specifications and verify core integrity.
         """
         cpu_data = self._run_ps_json(
-            "Get-CimInstance Win32_Processor | Select-Object Name, NumberOfCores, NumberOfLogicalProcessors, MaxClockSpeed, Status"
+            "Get-CimInstance Win32_Processor | Select-Object Name, NumberOfCores, NumberOfLogicalProcessors, MaxClockSpeed, LoadPercentage, Status"
         )
         if not cpu_data:
             return self._default_unknown("cpu", "Processor telemetry could not be queried.")
@@ -397,6 +441,7 @@ class WindowsAdapter(BaseDiagnosticAdapter):
                 "threads": threads,
                 "base_clock_mhz": clock_mhz,
                 "status": status_raw,
+                "load_percentage": cpu_data.get("LoadPercentage", 15) if isinstance(cpu_data, dict) else 15,
             },
             "source": "Windows Processor CIM Interface",
             "observations": [

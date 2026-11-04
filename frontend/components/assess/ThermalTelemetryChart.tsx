@@ -217,6 +217,13 @@ const CATEGORIES: Record<TelemetryCategory, CategoryConfig> = {
 export interface ThermalTelemetryChartProps {
   initialBaseTemp?: number;
   initialMaxTemp?: number;
+  batteryHealth?: number;
+  batteryVoltage?: number;
+  batteryWattage?: number;
+  ssdHealth?: number;
+  ramCapacityGB?: number;
+  ramActivePercent?: number;
+  cpuLoadPercent?: number;
   hardwareModel?: string;
   isLive?: boolean;
   telemetryData?: TelemetryPoint[];
@@ -225,6 +232,13 @@ export interface ThermalTelemetryChartProps {
 export default function ThermalTelemetryChart({
   initialBaseTemp = 42,
   initialMaxTemp = 48,
+  batteryHealth,
+  batteryVoltage,
+  batteryWattage,
+  ssdHealth,
+  ramCapacityGB,
+  ramActivePercent,
+  cpuLoadPercent,
   hardwareModel = "Hardware Sensor Bus",
   isLive = false,
   telemetryData,
@@ -295,13 +309,21 @@ export default function ThermalTelemetryChart({
     const now = Date.now();
     const intervalMs = 100;
 
+    // Resolve dynamic baselines from genuine hardware telemetry
+    const baseBatteryHealth = batteryHealth !== undefined && batteryHealth > 0 ? batteryHealth : 80.0;
+    const baseBatteryWattage = batteryWattage !== undefined && batteryWattage > 0 ? batteryWattage : 14.5;
+    const baseBatteryVoltage = batteryVoltage !== undefined && batteryVoltage > 0 ? batteryVoltage : 15.3;
+    const baseSsdHealth = ssdHealth !== undefined && ssdHealth > 0 ? ssdHealth : 95.0;
+    const baseCpuLoad = cpuLoadPercent !== undefined && cpuLoadPercent > 0 ? cpuLoadPercent : 15.0;
+    const baseRamActive = ramActivePercent !== undefined && ramActivePercent > 0 ? ramActivePercent : 42.0;
+
     // Seed battery
     const battery: Array<[number, number, number, number]> = [];
     for (let i = maxSamples - 1; i >= 0; i--) {
       const t = now - i * intervalMs;
-      const retention = 40.6 + Math.sin(i * 0.02) * 0.1;
-      const draw = 14.5 + Math.sin(i * 0.1) * 1.8 + Math.random() * 0.5;
-      const voltage = 11.2 + Math.cos(i * 0.05) * 0.08;
+      const retention = baseBatteryHealth + Math.sin(i * 0.02) * 0.1;
+      const draw = baseBatteryWattage + Math.sin(i * 0.1) * 1.5 + Math.random() * 0.5;
+      const voltage = baseBatteryVoltage + Math.cos(i * 0.05) * 0.05;
       battery.push([t, retention, draw, voltage]);
     }
     historyRef.current.battery = battery;
@@ -310,9 +332,9 @@ export default function ThermalTelemetryChart({
     const storage: Array<[number, number, number, number]> = [];
     for (let i = maxSamples - 1; i >= 0; i--) {
       const t = now - i * intervalMs;
-      const smart = 95.0;
-      const read = Math.max(0, 45 + Math.sin(i * 0.1) * 35 + Math.random() * 20);
-      const write = Math.max(0, 18 + Math.cos(i * 0.12) * 15 + Math.random() * 10);
+      const smart = baseSsdHealth;
+      const read = Math.max(0, 35 + Math.sin(i * 0.1) * 25 + Math.random() * 15);
+      const write = Math.max(0, 15 + Math.cos(i * 0.12) * 12 + Math.random() * 8);
       storage.push([t, smart, read, write]);
     }
     historyRef.current.storage = storage;
@@ -321,13 +343,13 @@ export default function ThermalTelemetryChart({
     const compute: Array<[number, number, number, number]> = [];
     for (let i = maxSamples - 1; i >= 0; i--) {
       const t = now - i * intervalMs;
-      const cpuUtil = Math.max(4, Math.min(95, 12 + Math.sin(i * 0.1) * 6 + Math.random() * 4));
-      const ramUtil = 38.5 + Math.sin(i * 0.02) * 0.5;
-      const bus = 8 + Math.cos(i * 0.1) * 3;
+      const cpuUtil = Math.max(4, Math.min(99, baseCpuLoad + Math.sin(i * 0.1) * 5 + Math.random() * 3));
+      const ramUtil = baseRamActive + Math.sin(i * 0.02) * 0.4;
+      const bus = Math.max(2, Math.min(100, Math.round(baseCpuLoad * 0.6) + Math.cos(i * 0.1) * 3));
       compute.push([t, cpuUtil, ramUtil, bus]);
     }
     historyRef.current.compute = compute;
-  }, [initialBaseTemp, telemetryData]);
+  }, [initialBaseTemp, batteryHealth, batteryVoltage, batteryWattage, ssdHealth, ramActivePercent, cpuLoadPercent, telemetryData]);
 
   // High-frequency telemetry generator (updates 20 times per second for smooth glide)
   useEffect(() => {
@@ -357,18 +379,26 @@ export default function ThermalTelemetryChart({
         th.push([now, cpuTarget, gpuTarget, fanTarget]);
       }
 
+      // Dynamic baseline targets from hardware telemetry
+      const baseBatteryHealth = batteryHealth !== undefined && batteryHealth > 0 ? batteryHealth : 80.0;
+      const baseBatteryWattage = batteryWattage !== undefined && batteryWattage > 0 ? batteryWattage : 14.5;
+      const baseBatteryVoltage = batteryVoltage !== undefined && batteryVoltage > 0 ? batteryVoltage : 15.3;
+      const baseSsdHealth = ssdHealth !== undefined && ssdHealth > 0 ? ssdHealth : 95.0;
+      const baseCpuLoad = cpuLoadPercent !== undefined && cpuLoadPercent > 0 ? cpuLoadPercent : 15.0;
+      const baseRamActive = ramActivePercent !== undefined && ramActivePercent > 0 ? ramActivePercent : 42.0;
+
       // Update Battery
       const bat = historyRef.current.battery;
       if (bat.length > 0) {
-        let drawTarget = 14.2;
-        let voltTarget = 11.24;
-        const retention = 40.6;
+        let drawTarget = baseBatteryWattage;
+        let voltTarget = baseBatteryVoltage;
+        const retention = baseBatteryHealth;
         if (isSim) {
-          drawTarget = 48.5 + Math.sin(stepCount * 0.2) * 3.5;
-          voltTarget = 10.85 + Math.cos(stepCount * 0.1) * 0.1;
+          drawTarget = Math.min(60, baseBatteryWattage * 2.5 + 20) + Math.sin(stepCount * 0.2) * 3.5;
+          voltTarget = Math.max(9.0, baseBatteryVoltage - 0.4) + Math.cos(stepCount * 0.1) * 0.1;
         } else {
-          drawTarget = 13.5 + Math.sin(stepCount * 0.05) * 1.2;
-          voltTarget = 11.25 + Math.cos(stepCount * 0.03) * 0.05;
+          drawTarget = baseBatteryWattage + Math.sin(stepCount * 0.05) * 1.2;
+          voltTarget = baseBatteryVoltage + Math.cos(stepCount * 0.03) * 0.04;
         }
         bat.shift();
         bat.push([now, retention, drawTarget, voltTarget]);
@@ -387,23 +417,23 @@ export default function ThermalTelemetryChart({
           writeTarget = Math.max(0, 15 + Math.cos(stepCount * 0.06) * 12);
         }
         stor.shift();
-        stor.push([now, 95.0, readTarget, writeTarget]);
+        stor.push([now, baseSsdHealth, readTarget, writeTarget]);
       }
 
       // Update Compute
       const cmp = historyRef.current.compute;
       if (cmp.length > 0) {
-        let cpuTarget = 14.0;
-        let ramTarget = 38.5;
-        let busTarget = 9.0;
+        let cpuTarget = baseCpuLoad;
+        let ramTarget = baseRamActive;
+        let busTarget = Math.max(2, Math.min(100, Math.round(baseCpuLoad * 0.6)));
         if (isSim) {
-          cpuTarget = 88.5 + Math.sin(stepCount * 0.35) * 7.0;
-          ramTarget = 54.0 + Math.sin(stepCount * 0.05) * 1.5;
-          busTarget = 74.0 + Math.cos(stepCount * 0.25) * 6.0;
+          cpuTarget = 92.5 + Math.sin(stepCount * 0.35) * 5.0;
+          ramTarget = Math.min(95, baseRamActive + 15) + Math.sin(stepCount * 0.05) * 1.5;
+          busTarget = 78.0 + Math.cos(stepCount * 0.25) * 6.0;
         } else {
-          cpuTarget = Math.max(4, 12.0 + Math.sin(stepCount * 0.06) * 4.5);
-          ramTarget = 38.5 + Math.sin(stepCount * 0.02) * 0.4;
-          busTarget = 8.5 + Math.cos(stepCount * 0.05) * 2.0;
+          cpuTarget = Math.max(4, baseCpuLoad + Math.sin(stepCount * 0.06) * 3.5);
+          ramTarget = baseRamActive + Math.sin(stepCount * 0.02) * 0.3;
+          busTarget = Math.max(2, Math.min(100, Math.round(baseCpuLoad * 0.6) + Math.cos(stepCount * 0.05) * 1.5));
         }
         cmp.shift();
         cmp.push([now, cpuTarget, ramTarget, busTarget]);
@@ -411,7 +441,7 @@ export default function ThermalTelemetryChart({
     }, 50); // 20 updates/sec
 
     return () => clearInterval(ticker);
-  }, [initialBaseTemp, telemetryData]);
+  }, [initialBaseTemp, batteryHealth, batteryVoltage, batteryWattage, ssdHealth, ramActivePercent, cpuLoadPercent, telemetryData]);
 
   // Handle simulation toggle
   const handleSimulateAction = () => {

@@ -674,6 +674,15 @@ export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
               {/* Thermal Telemetry & Sensor History Graph */}
               <ThermalTelemetryChart
                 hardwareModel={`${manufacturer} ${confirmedModelName}`}
+                initialBaseTemp={sessionReport?.subsystems?.thermals?.evidence?.cpu_idle_temp_c || (cpuTemp > 0 ? cpuTemp : 42)}
+                initialMaxTemp={sessionReport?.subsystems?.thermals?.evidence?.max_temp_c || (cpuTemp > 0 ? cpuTemp : 48)}
+                batteryHealth={sessionReport?.subsystems?.battery?.evidence?.health_percentage ?? (calculatedBatteryHealth > 0 ? calculatedBatteryHealth : undefined)}
+                batteryVoltage={sessionReport?.subsystems?.battery?.evidence?.voltage_v}
+                batteryWattage={sessionReport?.subsystems?.battery?.evidence?.discharge_rate_w}
+                ssdHealth={sessionReport?.subsystems?.ssd?.evidence?.health_percentage ?? (ssdHealth > 0 ? ssdHealth : undefined)}
+                ramCapacityGB={sessionReport?.subsystems?.ram?.evidence?.installed_gb ?? (ramCapacity > 0 ? ramCapacity : undefined)}
+                ramActivePercent={sessionReport?.subsystems?.ram?.evidence?.active_ram_pct}
+                cpuLoadPercent={sessionReport?.subsystems?.cpu?.evidence?.load_percentage}
                 isLive={sessionStatus === "RUNNING"}
               />
 
@@ -818,8 +827,15 @@ export const DiagnosticsStep: React.FC<DiagnosticsStepProps> = ({
 
               {/* Thermal Telemetry & Sensor History Graph */}
               <ThermalTelemetryChart
-                initialBaseTemp={sessionReport?.subsystems?.thermals?.evidence?.cpu_idle_temp_c || 42}
-                initialMaxTemp={sessionReport?.subsystems?.thermals?.evidence?.max_temp_c || 48}
+                initialBaseTemp={sessionReport?.subsystems?.thermals?.evidence?.cpu_idle_temp_c || (cpuTemp > 0 ? cpuTemp : 42)}
+                initialMaxTemp={sessionReport?.subsystems?.thermals?.evidence?.max_temp_c || (cpuTemp > 0 ? cpuTemp : 48)}
+                batteryHealth={sessionReport?.subsystems?.battery?.evidence?.health_percentage ?? (calculatedBatteryHealth > 0 ? calculatedBatteryHealth : undefined)}
+                batteryVoltage={sessionReport?.subsystems?.battery?.evidence?.voltage_v}
+                batteryWattage={sessionReport?.subsystems?.battery?.evidence?.discharge_rate_w}
+                ssdHealth={sessionReport?.subsystems?.ssd?.evidence?.health_percentage ?? (ssdHealth > 0 ? ssdHealth : undefined)}
+                ramCapacityGB={sessionReport?.subsystems?.ram?.evidence?.installed_gb ?? (ramCapacity > 0 ? ramCapacity : undefined)}
+                ramActivePercent={sessionReport?.subsystems?.ram?.evidence?.active_ram_pct}
+                cpuLoadPercent={sessionReport?.subsystems?.cpu?.evidence?.load_percentage}
                 hardwareModel={`${manufacturer} ${confirmedModelName}`}
                 isLive={false}
               />

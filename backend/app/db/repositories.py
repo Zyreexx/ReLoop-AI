@@ -103,6 +103,9 @@ class ProductRepository:
             return None
         return ProductRepository._to_schema(entity)
 
+    # Convenience alias
+    get = get_by_id
+
     @staticmethod
     def _to_schema(entity: ProductModel) -> Product:
         specs_obj = ProductSpecs(**(entity.specs or {})) if entity.specs else ProductSpecs()
