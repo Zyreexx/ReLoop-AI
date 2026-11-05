@@ -1,4 +1,16 @@
 "use client";
+const cleanFindingDesc = (desc: string) => {
+  if (!desc) return "";
+  return desc
+    .replace(/\s*\(Optical Inspection\s*\([^\)]*\)\)/gi, "")
+    .replace(/\s*\(Optical Inspection[^\)]*\)/gi, "")
+    .replace(/WhatsApp_Image_[^\s,\)]+/gi, "")
+    .replace(/\(\s*\)/g, "")
+    .replace(/^Optical analysis:\s*/gi, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+};
+
 
 import React, { useState } from "react";
 import { DiagnosticData, UserSymptomsData, VisualInspectionData } from "@/types/assessment";
@@ -101,7 +113,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
                         <span className="font-bold capitalize text-[#1D1D1F] mr-2">
                           {localizeComponentName(finding.component.toLowerCase(), language)}:
                         </span>
-                        <span className="text-[#6E6E73]">{localizeObservation(finding.description, language)}</span>
+                        <span className="text-[#6E6E73]">{localizeObservation(cleanFindingDesc(finding.description), language)}</span>
                       </div>
                       <span className={`text-[10px] font-mono uppercase px-2 py-0.5 rounded font-bold border shrink-0 ${badgeColor}`}>
                         {sev}
@@ -134,7 +146,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
                           <span className="font-bold capitalize text-[#1D1D1F] mr-2">
                             {localizeComponentName(obs.component, language)}:
                           </span>
-                          <span className="text-[#6E6E73]">{localizeObservation(obs.observation, language)}</span>
+                          <span className="text-[#6E6E73]">{localizeObservation(cleanFindingDesc(obs.observation), language)}</span>
                         </div>
                         <span className={`text-[10px] font-mono uppercase px-2 py-0.5 rounded font-bold border shrink-0 ${badgeColor}`}>
                           {sev}
@@ -174,7 +186,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
                         <span className="font-bold capitalize text-[#1D1D1F] mr-2">
                           {localizeComponentName(obs.component, language)}:
                         </span>
-                        <span className="text-[#6E6E73]">{localizeObservation(obs.observation, language)}</span>
+                        <span className="text-[#6E6E73]">{localizeObservation(cleanFindingDesc(obs.observation), language)}</span>
                       </div>
                       <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-blue-50 text-blue-700 font-bold shrink-0 border border-blue-200">
                         {t("provenance.modelCue", "MODEL CUE")}

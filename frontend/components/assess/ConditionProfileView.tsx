@@ -147,19 +147,34 @@ export const ConditionProfileView: React.FC<ConditionProfileViewProps> = ({
     return Array.from(map.values());
   };
 
-  // Clean redundant trailing source tags from summary descriptions
+  // Clean redundant trailing source tags and raw image filenames from summary descriptions
   const cleanSummaryText = (text: string): string => {
     if (!text) return "";
     let cleaned = text
-      .replace(
-        /\s*\((?:Optical Inspection|OS Battery|Storage Controller|UEFI|Hardware Specification|User Diagnostic|MemTest)[^)]*\)\.?$/gi,
-        ""
-      )
+      .replace(/\s*\(Optical Inspection\s*\([^\)]*\)\)/gi, "")
+      .replace(/\s*\(Optical Inspection[^\)]*\)/gi, "")
+      .replace(/WhatsApp_Image_[^\s,\)]+/gi, "")
+      .replace(/\s*\((?:OS Battery|Storage Controller|UEFI|Hardware Specification|User Diagnostic|MemTest)[^)]*\)\.?$/gi, "")
+      .replace(/\(\s*\)/g, "")
+      .replace(/^Optical analysis:\s*/gi, "")
+      .replace(/\s{2,}/g, " ")
       .trim();
     if (cleaned && !cleaned.endsWith(".") && !cleaned.endsWith("!") && !cleaned.endsWith("?")) {
       cleaned += ".";
     }
     return cleaned;
+  };
+
+  const cleanEvidenceText = (text: string): string => {
+    if (!text) return "";
+    return text
+      .replace(/\s*\(Optical Inspection\s*\([^\)]*\)\)/gi, "")
+      .replace(/\s*\(Optical Inspection[^\)]*\)/gi, "")
+      .replace(/WhatsApp_Image_[^\s,\)]+/gi, "")
+      .replace(/\(\s*\)/g, "")
+      .replace(/^Optical analysis:\s*/gi, "")
+      .replace(/\s{2,}/g, " ")
+      .trim();
   };
 
   // Clean status label so it doesn't duplicate the status pill badge
@@ -282,7 +297,7 @@ export const ConditionProfileView: React.FC<ConditionProfileViewProps> = ({
                         className="text-xs text-[#6E6E73] flex items-start gap-1.5"
                       >
                         <span className="text-[#0071E3] font-bold mt-0.5">•</span>
-                        <span>{localizeEvidenceText(ev.text, language)}</span>
+                        <span>{localizeEvidenceText(cleanEvidenceText(ev.text), language)}</span>
                       </div>
                     ))}
                   </div>
