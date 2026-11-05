@@ -59,6 +59,28 @@ export interface ProductIdentifyResponse {
   is_laptop?: boolean;
   device_category?: string;
   allow_manual_selection?: boolean;
+  display_faults?: string[];
+  keyboard_faults?: string[];
+  port_faults?: string[];
+  chassis_faults?: string[];
+  components_inspected_clean?: string[];
+  components_not_assessable?: string[];
+  visible_observations?: Array<{
+    id: string;
+    component: "chassis" | "display" | "keyboard" | "hinge" | "ports" | "trackpad";
+    condition: "no_visible_damage" | "minor_wear" | "surface_scratches" | "loose_part" | "visible_crack" | "missing_key" | "port_damage";
+    observation: string;
+    confidence: number;
+    severity?: "NONE" | "LOW" | "MODERATE" | "HIGH" | "CRITICAL";
+    source?: "DAMAGE_ANALYSIS" | "MODEL_IDENTIFICATION" | "USER_REPORTED";
+  }>;
+  damage_findings?: Array<{
+    component: string;
+    description: string;
+    severity: string;
+    confidence?: number;
+  }>;
+  overall_visual_condition?: string;
 }
 
 export async function identifyProduct(

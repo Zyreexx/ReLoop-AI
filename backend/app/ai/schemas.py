@@ -23,6 +23,12 @@ class OpenIdentificationOutput(BaseModel):
     contradictions: List[str] = Field(default_factory=list, description="Visual contradictions or mismatching indicators")
     model_confidence: float = Field(0.0, ge=0.0, le=1.0, description="Advisory raw model confidence score")
     candidate_id: Optional[str] = Field(None, description="Optional legacy candidate ID or 'UNKNOWN'")
+    display_cracks: List[str] = Field(default_factory=list, description="Directly visible display glass hairline cracks, panel fractures, shattered glass, or deep screen scratches observed in the photos")
+    keyboard_faults: List[str] = Field(default_factory=list, description="Missing keycaps, loose keys, detached scissor switches, or broken keys observed in the photos")
+    port_faults: List[str] = Field(default_factory=list, description="Damaged charging ports (USB-C/barrel/MagSafe), bent pins, broken tongues, debris blockage, or cracked port bezels observed in the photos")
+    chassis_faults: List[str] = Field(default_factory=list, description="Structural casing cracks, corner casing splits, deep dents, hinge damage, or visible battery bulge observed in the photos")
+    components_inspected_clean: List[str] = Field(default_factory=list, description="Components from ['display', 'keyboard', 'ports', 'chassis'] that are clearly visible in the photos with NO physical defects")
+    components_not_assessable: List[str] = Field(default_factory=list, description="Components from ['display', 'keyboard', 'ports', 'chassis'] that are not clearly visible or too blurry in the provided photos")
 
 
 # Backwards compatibility alias

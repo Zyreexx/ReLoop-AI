@@ -74,6 +74,12 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
   const [visibleObservations, setVisibleObservations] = useState<VisualObservation[]>(
     initialData?.visibleObservations || []
   );
+  const [damageFindings, setDamageFindings] = useState<any[]>(
+    initialData?.damageFindings || []
+  );
+  const [overallVisualCondition, setOverallVisualCondition] = useState<string>(
+    initialData?.overallVisualCondition || "GOOD"
+  );
 
   const [obsFilter, setObsFilter] = useState<"all" | "wear" | "intact">("all");
 
@@ -295,16 +301,19 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
           visible_label_text: result.visible_label_text || null,
         });
 
-        const observations: VisualObservation[] = (result.visual_clues || []).map(
-          (clue: string, idx: number) => ({
-            id: `vis-gemini-${idx}`,
-            component: "chassis" as const,
-            condition: "no_visible_damage" as const,
-            observation: clue,
-            confidence: result.confidence || 0.9,
-            source: "MODEL_IDENTIFICATION" as const,
-          })
-        );
+        // Prioritize dynamic fault observations from genuine photo inspection (display cracks, loose keys, port defects)
+        const observations: VisualObservation[] = (result.visible_observations && result.visible_observations.length > 0)
+          ? (result.visible_observations as VisualObservation[])
+          : (result.visual_clues || []).map(
+              (clue: string, idx: number) => ({
+                id: `vis-gemini-${idx}`,
+                component: "chassis" as const,
+                condition: "no_visible_damage" as const,
+                observation: clue,
+                confidence: result.confidence || 0.9,
+                source: "MODEL_IDENTIFICATION" as const,
+              })
+            );
 
         if (observations.length === 0) {
           observations.push({
@@ -318,6 +327,12 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
         }
 
         setVisibleObservations(observations);
+        if (result.damage_findings) {
+          setDamageFindings(result.damage_findings);
+        }
+        if (result.overall_visual_condition) {
+          setOverallVisualCondition(result.overall_visual_condition);
+        }
         setErrorMsg(null);
         setShowModelPicker(false);
         setAnalyzed(true);
@@ -411,15 +426,18 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
     const updatedProduct = { ...identifiedProduct, confirmed: true };
     setIdentifiedProduct(updatedProduct);
 
+    const hasSevereOrModerate = visibleObservations.some(isObservationWear);
+    const finalOverallCondition = overallVisualCondition || (hasSevereOrModerate ? "SERVICE_REQUIRED" : "GOOD");
+
     onComplete({
       images,
       rawFiles,
       identifiedProduct: updatedProduct,
       visibleObservations,
-      damageFindings: initialData?.damageFindings,
-      overallVisualCondition: initialData?.overallVisualCondition,
-      damageAnalysisCompleted: initialData?.damageAnalysisCompleted,
-      visualAnalysisStatus: initialData?.visualAnalysisStatus,
+      damageFindings: damageFindings.length > 0 ? damageFindings : initialData?.damageFindings,
+      overallVisualCondition: finalOverallCondition,
+      damageAnalysisCompleted: true,
+      visualAnalysisStatus: "COMPLETED",
     });
   };
 

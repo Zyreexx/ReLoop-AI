@@ -42,7 +42,7 @@ export type EvidenceSourceType = "VISUAL" | "DIAGNOSTIC" | "USER_REPORTED";
 export type VisualObservation = {
   id: string;
   component: "chassis" | "display" | "keyboard" | "hinge" | "ports" | "trackpad";
-  condition: "no_visible_damage" | "minor_wear" | "surface_scratches" | "loose_part" | "visible_crack" | "missing_key";
+  condition: "no_visible_damage" | "minor_wear" | "surface_scratches" | "loose_part" | "visible_crack" | "missing_key" | "port_damage";
   observation: string;
   confidence: number;
   severity?: "NONE" | "LOW" | "MODERATE" | "HIGH" | "CRITICAL";

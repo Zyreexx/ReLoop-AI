@@ -243,9 +243,20 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
   const keyboardStatusStr = keyboardIsFault ? "FAULT" : (hasLooseKeys ? "WEAR" : "PASS");
 
   const displayFinding = assessment?.visual?.findings?.find((f: any) => f.component?.toLowerCase() === "display");
+  const displayObs = assessment?.visual?.visibleObservations?.find((o: any) => o.component?.toLowerCase() === "display");
   const hasDisplayDamage = Boolean(
-    (displayFinding && /crack|shatter|dead pixel|bleed/i.test(displayFinding.description || "") && displayFinding.severity !== "NONE") ||
+    (displayFinding && /crack|shatter|dead pixel|bleed|scratch|damage/i.test(displayFinding.description || "") && displayFinding.severity !== "NONE") ||
+    (displayObs && /crack|shatter|dead pixel|bleed|scratch|damage/i.test(displayObs.observation || "") && displayObs.condition !== "no_visible_damage") ||
     assessment?.diagnostics?.agentReport?.subsystems?.display?.status === "FAULT_DETECTED"
+  );
+
+  const portFinding = assessment?.visual?.findings?.find((f: any) => f.component?.toLowerCase()?.includes("port"));
+  const portObs = assessment?.visual?.visibleObservations?.find((o: any) => o.component?.toLowerCase()?.includes("port"));
+  const portAgent = assessment?.diagnostics?.agentReport?.subsystems?.ports;
+  const hasPortDamage = Boolean(
+    (portFinding && /damage|bent|broken|debris|obstruction/i.test(portFinding.description || "") && portFinding.severity !== "NONE") ||
+    (portObs && /damage|bent|broken|debris|obstruction/i.test(portObs.observation || "") && portObs.condition !== "no_visible_damage") ||
+    (portAgent?.faults && portAgent.faults.some((f: any) => /damage|bent|broken|debris/i.test(typeof f === "string" ? f : f.description || "")))
   );
 
   // Build specific detected issues from genuine assessment data
@@ -756,10 +767,10 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
         },
         {
           name: "6. Ports & System I/O",
-          metric: "Type-C / HDMI / USB",
-          status: "PASS",
-          note: "Clean electrical bus contacts; all ports operational",
-          isAlert: false,
+          metric: hasPortDamage ? "Port Damage / Debris" : "Type-C / HDMI / USB",
+          status: hasPortDamage ? "FAULT" : "PASS",
+          note: hasPortDamage ? "Visual damage or debris obstruction detected on external I/O ports" : "Clean electrical bus contacts; all ports operational",
+          isAlert: hasPortDamage,
         },
         {
           name: "7. Keyboard & Deck",
@@ -1465,15 +1476,15 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
               <div className="p-3 rounded-xl bg-[#F5F5F7] dark:bg-slate-800/60 border border-[#E5E5E7]/60 dark:border-slate-700/60">
                 <div className="flex items-center justify-between text-[#6E6E73] dark:text-slate-400 mb-1">
                   <div className="flex items-center gap-1.5">
-                    <Plug size={13} className="text-[#0071E3]" />
+                    <Plug size={13} className={hasPortDamage ? "text-[#FF3B30]" : "text-[#0071E3]"} />
                     <span className="text-[10px] font-bold uppercase">{localizeComponentName("ports & i/o", language)}</span>
                   </div>
-                  <span className="text-[10px] font-bold uppercase text-[#34C759]">
-                    {localizeStatus("PASS", language)}
+                  <span className={`text-[10px] font-bold uppercase ${hasPortDamage ? "text-[#FF3B30]" : "text-[#34C759]"}`}>
+                    {localizeStatus(hasPortDamage ? "FAULT" : "PASS", language)}
                   </span>
                 </div>
                 <div className="text-sm font-bold text-[#1D1D1F] dark:text-white">
-                  Ports & I/O <span className="text-[11px] font-normal text-[#86868B] dark:text-slate-400">(Clean)</span>
+                  Ports & I/O <span className="text-[11px] font-normal text-[#86868B] dark:text-slate-400">({hasPortDamage ? "Damage Detected" : "Clean"})</span>
                 </div>
               </div>
 

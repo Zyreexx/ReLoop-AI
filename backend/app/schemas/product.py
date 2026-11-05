@@ -4,7 +4,7 @@ Product: id, manufacturer, model, model_year, category, serial_or_identifier, ag
 And section 9 endpoint contracts.
 """
 from datetime import datetime, timezone
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Dict, Any
 from uuid import uuid4
 from pydantic import BaseModel, Field, model_validator
 from app.schemas.enums import DeviceCategory, ConfidenceLevel, IdentificationStatus
@@ -117,6 +117,15 @@ class ProductIdentifyResponse(BaseModel):
     is_laptop: bool = True
     device_category: Optional[str] = "LAPTOP"
     allow_manual_selection: bool = True
+    display_faults: List[str] = Field(default_factory=list)
+    keyboard_faults: List[str] = Field(default_factory=list)
+    port_faults: List[str] = Field(default_factory=list)
+    chassis_faults: List[str] = Field(default_factory=list)
+    components_inspected_clean: List[str] = Field(default_factory=list)
+    components_not_assessable: List[str] = Field(default_factory=list)
+    visible_observations: List[Dict[str, Any]] = Field(default_factory=list)
+    damage_findings: List[Dict[str, Any]] = Field(default_factory=list)
+    overall_visual_condition: str = "GOOD"
 
 
 

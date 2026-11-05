@@ -958,6 +958,181 @@ class VisionService:
             if not (m.manufacturer.lower() == candidate_obj.manufacturer.lower() and m.model.lower() == candidate_obj.model.lower())
         ][:3]
 
+        # Extract genuine optical defect observations across display, keyboard, ports, chassis
+        display_cracks = getattr(ai_res, "display_cracks", []) or []
+        keyboard_faults = getattr(ai_res, "keyboard_faults", []) or []
+        port_faults = getattr(ai_res, "port_faults", []) or []
+        chassis_faults = getattr(ai_res, "chassis_faults", []) or []
+        clean_comps = [str(c).strip().lower() for c in (getattr(ai_res, "components_inspected_clean", []) or [])]
+        not_assessable = [str(c).strip().lower() for c in (getattr(ai_res, "components_not_assessable", []) or [])]
+
+        visible_obs: List[Dict[str, Any]] = []
+        damage_findings: List[Dict[str, Any]] = []
+
+        # 1. Display observations from photo inspection
+        if display_cracks:
+            for idx, crack in enumerate(display_cracks):
+                visible_obs.append({
+                    "id": f"vis-disp-{idx+1}",
+                    "component": "display",
+                    "condition": "visible_crack",
+                    "severity": "HIGH",
+                    "observation": crack,
+                    "confidence": num_conf,
+                    "source": "DAMAGE_ANALYSIS",
+                })
+                damage_findings.append({
+                    "component": "display",
+                    "description": crack,
+                    "severity": "HIGH",
+                    "confidence": num_conf,
+                })
+        elif "display" in clean_comps:
+            clean_text = "Display glass and panel clearly visible with no cracks, fractures, or blemishes detected"
+            visible_obs.append({
+                "id": "vis-disp-clean",
+                "component": "display",
+                "condition": "no_visible_damage",
+                "severity": "NONE",
+                "observation": clean_text,
+                "confidence": num_conf,
+                "source": "DAMAGE_ANALYSIS",
+            })
+            damage_findings.append({
+                "component": "display",
+                "description": clean_text,
+                "severity": "NONE",
+                "confidence": num_conf,
+            })
+
+        # 2. Keyboard observations from photo inspection
+        if keyboard_faults:
+            for idx, k_fault in enumerate(keyboard_faults):
+                is_loose = any(w in k_fault.lower() for w in ["loose", "unseated", "wobbly", "detached"])
+                visible_obs.append({
+                    "id": f"vis-kb-{idx+1}",
+                    "component": "keyboard",
+                    "condition": "loose_part" if is_loose else "missing_key",
+                    "severity": "MODERATE",
+                    "observation": k_fault,
+                    "confidence": num_conf,
+                    "source": "DAMAGE_ANALYSIS",
+                })
+                damage_findings.append({
+                    "component": "keyboard",
+                    "description": k_fault,
+                    "severity": "MODERATE",
+                    "confidence": num_conf,
+                })
+        elif "keyboard" in clean_comps:
+            clean_text = "Keyboard layout clearly visible with all keycaps intact and aligned"
+            visible_obs.append({
+                "id": "vis-kb-clean",
+                "component": "keyboard",
+                "condition": "no_visible_damage",
+                "severity": "NONE",
+                "observation": clean_text,
+                "confidence": num_conf,
+                "source": "DAMAGE_ANALYSIS",
+            })
+            damage_findings.append({
+                "component": "keyboard",
+                "description": clean_text,
+                "severity": "NONE",
+                "confidence": num_conf,
+            })
+
+        # 3. Charging Port & I/O observations from photo inspection
+        if port_faults:
+            for idx, p_fault in enumerate(port_faults):
+                visible_obs.append({
+                    "id": f"vis-port-{idx+1}",
+                    "component": "ports",
+                    "condition": "port_damage",
+                    "severity": "MODERATE",
+                    "observation": p_fault,
+                    "confidence": num_conf,
+                    "source": "DAMAGE_ANALYSIS",
+                })
+                damage_findings.append({
+                    "component": "ports",
+                    "description": p_fault,
+                    "severity": "MODERATE",
+                    "confidence": num_conf,
+                })
+        elif "ports" in clean_comps:
+            clean_text = "Charging ports and external I/O clean with intact connectors and no visible pin damage"
+            visible_obs.append({
+                "id": "vis-ports-clean",
+                "component": "ports",
+                "condition": "no_visible_damage",
+                "severity": "NONE",
+                "observation": clean_text,
+                "confidence": num_conf,
+                "source": "DAMAGE_ANALYSIS",
+            })
+            damage_findings.append({
+                "component": "ports",
+                "description": clean_text,
+                "severity": "NONE",
+                "confidence": num_conf,
+            })
+
+        # 4. Chassis & Hinge observations from photo inspection
+        if chassis_faults:
+            for idx, c_fault in enumerate(chassis_faults):
+                is_crack = any(w in c_fault.lower() for w in ["crack", "fracture", "split", "broken", "shattered"])
+                visible_obs.append({
+                    "id": f"vis-chassis-{idx+1}",
+                    "component": "chassis",
+                    "condition": "visible_crack" if is_crack else "minor_wear",
+                    "severity": "HIGH" if is_crack else "LOW",
+                    "observation": c_fault,
+                    "confidence": num_conf,
+                    "source": "DAMAGE_ANALYSIS",
+                })
+                damage_findings.append({
+                    "component": "chassis",
+                    "description": c_fault,
+                    "severity": "HIGH" if is_crack else "LOW",
+                    "confidence": num_conf,
+                })
+        elif "chassis" in clean_comps:
+            clean_text = "Chassis casing and hinges clearly visible with solid structural integrity"
+            visible_obs.append({
+                "id": "vis-chassis-clean",
+                "component": "chassis",
+                "condition": "no_visible_damage",
+                "severity": "NONE",
+                "observation": clean_text,
+                "confidence": num_conf,
+                "source": "DAMAGE_ANALYSIS",
+            })
+            damage_findings.append({
+                "component": "chassis",
+                "description": clean_text,
+                "severity": "NONE",
+                "confidence": num_conf,
+            })
+
+        # 5. Model design visual clues
+        for idx, clue in enumerate(ai_res.visual_evidence or []):
+            if not any(clue.lower() in o.get("observation", "").lower() for o in visible_obs):
+                is_wear = any(w in clue.lower() for w in ["scratch", "scuff", "wear", "residue", "dent", "blemish"])
+                visible_obs.append({
+                    "id": f"vis-model-{idx+1}",
+                    "component": "chassis",
+                    "condition": "minor_wear" if is_wear else "no_visible_damage",
+                    "severity": "LOW" if is_wear else "NONE",
+                    "observation": clue,
+                    "confidence": num_conf,
+                    "source": "MODEL_IDENTIFICATION",
+                })
+
+        has_severe = any(f.get("severity") in ["HIGH", "CRITICAL"] for f in damage_findings)
+        has_moderate = any(f.get("severity") in ["MODERATE", "MEDIUM"] for f in damage_findings)
+        overall_visual = "SERVICE_REQUIRED" if (has_severe or has_moderate) else "GOOD"
+
         return ProductIdentifyResponse(
             status=IdentificationStatus.IDENTIFIED,
             identified_model=candidate_obj,
@@ -970,6 +1145,15 @@ class VisionService:
             label_evidence=ai_res.label_evidence,
             visual_evidence=ai_res.visual_evidence,
             contradictions=ai_res.contradictions,
+            display_faults=display_cracks,
+            keyboard_faults=keyboard_faults,
+            port_faults=port_faults,
+            chassis_faults=chassis_faults,
+            components_inspected_clean=clean_comps,
+            components_not_assessable=not_assessable,
+            visible_observations=visible_obs,
+            damage_findings=damage_findings,
+            overall_visual_condition=overall_visual,
             needs_confirmation=True,
             requires_user_confirmation=True,
             alternative_models=alternatives,
