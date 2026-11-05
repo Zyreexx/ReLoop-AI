@@ -483,17 +483,17 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
               {t("visual.geminiBadge", "Gemini Vision AI Powered")}
             </span>
           </div>
-          <h2 className="text-3xl font-bold text-[#1D1D1F] tracking-tight">
+          <h2 className="text-3xl font-bold text-[#1D1D1F] dark:text-white tracking-tight">
             {t("visual.title", "Laptop Model Detection")}
           </h2>
-          <p className="text-[#6E6E73] text-sm sm:text-base mt-1">
+          <p className="text-[#6E6E73] dark:text-slate-400 text-sm sm:text-base mt-1">
             {t("visual.subtitle", "Upload a photo of your laptop. Gemini Vision AI will automatically detect the manufacturer, exact model name, and physical characteristics.")}
           </p>
         </div>
       </div>
 
       {/* Non-negotiable technical rule disclaimer */}
-      <div className="mb-6 p-4 rounded-xl bg-amber-50/80 border border-amber-200 text-amber-900 text-xs sm:text-sm flex items-start gap-3">
+      <div className="mb-6 p-4 rounded-xl bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/60 text-amber-900 dark:text-amber-200 text-xs sm:text-sm flex items-start gap-3">
         <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
         <div>
           <span className="font-semibold block mb-0.5">{t("visual.ruleTitle", "Hardware Verification Rule:")}</span>
@@ -535,18 +535,18 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
       )}
 
       {/* Photo Upload Slots Card */}
-      <div className="apple-card p-6 sm:p-8 mb-8 bg-white border border-[#E5E5E7] shadow-sm rounded-3xl">
+      <div className="apple-card p-6 sm:p-8 mb-8 bg-white dark:bg-slate-900 border border-[#E5E5E7] dark:border-slate-800 shadow-sm rounded-3xl">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2 gap-2">
           <div>
-            <h3 className="text-lg font-bold text-[#1D1D1F] flex items-center gap-2">
+            <h3 className="text-lg font-bold text-[#1D1D1F] dark:text-white flex items-center gap-2">
               <Laptop className="w-5 h-5 text-[#0071E3]" />
               {t("visual.uploadTitle", "Upload Laptop Photos")}
             </h3>
-            <p className="text-xs text-[#6E6E73] mt-0.5">
+            <p className="text-xs text-[#6E6E73] dark:text-slate-400 mt-0.5">
               {t("visual.uploadSubtitle", "Upload 1 or more photos (e.g. keyboard view, top lid, or bottom model label). Gemini will detect your laptop automatically!")}
             </p>
           </div>
-          <span className="text-xs font-bold px-3 py-1 rounded-full bg-[#0071E3]/10 text-[#0071E3] w-fit">
+          <span className="text-xs font-bold px-3 py-1 rounded-full bg-[#0071E3]/10 dark:bg-[#0071E3]/20 text-[#0071E3] dark:text-blue-400 w-fit">
             {t("visual.uploadedCount", "Uploaded")}: {images.length} / 6
           </span>
         </div>
@@ -567,7 +567,7 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
             return (
               <div
                 key={idx}
-                className="relative h-44 rounded-2xl border-2 border-dashed border-[#D2D2D7] bg-[#F5F5F7] hover:bg-[#FBFBFD] transition-all flex flex-col items-center justify-center p-3 text-center overflow-hidden group shadow-2xs"
+                className="relative h-44 rounded-2xl border-2 border-dashed border-[#D2D2D7] dark:border-slate-700 bg-[#F5F5F7] dark:bg-slate-800/40 hover:bg-[#FBFBFD] dark:hover:bg-slate-800/80 transition-all flex flex-col items-center justify-center p-3 text-center overflow-hidden group shadow-2xs"
               >
                 {imgSrc ? (
                   <>
@@ -608,13 +608,13 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
                     onClick={() => fileInputRef.current?.click()}
                     className="w-full h-full flex flex-col items-center justify-center cursor-pointer p-3 text-[#6E6E73] hover:text-[#0071E3] transition-colors"
                   >
-                    <div className="w-10 h-10 rounded-full bg-white shadow-2xs border border-[#E5E5E7] flex items-center justify-center mb-2 group-hover:border-[#0071E3]">
+                    <div className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 shadow-2xs border border-[#E5E5E7] dark:border-slate-700 flex items-center justify-center mb-2 group-hover:border-[#0071E3]">
                       <Upload className="w-4 h-4 text-[#0071E3]" />
                     </div>
-                    <span className="text-xs font-semibold text-[#1D1D1F] block">
+                    <span className="text-xs font-semibold text-[#1D1D1F] dark:text-white block">
                       {slotLabels[idx]}
                     </span>
-                    <span className="text-[10px] text-[#86868B] mt-0.5">{t("visual.clickToUpload", "Click to upload photo")}</span>
+                    <span className="text-[10px] text-[#86868B] dark:text-slate-400 mt-0.5">{t("visual.clickToUpload", "Click to upload photo")}</span>
                   </button>
                 )}
               </div>
@@ -633,8 +633,8 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
         />
 
         {/* Footer Action Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-[#E5E5E7]">
-          <div className="flex items-center gap-2 text-xs text-[#6E6E73]">
+        <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-[#E5E5E7] dark:border-slate-800">
+          <div className="flex items-center gap-2 text-xs text-[#6E6E73] dark:text-slate-400">
             <Camera className="w-4 h-4 text-[#0071E3]" />
             <span>{t("visual.supportedFormats", "Supported: JPG, PNG, WEBP (Max 10MB each) • 1 to 6 photos")}</span>
           </div>
@@ -821,7 +821,7 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
               <h5 className="text-sm font-bold uppercase tracking-wider text-[#1D1D1F]">
                 {t("visual.pickerTitle", "Select or Adjust Laptop Model")}
               </h5>
-              <p className="text-xs text-[#6E6E73] mt-0.5">
+              <p className="text-xs text-[#6E6E73] dark:text-slate-400 mt-0.5">
                 {t("visual.pickerSubtitle", "Select a supported model from our verified hardware catalog:")}
               </p>
             </div>
@@ -860,16 +860,16 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
       {/* Gemini AI Identified Model Results — Redesigned Modern Studio Hub */}
       {images.length > 0 && analyzed && !analyzing && Boolean(identifiedProduct.model) && (
         <div data-testid="verified-model-card" className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          {/* Detected Model Hero Card */}
-          <div className="rounded-3xl bg-linear-to-b from-white via-white to-[#FBFBFD] border border-[#E5E5E7] p-6 sm:p-8 shadow-sm hover:shadow-md transition-all relative overflow-hidden">
+          {/* Detected Model Hero Card — Apple Studio / Cyber-Hardware Showcase (Light & Dark) */}
+          <div className="rounded-3xl bg-linear-to-b from-white via-white to-[#FBFBFD] dark:from-slate-900 dark:via-slate-900 dark:to-slate-950 border border-[#E5E5E7] dark:border-slate-800 p-6 sm:p-8 shadow-sm hover:shadow-md transition-all relative overflow-hidden">
             {/* Ambient Lighting Accents */}
-            <div className="absolute top-0 right-0 w-96 h-96 bg-linear-to-bl from-[#0071E3]/10 via-[#34C759]/5 to-transparent rounded-bl-full pointer-events-none" />
-            <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-[#0071E3]/5 rounded-full blur-2xl pointer-events-none" />
+            <div className="absolute top-0 right-0 w-96 h-96 bg-linear-to-bl from-[#0071E3]/10 dark:from-[#2997FF]/15 via-[#34C759]/5 to-transparent rounded-bl-full pointer-events-none" />
+            <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-[#0071E3]/5 dark:bg-[#2997FF]/10 rounded-full blur-2xl pointer-events-none" />
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center relative z-10">
               {/* Left Column: Live Inspected Photo Viewfinder */}
               <div className="lg:col-span-5 relative group">
-                <div className="relative aspect-4/3 rounded-2xl overflow-hidden border-2 border-[#0071E3]/30 bg-[#090D16] shadow-md">
+                <div className="relative aspect-4/3 rounded-2xl overflow-hidden border-2 border-[#0071E3]/30 dark:border-[#2997FF]/40 bg-[#090D16] shadow-md">
                   {images[0] ? (
                     <img
                       src={images[0]}
@@ -877,15 +877,15 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
                       className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-[#6E6E73]">
-                      <Laptop className="w-12 h-12 text-[#0071E3]" />
+                    <div className="w-full h-full flex items-center justify-center text-[#6E6E73] dark:text-slate-400">
+                      <Laptop className="w-12 h-12 text-[#0071E3] dark:text-[#2997FF]" />
                     </div>
                   )}
 
                   {/* Optical HUD Overlay */}
                   <div className="absolute inset-0 pointer-events-none p-3 flex flex-col justify-between">
                     <div className="flex items-center justify-between">
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/75 backdrop-blur-md text-[10px] font-mono font-bold text-emerald-400 border border-emerald-500/30">
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/80 backdrop-blur-md text-[10px] font-mono font-bold text-emerald-400 border border-emerald-500/30">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                         GEMINI 2.5 VISION
                       </span>
@@ -895,7 +895,7 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
                     </div>
 
                     {/* Viewfinder Target Reticle */}
-                    <div className="self-center flex items-center justify-center text-[#0071E3]/60">
+                    <div className="self-center flex items-center justify-center text-[#0071E3]/60 dark:text-[#2997FF]/70">
                       <Scan className="w-14 h-14 stroke-[1.25] animate-pulse" />
                     </div>
 
@@ -917,14 +917,16 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
                       <div
                         key={i}
                         className={`w-12 h-12 rounded-xl overflow-hidden border-2 shrink-0 transition-all ${
-                          i === 0 ? "border-[#0071E3] shadow-xs" : "border-[#E5E5E7] opacity-75 hover:opacity-100"
+                          i === 0
+                            ? "border-[#0071E3] dark:border-[#2997FF] shadow-xs"
+                            : "border-[#E5E5E7] dark:border-slate-800 opacity-75 hover:opacity-100"
                         }`}
                       >
                         <img src={img} alt={`Thumb ${i + 1}`} className="w-full h-full object-cover" />
                       </div>
                     ))}
                     {images.length > 5 && (
-                      <div className="w-12 h-12 rounded-xl border border-[#E5E5E7] bg-[#F5F5F7] flex items-center justify-center text-xs font-bold text-[#6E6E73] shrink-0">
+                      <div className="w-12 h-12 rounded-xl border border-[#E5E5E7] dark:border-slate-800 bg-[#F5F5F7] dark:bg-slate-800 flex items-center justify-center text-xs font-bold text-[#6E6E73] dark:text-slate-300 shrink-0">
                         +{images.length - 5}
                       </div>
                     )}
@@ -935,56 +937,56 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
               {/* Right Column: AI Verified Machine Specs & Controls */}
               <div className="lg:col-span-7 space-y-4">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-xs font-mono font-extrabold uppercase tracking-wider px-3 py-1 rounded-full bg-[#1D1D1F] text-white shadow-xs">
+                  <span className="text-xs font-mono font-extrabold uppercase tracking-wider px-3 py-1 rounded-full bg-[#1D1D1F] dark:bg-white text-white dark:text-[#1D1D1F] shadow-xs">
                     {identifiedProduct.manufacturer || "LAPTOP"}
                   </span>
-                  <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                     {Math.round((identifiedProduct.confidence || 0.92) * 100)}% Match Precision
                   </span>
-                  <span className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-blue-50 text-[#0071E3] border border-blue-200">
+                  <span className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-blue-50 dark:bg-blue-950/50 text-[#0071E3] dark:text-blue-300 border border-blue-200 dark:border-blue-800/60">
                     AI Hardware Verified
                   </span>
                 </div>
 
                 <div>
-                  <span className="text-[11px] text-[#86868B] uppercase tracking-wider font-bold block mb-1">
+                  <span className="text-[11px] text-[#86868B] dark:text-slate-400 uppercase tracking-wider font-bold block mb-1">
                     {t("visual.detectedModelLabel", "Detected Model")}
                   </span>
-                  <h3 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[#1D1D1F] tracking-tight">
+                  <h3 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[#1D1D1F] dark:text-white tracking-tight">
                     {identifiedProduct.manufacturer} {identifiedProduct.model}
                   </h3>
-                  <p className="text-xs sm:text-sm text-[#6E6E73] mt-1 flex items-center gap-1.5">
-                    <Laptop className="w-3.5 h-3.5 text-[#0071E3]" />
+                  <p className="text-xs sm:text-sm text-[#6E6E73] dark:text-slate-400 mt-1 flex items-center gap-1.5">
+                    <Laptop className="w-3.5 h-3.5 text-[#0071E3] dark:text-[#2997FF]" />
                     <span>Mobile PC Architecture • Verified Hardware Fingerprint</span>
                   </p>
                 </div>
 
                 {identifiedProduct.visible_label_text && (
-                  <div className="p-3 rounded-xl bg-[#F5F5F7] border border-[#E5E5E7] flex items-center gap-2">
-                    <Tag className="w-4 h-4 text-[#0071E3] shrink-0" />
+                  <div className="p-3 rounded-xl bg-[#F5F5F7] dark:bg-slate-800/80 border border-[#E5E5E7] dark:border-slate-700/80 flex items-center gap-2">
+                    <Tag className="w-4 h-4 text-[#0071E3] dark:text-[#2997FF] shrink-0" />
                     <div className="text-xs">
-                      <span className="text-[#86868B] block text-[10px] font-semibold uppercase">OCR Regulatory Label:</span>
-                      <span className="font-mono font-bold text-[#1D1D1F]">&quot;{identifiedProduct.visible_label_text}&quot;</span>
+                      <span className="text-[#86868B] dark:text-slate-400 block text-[10px] font-semibold uppercase">OCR Regulatory Label:</span>
+                      <span className="font-mono font-bold text-[#1D1D1F] dark:text-slate-100">&quot;{identifiedProduct.visible_label_text}&quot;</span>
                     </div>
                   </div>
                 )}
 
                 {/* Subsystem Readiness Indicators */}
                 <div className="grid grid-cols-3 gap-2 pt-2">
-                  <div className="p-2.5 rounded-xl bg-[#F5F5F7] border border-[#E5E5E7]/70 text-center">
-                    <span className="text-[10px] font-semibold text-[#86868B] uppercase block">Optical Match</span>
-                    <span className="text-xs font-bold text-emerald-600 flex items-center justify-center gap-1 mt-0.5">
+                  <div className="p-2.5 rounded-xl bg-[#F5F5F7] dark:bg-slate-800/60 border border-[#E5E5E7]/70 dark:border-slate-700/60 text-center">
+                    <span className="text-[10px] font-semibold text-[#86868B] dark:text-slate-400 uppercase block">Optical Match</span>
+                    <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center justify-center gap-1 mt-0.5">
                       <CheckCircle2 size={12} /> High
                     </span>
                   </div>
-                  <div className="p-2.5 rounded-xl bg-[#F5F5F7] border border-[#E5E5E7]/70 text-center">
-                    <span className="text-[10px] font-semibold text-[#86868B] uppercase block">Form Factor</span>
-                    <span className="text-xs font-bold text-[#1D1D1F] mt-0.5 block">Standard Laptop</span>
+                  <div className="p-2.5 rounded-xl bg-[#F5F5F7] dark:bg-slate-800/60 border border-[#E5E5E7]/70 dark:border-slate-700/60 text-center">
+                    <span className="text-[10px] font-semibold text-[#86868B] dark:text-slate-400 uppercase block">Form Factor</span>
+                    <span className="text-xs font-bold text-[#1D1D1F] dark:text-white mt-0.5 block">Standard Laptop</span>
                   </div>
-                  <div className="p-2.5 rounded-xl bg-[#F5F5F7] border border-[#E5E5E7]/70 text-center">
-                    <span className="text-[10px] font-semibold text-[#86868B] uppercase block">Next Stage</span>
-                    <span className="text-xs font-bold text-[#0071E3] mt-0.5 block">Diagnostics</span>
+                  <div className="p-2.5 rounded-xl bg-[#F5F5F7] dark:bg-slate-800/60 border border-[#E5E5E7]/70 dark:border-slate-700/60 text-center">
+                    <span className="text-[10px] font-semibold text-[#86868B] dark:text-slate-400 uppercase block">Next Stage</span>
+                    <span className="text-xs font-bold text-[#0071E3] dark:text-[#2997FF] mt-0.5 block">Diagnostics</span>
                   </div>
                 </div>
 
@@ -993,16 +995,16 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
                   <button
                     type="button"
                     onClick={() => setShowModelPicker(true)}
-                    className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full border border-[#D2D2D7] text-xs font-semibold text-[#1D1D1F] hover:bg-[#F5F5F7] transition-all cursor-pointer shadow-2xs"
+                    className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full border border-[#D2D2D7] dark:border-slate-700 text-xs font-semibold text-[#1D1D1F] dark:text-slate-200 hover:bg-[#F5F5F7] dark:hover:bg-slate-800 transition-all cursor-pointer shadow-2xs"
                   >
-                    <Edit3 size={13} className="text-[#6E6E73]" />
+                    <Edit3 size={13} className="text-[#6E6E73] dark:text-slate-400" />
                     <span>{t("visual.changeModel", "Adjust Model Manually")}</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={handleConfirmModel}
-                    className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-linear-to-r from-[#0071E3] to-[#0077ED] hover:from-[#0060C4] hover:to-[#0071E3] text-white text-xs font-bold transition-all shadow-md hover:shadow-lg cursor-pointer"
+                    className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-linear-to-r from-[#0071E3] to-[#0077ED] dark:from-[#2997FF] dark:to-[#0071E3] hover:from-[#0060C4] hover:to-[#0071E3] text-white text-xs font-bold transition-all shadow-md hover:shadow-lg cursor-pointer"
                   >
                     <CheckCircle2 size={15} />
                     <span>{t("visual.confirmContinue", "Confirm & Continue")}</span>
@@ -1013,30 +1015,32 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
             </div>
           </div>
 
-          {/* Visible Observations Deck — Reimagined Component Health Cards */}
+          {/* Visible Observations Deck — Reimagined Component Health Cards (Light & Dark) */}
           {visibleObservations.length > 0 && (
             <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-[#E5E5E7]">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-[#E5E5E7] dark:border-slate-800">
                 <div>
-                  <h4 className="text-sm font-bold uppercase tracking-wider text-[#1D1D1F] flex items-center gap-2">
-                    <Eye className="w-4 h-4 text-[#0071E3]" />
+                  <h4 className="text-sm font-bold uppercase tracking-wider text-[#1D1D1F] dark:text-white flex items-center gap-2">
+                    <Eye className="w-4 h-4 text-[#0071E3] dark:text-[#2997FF]" />
                     <span>{t("visual.observationsTitle", "Gemini Optical Observations & Health Scan")}</span>
-                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-[#0071E3]/10 text-[#0071E3]">
+                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-[#0071E3]/10 dark:bg-[#0071E3]/20 text-[#0071E3] dark:text-blue-400">
                       {visibleObservations.length} Findings
                     </span>
                   </h4>
-                  <p className="text-xs text-[#6E6E73] mt-0.5">
+                  <p className="text-xs text-[#6E6E73] dark:text-slate-400 mt-0.5">
                     Real-time visual defect extraction across display, keyboard, chassis, and peripheral interfaces.
                   </p>
                 </div>
 
                 {/* Filter Pills */}
-                <div className="flex items-center gap-1.5 p-1 rounded-xl bg-[#F5F5F7] border border-[#E5E5E7] self-start sm:self-auto">
+                <div className="flex items-center gap-1.5 p-1 rounded-xl bg-[#F5F5F7] dark:bg-slate-800/80 border border-[#E5E5E7] dark:border-slate-700 self-start sm:self-auto">
                   <button
                     type="button"
                     onClick={() => setObsFilter("all")}
                     className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                      obsFilter === "all" ? "bg-white text-[#1D1D1F] shadow-xs" : "text-[#6E6E73] hover:text-[#1D1D1F]"
+                      obsFilter === "all"
+                        ? "bg-white dark:bg-slate-700 text-[#1D1D1F] dark:text-white shadow-xs"
+                        : "text-[#6E6E73] dark:text-slate-400 hover:text-[#1D1D1F] dark:hover:text-white"
                     }`}
                   >
                     All ({visibleObservations.length})
@@ -1045,7 +1049,9 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
                     type="button"
                     onClick={() => setObsFilter("wear")}
                     className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                      obsFilter === "wear" ? "bg-white text-amber-700 shadow-xs" : "text-[#6E6E73] hover:text-[#1D1D1F]"
+                      obsFilter === "wear"
+                        ? "bg-white dark:bg-slate-700 text-amber-700 dark:text-amber-400 shadow-xs"
+                        : "text-[#6E6E73] dark:text-slate-400 hover:text-[#1D1D1F] dark:hover:text-white"
                     }`}
                   >
                     Wear & Alerts ({wearCount})
@@ -1054,7 +1060,9 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
                     type="button"
                     onClick={() => setObsFilter("intact")}
                     className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                      obsFilter === "intact" ? "bg-white text-emerald-700 shadow-xs" : "text-[#6E6E73] hover:text-[#1D1D1F]"
+                      obsFilter === "intact"
+                        ? "bg-white dark:bg-slate-700 text-emerald-700 dark:text-emerald-400 shadow-xs"
+                        : "text-[#6E6E73] dark:text-slate-400 hover:text-[#1D1D1F] dark:hover:text-white"
                     }`}
                   >
                     Intact ({intactCount})
@@ -1073,10 +1081,10 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
                   return (
                     <div
                       key={obs.id}
-                      className={`p-4 rounded-2xl bg-white border transition-all flex flex-col justify-between hover:shadow-xs ${
+                      className={`p-4 rounded-2xl border transition-all flex flex-col justify-between hover:shadow-xs ${
                         isWear
-                          ? "border-amber-200/80 shadow-2xs bg-linear-to-b from-amber-50/20 to-white"
-                          : "border-[#E5E5E7] hover:border-[#D2D2D7]"
+                          ? "border-amber-200/80 dark:border-amber-800/40 shadow-2xs bg-linear-to-b from-amber-50/30 to-white dark:from-amber-950/20 dark:to-slate-900"
+                          : "border-[#E5E5E7] dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-[#D2D2D7] dark:hover:border-slate-700"
                       }`}
                     >
                       <div>
@@ -1084,11 +1092,13 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
                         <div className="flex items-center justify-between gap-2 mb-2.5">
                           <div className="flex items-center gap-2 min-w-0">
                             <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
-                              isWear ? "bg-amber-100/70 text-amber-800" : "bg-[#F5F5F7] text-[#0071E3]"
+                              isWear
+                                ? "bg-amber-100/70 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300"
+                                : "bg-[#F5F5F7] dark:bg-slate-800 text-[#0071E3] dark:text-[#2997FF]"
                             }`}>
                               <Icon size={16} />
                             </div>
-                            <span className="text-xs font-bold capitalize text-[#1D1D1F] truncate">
+                            <span className="text-xs font-bold capitalize text-[#1D1D1F] dark:text-white truncate">
                               {obs.component === "chassis" ? "Chassis / Enclosure" : obs.component === "display" ? "Display Panel" : obs.component === "keyboard" ? "Keyboard & Deck" : obs.component}
                             </span>
                           </div>
@@ -1096,24 +1106,24 @@ export const VisualInspectionStep: React.FC<VisualInspectionStepProps> = ({
                           <span className={`text-[10px] font-mono uppercase px-2 py-0.5 rounded font-bold border shrink-0 ${
                             isWear
                               ? sev === "HIGH" || sev === "CRITICAL"
-                                ? "bg-red-50 text-red-700 border-red-200"
-                                : "bg-amber-50 text-amber-700 border-amber-200"
-                              : "bg-emerald-50 text-emerald-700 border-emerald-200"
+                                ? "bg-red-50 dark:bg-red-950/60 text-red-700 dark:text-red-300 border-red-200 dark:border-red-900/60"
+                                : "bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-900/60"
+                              : "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900/60"
                           }`}>
                             {isWear ? (sev || "WEAR DETECTED") : "VERIFIED INTACT"}
                           </span>
                         </div>
 
                         {/* Description */}
-                        <p className="text-xs text-[#1D1D1F] font-medium leading-relaxed mb-3">
+                        <p className="text-xs text-[#1D1D1F] dark:text-slate-200 font-medium leading-relaxed mb-3">
                           {cleanedText}
                         </p>
                       </div>
 
                       {/* Footer: Provenance tag & AI confidence */}
-                      <div className="pt-2 border-t border-[#F5F5F7] flex items-center justify-between text-[10px] text-[#6E6E73]">
+                      <div className="pt-2 border-t border-[#F5F5F7] dark:border-slate-800/80 flex items-center justify-between text-[10px] text-[#6E6E73] dark:text-slate-400">
                         <span className="inline-flex items-center gap-1">
-                          <Sparkles size={11} className="text-[#0071E3]" />
+                          <Sparkles size={11} className="text-[#0071E3] dark:text-[#2997FF]" />
                           <span>Gemini Optical Telemetry</span>
                         </span>
                         <span className="font-mono font-semibold">

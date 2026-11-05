@@ -51,19 +51,19 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
         <span className="text-xs font-mono font-bold uppercase px-2.5 py-1 rounded-md bg-[#1D1D1F] text-white mb-2 inline-block">
           {t("review.badge")}
         </span>
-        <h2 className="text-3xl font-bold text-[#1D1D1F] tracking-tight">
+        <h2 className="text-3xl font-bold text-[#1D1D1F] dark:text-white tracking-tight">
           {t("review.title")}
         </h2>
-        <p className="text-[#6E6E73] text-sm sm:text-base mt-1">
+        <p className="text-[#6E6E73] dark:text-slate-400 text-sm sm:text-base mt-1">
           {t("review.subtitle")}
         </p>
       </div>
 
       <div className="space-y-6">
         {/* 1. VISUAL INSPECTION REVIEW */}
-        <div className="apple-card p-6 bg-white border-l-4 border-l-purple-500">
-          <div className="flex items-center justify-between mb-4 pb-3 border-b border-[#E5E5E7]">
-            <h3 className="text-base font-bold text-[#1D1D1F] flex items-center gap-2">
+        <div className="apple-card p-6 bg-white dark:bg-slate-900 border border-[#E5E5E7] dark:border-slate-800 border-l-4 border-l-purple-500 dark:border-l-purple-500">
+          <div className="flex items-center justify-between mb-4 pb-3 border-b border-[#E5E5E7] dark:border-slate-800">
+            <h3 className="text-base font-bold text-[#1D1D1F] dark:text-white flex items-center gap-2">
               <span>{t("review.visualTitle")}</span>
             </h3>
             <span className="text-[10px] font-mono uppercase px-2.5 py-0.5 rounded bg-purple-50 text-purple-700 font-bold border border-purple-200">
@@ -72,15 +72,15 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-            <div className="p-3 rounded-xl bg-[#F5F5F7]">
+            <div className="p-3 rounded-xl bg-[#F5F5F7] dark:bg-slate-800/60 border border-transparent dark:border-slate-700/60">
               <span className="text-[11px] text-[#86868B] block font-medium">{t("visual.badge")}</span>
-              <span className="text-sm font-bold text-[#1D1D1F]">
+              <span className="text-sm font-bold text-[#1D1D1F] dark:text-white">
                 {visual.images.length} {t("review.photosAttached")}
               </span>
             </div>
-            <div className="p-3 rounded-xl bg-[#F5F5F7]">
+            <div className="p-3 rounded-xl bg-[#F5F5F7] dark:bg-slate-800/60 border border-transparent dark:border-slate-700/60">
               <span className="text-[11px] text-[#86868B] block font-medium">{t("diag.confirmedModel")}</span>
-              <span className="text-sm font-bold text-[#1D1D1F]">
+              <span className="text-sm font-bold text-[#1D1D1F] dark:text-white">
                 {visual.identifiedProduct.manufacturer} {visual.identifiedProduct.model}
               </span>
             </div>
@@ -88,7 +88,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
 
           {/* 1A. Physical Damage & Exterior Condition Findings */}
           <div className="mb-4">
-            <span className="text-xs font-bold text-[#6E6E73] uppercase tracking-wider block mb-2">
+            <span className="text-xs font-bold text-[#6E6E73] dark:text-slate-400 uppercase tracking-wider block mb-2">
               {t("review.damageFindingsTitle", "Physical Damage & Exterior Condition")}
             </span>
             {visual.damageFindings && visual.damageFindings.length > 0 ? (
@@ -107,13 +107,13 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
                   return (
                     <div
                       key={`dmg-${idx}`}
-                      className="p-3 rounded-xl bg-[#FBFBFD] border border-[#E5E5E7] flex items-center justify-between text-xs"
+                      className="p-3 rounded-xl bg-[#FBFBFD] dark:bg-slate-800/40 border border-[#E5E5E7] dark:border-slate-800 flex items-center justify-between text-xs"
                     >
                       <div>
-                        <span className="font-bold capitalize text-[#1D1D1F] mr-2">
+                        <span className="font-bold capitalize text-[#1D1D1F] dark:text-slate-100 mr-2">
                           {localizeComponentName(finding.component.toLowerCase(), language)}:
                         </span>
-                        <span className="text-[#6E6E73]">{localizeObservation(cleanFindingDesc(finding.description), language)}</span>
+                        <span className="text-[#6E6E73] dark:text-slate-300">{localizeObservation(cleanFindingDesc(finding.description), language)}</span>
                       </div>
                       <span className={`text-[10px] font-mono uppercase px-2 py-0.5 rounded font-bold border shrink-0 ${badgeColor}`}>
                         {sev}
@@ -140,13 +140,13 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
                     return (
                       <div
                         key={obs.id}
-                        className="p-3 rounded-xl bg-[#FBFBFD] border border-[#E5E5E7] flex items-center justify-between text-xs"
+                        className="p-3 rounded-xl bg-[#FBFBFD] dark:bg-slate-800/40 border border-[#E5E5E7] dark:border-slate-800 flex items-center justify-between text-xs"
                       >
                         <div>
-                          <span className="font-bold capitalize text-[#1D1D1F] mr-2">
+                          <span className="font-bold capitalize text-[#1D1D1F] dark:text-slate-100 mr-2">
                             {localizeComponentName(obs.component, language)}:
                           </span>
-                          <span className="text-[#6E6E73]">{localizeObservation(cleanFindingDesc(obs.observation), language)}</span>
+                          <span className="text-[#6E6E73] dark:text-slate-300">{localizeObservation(cleanFindingDesc(obs.observation), language)}</span>
                         </div>
                         <span className={`text-[10px] font-mono uppercase px-2 py-0.5 rounded font-bold border shrink-0 ${badgeColor}`}>
                           {sev}
@@ -171,7 +171,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
           {/* 1B. Hardware Model Identification Cues */}
           {visual.visibleObservations.filter((o) => o.source === "MODEL_IDENTIFICATION" || (!o.source && !visual.damageFindings)).length > 0 && (
             <div>
-              <span className="text-xs font-bold text-[#6E6E73] uppercase tracking-wider block mb-2">
+              <span className="text-xs font-bold text-[#6E6E73] dark:text-slate-400 uppercase tracking-wider block mb-2">
                 {t("review.modelCluesTitle", "Hardware Model Identification Cues")}
               </span>
               <div className="space-y-2">
@@ -180,13 +180,13 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
                   .map((obs) => (
                     <div
                       key={obs.id}
-                      className="p-3 rounded-xl bg-[#FBFBFD] border border-[#E5E5E7] flex items-center justify-between text-xs"
+                      className="p-3 rounded-xl bg-[#FBFBFD] dark:bg-slate-800/40 border border-[#E5E5E7] dark:border-slate-800 flex items-center justify-between text-xs"
                     >
                       <div>
-                        <span className="font-bold capitalize text-[#1D1D1F] mr-2">
+                        <span className="font-bold capitalize text-[#1D1D1F] dark:text-slate-100 mr-2">
                           {localizeComponentName(obs.component, language)}:
                         </span>
-                        <span className="text-[#6E6E73]">{localizeObservation(cleanFindingDesc(obs.observation), language)}</span>
+                        <span className="text-[#6E6E73] dark:text-slate-300">{localizeObservation(cleanFindingDesc(obs.observation), language)}</span>
                       </div>
                       <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-blue-50 text-blue-700 font-bold shrink-0 border border-blue-200">
                         {t("provenance.modelCue", "MODEL CUE")}
@@ -199,9 +199,9 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
         </div>
 
         {/* 2. DIAGNOSTICS REVIEW */}
-        <div className="apple-card p-6 bg-white border-l-4 border-l-blue-500">
-          <div className="flex items-center justify-between mb-4 pb-3 border-b border-[#E5E5E7]">
-            <h3 className="text-base font-bold text-[#1D1D1F]">{t("review.diagTitle")}</h3>
+        <div className="apple-card p-6 bg-white dark:bg-slate-900 border border-[#E5E5E7] dark:border-slate-800 border-l-4 border-l-blue-500 dark:border-l-blue-500">
+          <div className="flex items-center justify-between mb-4 pb-3 border-b border-[#E5E5E7] dark:border-slate-800">
+            <h3 className="text-base font-bold text-[#1D1D1F] dark:text-white">{t("review.diagTitle")}</h3>
             <span className="text-[10px] font-mono uppercase px-2.5 py-0.5 rounded bg-blue-50 text-blue-700 font-bold border border-blue-200">
               {t("provenance.diagnostic", "DIAGNOSTIC")}
             </span>
@@ -209,10 +209,10 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {/* Battery */}
-            <div className="p-3.5 rounded-xl bg-[#FBFBFD] border border-[#E5E5E7] flex items-center justify-between">
+            <div className="p-3.5 rounded-xl bg-[#FBFBFD] dark:bg-slate-800/40 border border-[#E5E5E7] dark:border-slate-800 flex items-center justify-between">
               <div>
-                <span className="text-xs font-bold text-[#1D1D1F] block">{t("review.batteryCap")}</span>
-                <span className="text-xs text-[#6E6E73]">
+                <span className="text-xs font-bold text-[#1D1D1F] dark:text-white block">{t("review.batteryCap")}</span>
+                <span className="text-xs text-[#6E6E73] dark:text-slate-400">
                   {diagnostics.battery.notProvided
                     ? t("review.notProvided")
                     : `${diagnostics.battery.healthPercentage}% ${language === "gu" ? "આરોગ્ય" : language === "hi" ? "स्वास्थ्य" : "health"} (${diagnostics.battery.fullChargeCapacity} / ${diagnostics.battery.designCapacity} ${diagnostics.battery.unit})`}
@@ -224,10 +224,10 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
             </div>
 
             {/* SSD */}
-            <div className="p-3.5 rounded-xl bg-[#FBFBFD] border border-[#E5E5E7] flex items-center justify-between">
+            <div className="p-3.5 rounded-xl bg-[#FBFBFD] dark:bg-slate-800/40 border border-[#E5E5E7] dark:border-slate-800 flex items-center justify-between">
               <div>
-                <span className="text-xs font-bold text-[#1D1D1F] block">{t("review.ssdStorage")}</span>
-                <span className="text-xs text-[#6E6E73]">
+                <span className="text-xs font-bold text-[#1D1D1F] dark:text-white block">{t("review.ssdStorage")}</span>
+                <span className="text-xs text-[#6E6E73] dark:text-slate-400">
                   {diagnostics.ssd.notProvided
                     ? t("review.notProvided")
                     : `${diagnostics.ssd.healthPercentage}% ${language === "gu" ? "આરોગ્ય" : language === "hi" ? "स्वास्थ्य" : "Health"} (SMART: ${diagnostics.ssd.smartStatus})`}
@@ -239,9 +239,9 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
             </div>
 
             {/* RAM */}
-            <div className="p-3.5 rounded-xl bg-[#FBFBFD] border border-[#E5E5E7] flex items-center justify-between">
+            <div className="p-3.5 rounded-xl bg-[#FBFBFD] dark:bg-slate-800/40 border border-[#E5E5E7] dark:border-slate-800 flex items-center justify-between">
               <div>
-                <span className="text-xs font-bold text-[#1D1D1F] block">{t("review.ramMemory")}</span>
+                <span className="text-xs font-bold text-[#1D1D1F] dark:text-white block">{t("review.ramMemory")}</span>
                 <span className="text-xs text-[#6E6E73]">
                   {`${diagnostics.ram.capacityGB} GB (${language === "gu" ? "સ્ટ્રેસ ટેસ્ટ" : language === "hi" ? "तनाव परीक्षण" : "Stress Test"}: ${diagnostics.ram.testResult})`}
                 </span>
@@ -252,9 +252,9 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
             </div>
 
             {/* Thermals */}
-            <div className="p-3.5 rounded-xl bg-[#FBFBFD] border border-[#E5E5E7] flex items-center justify-between">
+            <div className="p-3.5 rounded-xl bg-[#FBFBFD] dark:bg-slate-800/40 border border-[#E5E5E7] dark:border-slate-800 flex items-center justify-between">
               <div>
-                <span className="text-xs font-bold text-[#1D1D1F] block">{t("review.thermals")}</span>
+                <span className="text-xs font-bold text-[#1D1D1F] dark:text-white block">{t("review.thermals")}</span>
                 <span className="text-xs text-[#6E6E73]">
                   {`${diagnostics.thermals.cpuTempC}°C (${language === "gu" ? "થ્રોટલિંગ" : language === "hi" ? "थ्रॉटलिंग" : "Throttling"}: ${diagnostics.thermals.thermalThrottling})`}
                 </span>
@@ -265,9 +265,9 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
             </div>
 
             {/* System */}
-            <div className="p-3.5 rounded-xl bg-[#FBFBFD] border border-[#E5E5E7] flex items-center justify-between sm:col-span-2">
+            <div className="p-3.5 rounded-xl bg-[#FBFBFD] dark:bg-slate-800/40 border border-[#E5E5E7] dark:border-slate-800 flex items-center justify-between sm:col-span-2">
               <div>
-                <span className="text-xs font-bold text-[#1D1D1F] block">{t("review.systemHardware")}</span>
+                <span className="text-xs font-bold text-[#1D1D1F] dark:text-white block">{t("review.systemHardware")}</span>
                 <span className="text-xs text-[#6E6E73]">
                   {t("diag.hardwareResult", "Hardware Result")}: {diagnostics.system.hardwareResult} • {t("diag.criticalFaults", "Faults")}: {diagnostics.system.criticalFaults}
                 </span>
@@ -280,9 +280,9 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
         </div>
 
         {/* 3. USER SYMPTOMS REVIEW */}
-        <div className="apple-card p-6 bg-white border-l-4 border-l-amber-500">
-          <div className="flex items-center justify-between mb-4 pb-3 border-b border-[#E5E5E7]">
-            <h3 className="text-base font-bold text-[#1D1D1F]">{t("review.symptomsTitle")}</h3>
+        <div className="apple-card p-6 bg-white dark:bg-slate-900 border border-[#E5E5E7] dark:border-slate-800 border-l-4 border-l-amber-500 dark:border-l-amber-500">
+          <div className="flex items-center justify-between mb-4 pb-3 border-b border-[#E5E5E7] dark:border-slate-800">
+            <h3 className="text-base font-bold text-[#1D1D1F] dark:text-white">{t("review.symptomsTitle")}</h3>
             <span className="text-[10px] font-mono uppercase px-2.5 py-0.5 rounded bg-amber-50 text-amber-700 font-bold border border-amber-200">
               {t("provenance.userReported", "USER REPORTED")}
             </span>
@@ -290,7 +290,7 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
 
           <div className="space-y-3 mb-4">
             <div className="p-3.5 rounded-xl bg-[#FBFBFD] border border-[#E5E5E7]">
-              <span className="text-xs font-bold text-[#1D1D1F] block mb-1">{t("review.selectedSymptoms")}</span>
+              <span className="text-xs font-bold text-[#1D1D1F] dark:text-white block mb-1">{t("review.selectedSymptoms")}</span>
               {symptoms.selectedSymptoms.length === 0 ? (
                 <span className="text-xs text-[#6E6E73]">{t("review.noSymptoms")}</span>
               ) : (
@@ -313,9 +313,9 @@ export const ReviewStep: React.FC<ReviewStepProps> = ({
               )}
             </div>
 
-            <div className="p-3.5 rounded-xl bg-[#FBFBFD] border border-[#E5E5E7] flex items-center justify-between">
+            <div className="p-3.5 rounded-xl bg-[#FBFBFD] dark:bg-slate-800/40 border border-[#E5E5E7] dark:border-slate-800 flex items-center justify-between">
               <div>
-                <span className="text-xs font-bold text-[#1D1D1F] block">{t("review.optimizationObj")}</span>
+                <span className="text-xs font-bold text-[#1D1D1F] dark:text-white block">{t("review.optimizationObj")}</span>
                 <span className="text-xs text-[#0071E3] font-semibold">
                   {objectiveTitles[symptoms.userObjective] || symptoms.userObjective}
                 </span>

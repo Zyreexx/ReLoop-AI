@@ -188,7 +188,7 @@ export const ConditionProfileView: React.FC<ConditionProfileViewProps> = ({
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
       {/* Prominent Hero Banner with Clearly Visible Laptop Model Name */}
-      <div className="bg-white rounded-3xl border border-[#E5E5E7] p-6 sm:p-8 shadow-sm mb-10 transition-all hover:shadow-md">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl border border-[#E5E5E7] dark:border-slate-800 p-6 sm:p-8 shadow-sm mb-10 transition-all hover:shadow-md">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="flex items-start sm:items-center gap-4 sm:gap-5">
             <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-blue-500/10 via-[#0071E3]/10 to-indigo-500/10 border border-[#0071E3]/20 flex items-center justify-center text-[#0071E3] shrink-0 shadow-xs">
@@ -204,20 +204,20 @@ export const ConditionProfileView: React.FC<ConditionProfileViewProps> = ({
                   {t("profile.activeBadge")}
                 </span>
               </div>
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[#1D1D1F] tracking-tight">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[#1D1D1F] dark:text-white tracking-tight">
                 {fullDeviceName}
               </h1>
-              <p className="text-xs sm:text-sm text-[#6E6E73] mt-1.5 max-w-2xl leading-relaxed">
+              <p className="text-xs sm:text-sm text-[#6E6E73] dark:text-slate-400 mt-1.5 max-w-2xl leading-relaxed">
                 {t("profile.desc")}
               </p>
             </div>
           </div>
 
-          <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center border-t sm:border-t-0 pt-4 sm:pt-0 border-[#F0F0F2] gap-1.5 shrink-0">
+          <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center border-t sm:border-t-0 pt-4 sm:pt-0 border-[#F0F0F2] dark:border-slate-800 gap-1.5 shrink-0">
             <span className="text-[11px] font-medium text-[#86868B] uppercase tracking-wider">
               {t("profile.evaluatedComp")}
             </span>
-            <div className="text-2xl font-bold text-[#1D1D1F] flex items-baseline gap-1">
+            <div className="text-2xl font-bold text-[#1D1D1F] dark:text-white flex items-baseline gap-1">
               <span>{conditionProfile.length}</span>
               <span className="text-xs font-semibold text-[#86868B]">{t("profile.subsystems")}</span>
             </div>
@@ -246,16 +246,16 @@ export const ConditionProfileView: React.FC<ConditionProfileViewProps> = ({
           return (
             <div
               key={idx}
-              className="bg-white rounded-2xl border border-[#E5E5E7] p-6 shadow-xs hover:border-[#0071E3]/40 hover:shadow-md transition-all flex flex-col justify-between"
+              className="bg-white dark:bg-slate-900 rounded-2xl border border-[#E5E5E7] dark:border-slate-800 p-6 shadow-xs hover:border-[#0071E3]/40 dark:hover:border-[#2997FF]/40 hover:shadow-md transition-all flex flex-col justify-between"
             >
               <div>
                 {/* Header: Icon + Title on left, Status Pill on right */}
-                <div className="flex items-center justify-between gap-3 mb-4 pb-3 border-b border-[#F5F5F7]">
+                <div className="flex items-center justify-between gap-3 mb-4 pb-3 border-b border-[#F5F5F7] dark:border-slate-800/80">
                   <div className="flex items-center gap-3 min-w-0">
-                    <div className="w-9 h-9 rounded-xl bg-[#F5F5F7] border border-[#E5E5E7] flex items-center justify-center text-[#1D1D1F] shrink-0">
+                    <div className="w-9 h-9 rounded-xl bg-[#F5F5F7] dark:bg-slate-800 border border-[#E5E5E7] dark:border-slate-700 flex items-center justify-center text-[#1D1D1F] dark:text-white shrink-0">
                       <Icon size={18} />
                     </div>
-                    <span className="text-base font-bold text-[#1D1D1F] truncate">
+                    <span className="text-base font-bold text-[#1D1D1F] dark:text-white truncate">
                       {localizeComponentName(record.component, language)}
                     </span>
                   </div>
@@ -263,10 +263,10 @@ export const ConditionProfileView: React.FC<ConditionProfileViewProps> = ({
                   <span
                     className={`text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1.5 shrink-0 ${
                       isGood
-                        ? "bg-emerald-50 text-emerald-700 border border-emerald-200/80"
+                        ? "bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/60"
                         : isAttention
-                        ? "bg-amber-50 text-amber-700 border border-amber-200/80"
-                        : "bg-rose-50 text-rose-700 border border-rose-200/80"
+                        ? "bg-amber-50 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200/80 dark:border-amber-800/60"
+                        : "bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200/80 dark:border-rose-800/60"
                     }`}
                   >
                     {isGood && <CheckCircle2 size={13} />}
@@ -278,13 +278,13 @@ export const ConditionProfileView: React.FC<ConditionProfileViewProps> = ({
 
                 {/* Metric / Condition Headline */}
                 <div className="mb-2">
-                  <span className="text-sm font-semibold text-[#1D1D1F]">
+                  <span className="text-sm font-semibold text-[#1D1D1F] dark:text-slate-100">
                     {localizeConditionHeadline(headline, language)}
                   </span>
                 </div>
 
                 {/* Primary Observation / Summary */}
-                <p className="text-[13px] text-[#515154] leading-relaxed mb-4">
+                <p className="text-[13px] text-[#515154] dark:text-slate-300 leading-relaxed mb-4">
                   {localizeConditionSummary(cleanedSummary, language)}
                 </p>
 
@@ -294,7 +294,7 @@ export const ConditionProfileView: React.FC<ConditionProfileViewProps> = ({
                     {descriptiveEvidence.map((ev, evIdx) => (
                       <div
                         key={evIdx}
-                        className="text-xs text-[#6E6E73] flex items-start gap-1.5"
+                        className="text-xs text-[#6E6E73] dark:text-slate-400 flex items-start gap-1.5"
                       >
                         <span className="text-[#0071E3] font-bold mt-0.5">•</span>
                         <span>{localizeEvidenceText(cleanEvidenceText(ev.text), language)}</span>
@@ -305,7 +305,7 @@ export const ConditionProfileView: React.FC<ConditionProfileViewProps> = ({
               </div>
 
               {/* Clean Footer: Clean Source Badges + Provenance Indicator */}
-              <div className="pt-3.5 mt-2 border-t border-[#F2F2F5] flex items-center justify-between gap-2 flex-wrap">
+              <div className="pt-3.5 mt-2 border-t border-[#F2F2F5] dark:border-slate-800/80 flex items-center justify-between gap-2 flex-wrap">
                 <div className="flex items-center gap-1.5 flex-wrap">
                   {deduplicatedSources.map((st) => (
                     <span
@@ -342,16 +342,16 @@ export const ConditionProfileView: React.FC<ConditionProfileViewProps> = ({
       </div>
 
       {/* Overall Statement & Optimizer Primary CTA */}
-      <div className="apple-card p-8 sm:p-10 bg-white border-2 border-[#0071E3]/30 shadow-lg text-center max-w-3xl mx-auto rounded-3xl">
+      <div className="apple-card p-8 sm:p-10 bg-white dark:bg-slate-900 border-2 border-[#0071E3]/30 dark:border-[#2997FF]/30 shadow-lg text-center max-w-3xl mx-auto rounded-3xl">
         <div className="w-12 h-12 rounded-2xl bg-[#0071E3]/10 text-[#0071E3] flex items-center justify-center mx-auto mb-4">
           <Sparkles className="w-6 h-6" />
         </div>
 
-        <h3 className="text-2xl font-bold text-[#1D1D1F] tracking-tight mb-2">
+        <h3 className="text-2xl font-bold text-[#1D1D1F] dark:text-white tracking-tight mb-2">
           {t("profile.ctaTitle")}
         </h3>
 
-        <p className="text-sm text-[#6E6E73] max-w-xl mx-auto mb-8 leading-relaxed">
+        <p className="text-sm text-[#6E6E73] dark:text-slate-400 max-w-xl mx-auto mb-8 leading-relaxed">
           {t("profile.ctaDesc")}
         </p>
 
