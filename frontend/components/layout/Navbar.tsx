@@ -30,32 +30,32 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth }) => {
   return (
     <>
       <header
-        className={`sticky top-0 z-50 transition-all duration-300 ${
+        className={`sticky top-0 z-50 w-full max-w-full transition-all duration-300 ${
           scrolled
             ? "apple-nav-blur py-3 shadow-xs"
-            : "bg-[#F5F5F7]/90 backdrop-blur-md py-4"
+            : "bg-[#F5F5F7]/90 dark:bg-[#000000]/90 backdrop-blur-md py-4"
         }`}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-3 lg:gap-4 xl:gap-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-3 xl:gap-6">
           {/* Brand Logo */}
           <Link
             href="/"
-            className="flex items-center gap-2.5 text-[#1D1D1F] dark:text-white hover:opacity-90 transition-opacity shrink-0"
+            className="flex items-center gap-2 text-[#1D1D1F] dark:text-white hover:opacity-90 transition-opacity shrink-0"
           >
             <div className="w-8 h-8 rounded-full bg-[#0071E3] flex items-center justify-center text-white shadow-xs">
               <RefreshCw className="w-4 h-4" />
             </div>
             <div className="flex flex-col">
-              <span className="font-semibold text-[17px] tracking-tight text-[#1D1D1F] dark:text-white">
+              <span className="font-semibold text-[16px] xl:text-[17px] tracking-tight text-[#1D1D1F] dark:text-white">
                 ReLoop <span className="text-[#0071E3] font-bold">AI</span>
               </span>
             </div>
           </Link>
-          {/* Desktop Navigation Links */}
-          <nav className="hidden lg:flex items-center justify-center gap-1.5 lg:gap-2 xl:gap-6 text-[13px] xl:text-[13.5px] font-medium text-[#6E6E73] dark:text-[#A1A1A6] flex-1 max-w-2xl mx-1 xl:mx-4">
+          {/* Desktop Navigation Links (Visible on xl: 1280px+) */}
+          <nav className="hidden xl:flex items-center justify-center gap-1 xl:gap-2 2xl:gap-4 text-[12.5px] xl:text-[13px] font-medium text-[#6E6E73] dark:text-[#A1A1A6] flex-1 max-w-2xl mx-2">
             <Link
               href="/"
-              className={`px-2.5 py-1 xl:px-3 xl:py-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 hover:text-[#1D1D1F] dark:hover:text-white transition-all whitespace-nowrap ${
+              className={`px-2.5 py-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 hover:text-[#1D1D1F] dark:hover:text-white transition-all whitespace-nowrap ${
                 pathname === "/" ? "text-[#0071E3] dark:text-[#0071E3] font-semibold bg-[#0071E3]/5" : ""
               }`}
             >
@@ -63,7 +63,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth }) => {
             </Link>
             <Link
               href="/pathways"
-              className={`px-3 py-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 hover:text-[#1D1D1F] dark:hover:text-white transition-all whitespace-nowrap ${
+              className={`px-2.5 py-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 hover:text-[#1D1D1F] dark:hover:text-white transition-all whitespace-nowrap ${
                 pathname === "/pathways" ? "text-[#0071E3] dark:text-[#0071E3] font-semibold bg-[#0071E3]/5" : ""
               }`}
             >
@@ -71,7 +71,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth }) => {
             </Link>
             <Link
               href="/how-it-works"
-              className={`px-3 py-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 hover:text-[#1D1D1F] dark:hover:text-white transition-all whitespace-nowrap ${
+              className={`px-2.5 py-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 hover:text-[#1D1D1F] dark:hover:text-white transition-all whitespace-nowrap ${
                 pathname === "/how-it-works" ? "text-[#0071E3] dark:text-[#0071E3] font-semibold bg-[#0071E3]/5" : ""
               }`}
             >
@@ -79,7 +79,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth }) => {
             </Link>
             <Link
               href="/batch"
-              className={`px-3 py-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 hover:text-[#1D1D1F] dark:hover:text-white transition-all whitespace-nowrap ${
+              className={`px-2.5 py-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 hover:text-[#1D1D1F] dark:hover:text-white transition-all whitespace-nowrap ${
                 pathname === "/batch" ? "text-[#0071E3] dark:text-[#0071E3] font-semibold bg-[#0071E3]/5" : ""
               }`}
             >
@@ -87,7 +87,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth }) => {
             </Link>
             <Link
               href="/locator"
-              className={`px-3 py-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 hover:text-[#1D1D1F] dark:hover:text-white transition-all whitespace-nowrap ${
+              className={`px-2.5 py-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 hover:text-[#1D1D1F] dark:hover:text-white transition-all whitespace-nowrap ${
                 pathname === "/locator" ? "text-[#0071E3] dark:text-[#0071E3] font-semibold bg-[#0071E3]/5" : ""
               }`}
             >
@@ -95,7 +95,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth }) => {
             </Link>
             <Link
               href="/about"
-              className={`px-3 py-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 hover:text-[#1D1D1F] dark:hover:text-white transition-all whitespace-nowrap ${
+              className={`px-2.5 py-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 hover:text-[#1D1D1F] dark:hover:text-white transition-all whitespace-nowrap ${
                 pathname === "/about" || pathname === "/engine" ? "text-[#0071E3] dark:text-[#0071E3] font-semibold bg-[#0071E3]/5" : ""
               }`}
             >
@@ -103,7 +103,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth }) => {
             </Link>
             <Link
               href="/dashboard"
-              className={`px-3 py-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 hover:text-[#1D1D1F] dark:hover:text-white transition-all whitespace-nowrap flex items-center gap-1.5 ${
+              className={`px-2.5 py-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 hover:text-[#1D1D1F] dark:hover:text-white transition-all whitespace-nowrap flex items-center gap-1.5 ${
                 pathname === "/dashboard"
                   ? "text-[#0071E3] dark:text-[#0071E3] font-semibold bg-[#0071E3]/5"
                   : "text-[#6E6E73] dark:text-[#A1A1A6]"
@@ -113,10 +113,10 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth }) => {
               <span>{user ? t("nav.myDevices", "My Devices") : "History"}</span>
             </Link>
           </nav>
-          {/* Actions */}
-          <div className="hidden lg:flex items-center gap-2 xl:gap-3.5 shrink-0">
+          {/* Actions (Visible on xl: 1280px+) */}
+          <div className="hidden xl:flex items-center gap-2 xl:gap-2.5 shrink-0">
             {user ? (
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-2">
                 <Link
                   href="/dashboard"
                   title="View My Devices Dashboard"
@@ -133,7 +133,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth }) => {
                       {user.name.charAt(0).toUpperCase()}
                     </div>
                   )}
-                  <span className="text-[13px] font-medium text-[#1D1D1F] dark:text-white group-hover:text-[#0071E3] transition-colors whitespace-nowrap">
+                  <span className="text-[12.5px] font-medium text-[#1D1D1F] dark:text-white group-hover:text-[#0071E3] transition-colors whitespace-nowrap">
                     {user.name.split(" ")[0]}
                   </span>
                 </Link>
@@ -150,7 +150,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth }) => {
               <button
                 type="button"
                 onClick={() => onOpenAuth("login")}
-                className="text-[12px] xl:text-[13px] font-medium text-[#1D1D1F] dark:text-white hover:text-[#0071E3] px-2.5 xl:px-3.5 py-1.5 transition-colors whitespace-nowrap cursor-pointer"
+                className="text-[12.5px] font-medium text-[#1D1D1F] dark:text-white hover:text-[#0071E3] px-2.5 py-1.5 transition-colors whitespace-nowrap cursor-pointer"
               >
                 {t("nav.signIn")}
               </button>
@@ -158,30 +158,30 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth }) => {
             <button
               type="button"
               onClick={handleAssessDeviceClick}
-              className="inline-flex items-center gap-1.5 text-[12.5px] xl:text-[13px] font-semibold text-white bg-[#0071E3] hover:bg-[#0077ED] px-3.5 xl:px-4 py-1.5 xl:py-2 rounded-full transition-all duration-200 cursor-pointer shadow-xs hover:shadow-sm whitespace-nowrap shrink-0"
+              className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-white bg-[#0071E3] hover:bg-[#0077ED] px-3.5 py-1.5 rounded-full transition-all duration-200 cursor-pointer shadow-xs hover:shadow-sm whitespace-nowrap shrink-0"
             >
               <span>{t("nav.assessDevice")}</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
             {/* Theme Toggle & Language Selector Dropdown */}
-            <div className="flex items-center gap-1.5 shrink-0 ml-0.5 xl:ml-1">
+            <div className="flex items-center gap-1 shrink-0">
               <ThemeToggle variant="navbar" />
               <LanguageSelector variant="navbar" className="ml-0.5" />
             </div>
           </div>
-          {/* Mobile hamburger */}
+          {/* Mobile/Tablet hamburger (Visible below xl: < 1280px) */}
           <button
             type="button"
-            className="lg:hidden p-1.5 rounded-lg text-[#1D1D1F] dark:text-white hover:bg-black/5 dark:hover:bg-white/10"
+            className="xl:hidden p-2 rounded-lg text-[#1D1D1F] dark:text-white hover:bg-black/5 dark:hover:bg-white/10"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-label="Toggle menu"
           >
-            {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+            {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
         </div>
-        {/* Mobile dropdown */}
+        {/* Mobile/Tablet dropdown */}
         {mobileMenuOpen && (
-          <div className="lg:hidden bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-xl border-b border-[#E5E5E7] dark:border-[#38383A] px-6 py-4 flex flex-col gap-3 shadow-lg">
+          <div className="xl:hidden w-full max-w-full overflow-x-hidden bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-xl border-b border-[#E5E5E7] dark:border-[#38383A] px-6 py-4 flex flex-col gap-3 shadow-lg">
             <Link
               href="/"
               onClick={() => setMobileMenuOpen(false)}
