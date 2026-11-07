@@ -310,13 +310,13 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenAuth }) => {
   );
 
   return (
-    <section id="overview" className="relative overflow-hidden w-full max-w-full bg-[#F5F5F7] border-b border-[#E5E5E7]">
+    <section id="overview" className="relative overflow-hidden w-full max-w-full bg-[#F5F5F7] border-b border-[#E5E5E7] [contain:paint]">
       {/* ─────────────────────────────────────────────────────────────
           HERO BANNER WITH FLOATING LAPTOPS IN THE BACKGROUND
           ───────────────────────────────────────────────────────────── */}
-      <div className="relative min-h-[85vh] sm:min-h-[88vh] flex items-center justify-center pt-14 pb-20 overflow-hidden w-full max-w-full">
+      <div className="relative min-h-[85vh] sm:min-h-[88vh] flex items-center justify-center pt-14 pb-20 overflow-hidden w-full max-w-full [contain:paint]">
         {/* BACKGROUND LAYER: Dual Inclined Floating Laptop Lines */}
-        <div className="absolute inset-0 z-0 overflow-hidden flex flex-col justify-center pointer-events-none select-none opacity-45 marquee-mask w-full max-w-full">
+        <div className="absolute inset-0 z-0 overflow-hidden flex flex-col justify-center pointer-events-none select-none opacity-45 marquee-mask w-full max-w-full [contain:paint]">
           {/* Gentle central text contrast mask:
               Kept soft & semi-transparent so laptops remain visible continuously across the center without hard borders */}
           <div
@@ -328,9 +328,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenAuth }) => {
           />
 
           {/* Tilted / Inclined Container — scale-[1.35] ensures cards overflow past screen boundaries comfortably */}
-          <div className="transform -rotate-3 scale-[1.35] origin-center space-y-6">
+          <div className="transform -rotate-3 scale-[1.35] origin-center space-y-6 overflow-hidden w-full max-w-full">
             {/* Top Line: Moving LEFT — 4 identical copies for seamless infinite wrap */}
-            <div className="w-full flex">
+            <div className="w-full flex overflow-hidden">
               <div className="animate-marquee-left">
                 {line1Laptops.map((laptop, idx) =>
                   renderBackgroundLaptopCard(laptop, "line1-a", idx)
@@ -348,7 +348,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenAuth }) => {
             </div>
 
             {/* Bottom Line: Moving RIGHT — 4 identical copies for seamless infinite wrap */}
-            <div className="w-full flex">
+            <div className="w-full flex overflow-hidden">
               <div className="animate-marquee-right">
                 {line2Laptops.map((laptop, idx) =>
                   renderBackgroundLaptopCard(laptop, "line2-a", idx)
@@ -468,7 +468,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenAuth }) => {
         </div>
 
         {/* Device Switcher Pills */}
-        <div className="flex items-center justify-center gap-2 mb-6">
+        <div className="flex flex-wrap items-center justify-center gap-2 mb-6">
           <span className="text-xs font-semibold text-[#86868B] uppercase tracking-wider mr-2">
             {t("hero.inspectHardware", "Inspect Hardware:")}
           </span>
