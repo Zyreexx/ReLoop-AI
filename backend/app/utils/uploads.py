@@ -55,9 +55,10 @@ def detect_image_type(header: bytes) -> Tuple[str, str]:
 
 def sanitize_filename(filename: str) -> str:
     """
-    Strips directory traversal and illegal characters from filenames.
+    Strips directory traversal and illegal characters from filenames across all platforms.
     """
-    raw_name = Path(filename).name
+    normalized = filename.replace("\\", "/")
+    raw_name = Path(normalized).name
     # Keep only alphanumeric, hyphens, underscores, dots
     cleaned = re.sub(r"[^\w\.\-]", "_", raw_name)
     return cleaned if cleaned else "image.jpg"

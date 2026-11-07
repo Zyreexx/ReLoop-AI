@@ -33,20 +33,28 @@ def test_run_health_check_structure():
     assert checks["adapter_initialized"] is True
 
 def test_runner_cli_version(monkeypatch):
+    env = os.environ.copy()
+    env["PYTHONPATH"] = f"{str(root_dir)}{os.pathsep}{env.get('PYTHONPATH', '')}"
     res = subprocess.run(
         [sys.executable, "-m", "diagnostics_agent.runner", "--version"],
         capture_output=True,
         text=True,
+        cwd=str(root_dir),
+        env=env,
     )
     assert res.returncode == 0
     assert "ReLoop AI Diagnostics Agent v1.2.0" in res.stdout
 
 def test_runner_cli_health(tmp_path):
+    env = os.environ.copy()
+    env["PYTHONPATH"] = f"{str(root_dir)}{os.pathsep}{env.get('PYTHONPATH', '')}"
     out_file = tmp_path / "health.json"
     res = subprocess.run(
         [sys.executable, "-m", "diagnostics_agent.runner", "--health", "--json-output", str(out_file)],
         capture_output=True,
         text=True,
+        cwd=str(root_dir),
+        env=env,
     )
     assert res.returncode == 0
     assert out_file.exists()

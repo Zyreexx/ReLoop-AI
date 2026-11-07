@@ -75,42 +75,45 @@ def test_windows_battery_thresholds():
 
     # 1. Healthy Battery (85% health, 200 cycles -> GOOD)
     with patch.object(adapter, "_run_ps_json") as mock_ps:
-        with patch("os.path.exists", return_value=True):
-            with patch("builtins.open", MagicMock(return_value=MagicMock(
-                __enter__=lambda s: MagicMock(read=lambda: "<DesignCapacity>50000</DesignCapacity><FullChargeCapacity>42500</FullChargeCapacity><CycleCount>200</CycleCount>"),
-                __exit__=lambda s, e, v, t: None,
-            ))):
-                res = adapter.diagnose_battery()
-                assert res["status"] == "PASSED"
-                assert res["component_status"] == "GOOD"
-                assert res["evidence"]["health_percentage"] == 85.0
-                assert res["fault_severity"] == "INFO"
+        with patch("subprocess.run"):
+            with patch("os.path.exists", return_value=True):
+                with patch("builtins.open", MagicMock(return_value=MagicMock(
+                    __enter__=lambda s: MagicMock(read=lambda: "<DesignCapacity>50000</DesignCapacity><FullChargeCapacity>42500</FullChargeCapacity><CycleCount>200</CycleCount>"),
+                    __exit__=lambda s, e, v, t: None,
+                ))):
+                    res = adapter.diagnose_battery()
+                    assert res["status"] == "PASSED"
+                    assert res["component_status"] == "GOOD"
+                    assert res["evidence"]["health_percentage"] == 85.0
+                    assert res["fault_severity"] == "INFO"
 
     # 2. Degraded Battery (40% health -> REPLACE)
     with patch.object(adapter, "_run_ps_json") as mock_ps:
-        with patch("os.path.exists", return_value=True):
-            with patch("builtins.open", MagicMock(return_value=MagicMock(
-                __enter__=lambda s: MagicMock(read=lambda: "<DesignCapacity>50000</DesignCapacity><FullChargeCapacity>20000</FullChargeCapacity><CycleCount>350</CycleCount>"),
-                __exit__=lambda s, e, v, t: None,
-            ))):
-                res = adapter.diagnose_battery()
-                assert res["status"] == "FAULT_DETECTED"
-                assert res["component_status"] == "REPLACE"
-                assert res["evidence"]["health_percentage"] == 40.0
-                assert res["fault_severity"] == "HIGH"
-                assert any("Severe battery degradation" in f for f in res["faults"])
+        with patch("subprocess.run"):
+            with patch("os.path.exists", return_value=True):
+                with patch("builtins.open", MagicMock(return_value=MagicMock(
+                    __enter__=lambda s: MagicMock(read=lambda: "<DesignCapacity>50000</DesignCapacity><FullChargeCapacity>20000</FullChargeCapacity><CycleCount>350</CycleCount>"),
+                    __exit__=lambda s, e, v, t: None,
+                ))):
+                    res = adapter.diagnose_battery()
+                    assert res["status"] == "FAULT_DETECTED"
+                    assert res["component_status"] == "REPLACE"
+                    assert res["evidence"]["health_percentage"] == 40.0
+                    assert res["fault_severity"] == "HIGH"
+                    assert any("Severe battery degradation" in f for f in res["faults"])
 
     # 3. High Cycles Battery (85% health, 650 cycles -> WEAR)
     with patch.object(adapter, "_run_ps_json") as mock_ps:
-        with patch("os.path.exists", return_value=True):
-            with patch("builtins.open", MagicMock(return_value=MagicMock(
-                __enter__=lambda s: MagicMock(read=lambda: "<DesignCapacity>50000</DesignCapacity><FullChargeCapacity>42500</FullChargeCapacity><CycleCount>650</CycleCount>"),
-                __exit__=lambda s, e, v, t: None,
-            ))):
-                res = adapter.diagnose_battery()
-                assert res["status"] == "FAULT_DETECTED"
-                assert res["component_status"] == "WEAR"
-                assert any("Elevated cycle count" in f for f in res["faults"])
+        with patch("subprocess.run"):
+            with patch("os.path.exists", return_value=True):
+                with patch("builtins.open", MagicMock(return_value=MagicMock(
+                    __enter__=lambda s: MagicMock(read=lambda: "<DesignCapacity>50000</DesignCapacity><FullChargeCapacity>42500</FullChargeCapacity><CycleCount>650</CycleCount>"),
+                    __exit__=lambda s, e, v, t: None,
+                ))):
+                    res = adapter.diagnose_battery()
+                    assert res["status"] == "FAULT_DETECTED"
+                    assert res["component_status"] == "WEAR"
+                    assert any("Elevated cycle count" in f for f in res["faults"])
 
 
 def test_windows_storage_smart_evaluation():
