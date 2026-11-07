@@ -4,13 +4,14 @@ Validates category-specific product specifications, catalog matching, condition 
 repair pricing, and deterministic circular path optimization while preserving laptop workflows.
 """
 import pytest
+from typing import Any
 from app.db.store import store
 from app.schemas.enums import ComponentStatus, DeviceCategory, Objective, PathwayType
 from app.schemas.product import ProductRecord, ProductSpecs
 from app.schemas.evidence import EvidenceItem, EvidenceType
 from app.services.assessment_service import assessment_service
 from app.services.recommendation_service import recommendation_service
-from app.schemas.recommendation import RecommendationRequest
+from app.schemas.recommendation import RecommendationRequest, ScoredPathway
 from app.knowledge.loader import get_generic_profile_for_category, match_catalog_model
 
 
@@ -81,9 +82,15 @@ def test_smartphone_assessment_and_virtual_keyboard():
     req = RecommendationRequest(product_id=prod_id, objective=Objective.LOWEST_COST, skip_ai_explanation=True)
     rec = recommendation_service.generate_recommendation(req)
     assert rec.selected_pathway in [PathwayType.REPAIR, PathwayType.REFURBISH, PathwayType.REUSE]
-    repair_pathway = next((p for p in rec.alternative_pathways if p.pathway.type == PathwayType.REPAIR), None)
-    assert repair_pathway is not None
-    assert repair_pathway.pathway.eligibility.is_eligible is True
+    repair_pw: Any = None
+    for p in rec.alternative_pathways:
+        pw = p.pathway if isinstance(p, ScoredPathway) else p
+        if getattr(pw, "type", None) == PathwayType.REPAIR:
+            repair_pw = pw
+            break
+    assert repair_pw is not None
+    is_eligible = getattr(getattr(repair_pw, "eligibility", None), "is_eligible", getattr(repair_pw, "eligibility", None))
+    assert is_eligible is True
 
 
 def test_desktop_assessment_mains_powered():

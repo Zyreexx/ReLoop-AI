@@ -49,6 +49,7 @@ def test_batch_upload_and_processing_end_to_end():
     assert data["total_devices"] == 4
 
     # 2. Wait for async processing to complete (bounded workers)
+    st: dict = {}
     for _ in range(50):
         st_resp = client.get(f"/api/batch/{job_id}/status")
         assert st_resp.status_code == 200

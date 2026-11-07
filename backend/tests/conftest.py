@@ -101,7 +101,7 @@ def repairable_condition_profile(dell_latitude_5420):
         components={
             "battery": ComponentCondition(
                 component="battery",
-                status=ComponentStatus.SERVICE_REQUIRED,
+                status=ComponentStatus.WEAR,
                 label="73% — Service Recommended",
                 observations=["Full charge capacity 42,340 mWh of 58,000 mWh design."],
                 measurements={"health_percentage": "73.0%", "cycle_count": "584"},
@@ -133,7 +133,7 @@ def repairable_condition_profile(dell_latitude_5420):
             ),
             "thermals": ComponentCondition(
                 component="thermals",
-                status=ComponentStatus.SERVICE_REQUIRED,
+                status=ComponentStatus.WEAR,
                 label="Service Required",
                 observations=["Peak temperature 96°C under workload; thermal throttling flagged."],
                 measurements={"cpu_max_temp": "96°C"},
@@ -152,7 +152,7 @@ def repairable_condition_profile(dell_latitude_5420):
             ),
             "keyboard": ComponentCondition(
                 component="keyboard",
-                status=ComponentStatus.SERVICE_REQUIRED,
+                status=ComponentStatus.WEAR,
                 label="Key Damage / Missing",
                 observations=["Missing keycap on keyboard deck."],
                 evidence_ids=["ev_kb_1"],
@@ -161,7 +161,7 @@ def repairable_condition_profile(dell_latitude_5420):
             ),
             "chassis": ComponentCondition(
                 component="chassis",
-                status=ComponentStatus.FAIR,
+                status=ComponentStatus.WEAR,
                 label="Moderate Cosmetic Wear",
                 observations=["Light scuffs; hinges firm."],
                 evidence_ids=["ev_chas_1"],
