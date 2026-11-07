@@ -71,7 +71,7 @@ def test_smartphone_assessment_and_virtual_keyboard():
     # Virtual keyboard should automatically synthesize as N/A Good
     kb = profile.components["keyboard"]
     assert kb.status == ComponentStatus.GOOD
-    assert "Virtual" in kb.label
+    assert kb.label is not None and "Virtual" in kb.label
 
     # Battery should be correctly flagged for service
     bat = profile.components["battery"]
@@ -112,12 +112,12 @@ def test_desktop_assessment_mains_powered():
     # Battery must synthesize as AC Mains Powered (GOOD), not UNKNOWN
     bat = profile.components["battery"]
     assert bat.status == ComponentStatus.GOOD
-    assert "AC Mains" in bat.label
+    assert bat.label is not None and "AC Mains" in bat.label
 
     # Display must synthesize as External / Modular (GOOD)
     disp = profile.components["display"]
     assert disp.status == ComponentStatus.GOOD
-    assert "External" in disp.label or "Headless" in disp.label
+    assert disp.label is not None and ("External" in disp.label or "Headless" in disp.label)
 
 
 def test_server_assessment_high_modularity_and_embodied_carbon():
