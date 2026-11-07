@@ -1,0 +1,48 @@
+{
+  "manufacturer": "Generic",
+  "model": "Standard Desktop PC",
+  "slug": "generic-desktop",
+  "aliases": ["generic-desktop", "desktop", "desktop pc", "tower pc", "workstation"],
+  "model_year": 2021,
+  "category": "DESKTOP",
+  "is_generic": true,
+  "specs": {
+    "category": "DESKTOP",
+    "ram_modular": true,
+    "ssd_modular": true,
+    "battery_replaceable": false,
+    "display_size_inches": 0.0,
+    "weight_kg": 7.5,
+    "baseline_embodied_co2_kg": 380.0,
+    "estimated_original_msrp_usd": 850.0
+  },
+  "component_configuration": {
+    "cpu": "Standard Multi-Core Desktop Processor (Socketed LGA/AM4)",
+    "ram_slots": 4,
+    "max_ram_gb": 64,
+    "ram_type": "DDR4 / DDR5 Desktop DIMM",
+    "storage_interface": "Multiple M.2 NVMe & SATA 3.0 Ports",
+    "battery_capacity_wh": 0.0,
+    "display_resolution": "External Monitor Output (HDMI/DisplayPort)",
+    "chassis_material": "Standard Steel / Mesh ATX Enclosure"
+  },
+  "repairability_score": {
+    "score": 9.2,
+    "max_score": 10.0,
+    "basis": "GENERIC_CATEGORY_ESTIMATE",
+    "note": "Exceptional modularity with standardized ATX power supplies, socketed CPUs, and expansion cards."
+  },
+  "typical_repair_cost_inr": {
+    "ssd": { "min": 2500, "max": 6000, "basis": "GENERIC_CATEGORY_ESTIMATE", "note": "Standard M.2 NVMe SSD (512GB-1TB)." },
+    "ram": { "min": 1800, "max": 4500, "basis": "GENERIC_CATEGORY_ESTIMATE", "note": "Standard desktop DDR4/DDR5 DIMM module." },
+    "thermals": { "min": 500, "max": 1500, "basis": "GENERIC_CATEGORY_ESTIMATE", "note": "CPU thermal paste re-application and case fan dusting." },
+    "motherboard": { "min": 4500, "max": 12000, "basis": "GENERIC_CATEGORY_ESTIMATE", "note": "Standard ATX/mATX replacement motherboard." }
+  },
+  "expected_useful_life": {
+    "baseline_years": 6.5,
+    "extended_years_post_repair": 4.0,
+    "basis": "GENERIC_CATEGORY_ESTIMATE",
+    "note": "Modular desktop architectures boast the longest usable lifespan across consumer electronics."
+  }
+}
+

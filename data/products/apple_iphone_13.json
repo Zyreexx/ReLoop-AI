@@ -1,0 +1,48 @@
+{
+  "manufacturer": "Apple",
+  "model": "iPhone 13",
+  "slug": "apple-iphone-13",
+  "aliases": ["iphone 13", "iphone13", "apple iphone 13", "a2633"],
+  "model_year": 2021,
+  "category": "SMARTPHONE",
+  "is_generic": false,
+  "specs": {
+    "category": "SMARTPHONE",
+    "ram_modular": false,
+    "ssd_modular": false,
+    "battery_replaceable": true,
+    "display_size_inches": 6.1,
+    "weight_kg": 0.174,
+    "baseline_embodied_co2_kg": 64.0,
+    "estimated_original_msrp_usd": 799.0
+  },
+  "component_configuration": {
+    "cpu": "Apple A15 Bionic (6-Core)",
+    "ram_slots": 0,
+    "max_ram_gb": 4,
+    "ram_type": "LPDDR4X PoP",
+    "storage_interface": "NVMe Onboard NAND Flash",
+    "battery_capacity_wh": 12.41,
+    "display_resolution": "2532x1170 Super Retina XDR OLED",
+    "chassis_material": "Ceramic Shield front, Glass back, Aluminum frame"
+  },
+  "repairability_score": {
+    "score": 6.5,
+    "max_score": 10.0,
+    "basis": "FRENCH_REPAIRABILITY_INDEX",
+    "note": "Independent disassembly possible with standard Pentalobe / Tri-point tools."
+  },
+  "typical_repair_cost_inr": {
+    "battery": { "min": 2500, "max": 4500, "basis": "OEM_SERVICE_BENCHMARK", "note": "OEM certified 3227mAh battery replacement." },
+    "display": { "min": 6500, "max": 12000, "basis": "OEM_SERVICE_BENCHMARK", "note": "Super Retina XDR OLED panel assembly." },
+    "ports": { "min": 1500, "max": 3000, "basis": "OEM_SERVICE_BENCHMARK", "note": "Lightning flex connector port board." },
+    "chassis": { "min": 2500, "max": 5500, "basis": "OEM_SERVICE_BENCHMARK", "note": "Back glass panel replacement." }
+  },
+  "expected_useful_life": {
+    "baseline_years": 4.5,
+    "extended_years_post_repair": 2.5,
+    "basis": "EMPIRICAL_TELEMETRY",
+    "note": "Extended iOS software support provides exceptional longevity."
+  }
+}
+

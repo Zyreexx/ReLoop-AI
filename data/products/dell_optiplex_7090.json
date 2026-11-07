@@ -1,0 +1,48 @@
+{
+  "manufacturer": "Dell",
+  "model": "OptiPlex 7090 Tower",
+  "slug": "dell-optiplex-7090",
+  "aliases": ["optiplex 7090", "dell optiplex 7090", "optiplex 7090 sff"],
+  "model_year": 2021,
+  "category": "DESKTOP",
+  "is_generic": false,
+  "specs": {
+    "category": "DESKTOP",
+    "ram_modular": true,
+    "ssd_modular": true,
+    "battery_replaceable": false,
+    "display_size_inches": 0.0,
+    "weight_kg": 6.56,
+    "baseline_embodied_co2_kg": 340.0,
+    "estimated_original_msrp_usd": 929.0
+  },
+  "component_configuration": {
+    "cpu": "Intel Core i7-11700 (8-Core, 2.50GHz to 4.90GHz)",
+    "ram_slots": 4,
+    "max_ram_gb": 128,
+    "ram_type": "DDR4-3200 Non-ECC UDIMM",
+    "storage_interface": "2x M.2 2280 PCIe NVMe, 2x 3.5 SATA bays",
+    "battery_capacity_wh": 0.0,
+    "display_resolution": "Integrated Intel UHD 750 (Dual DisplayPort 1.4)",
+    "chassis_material": "Toolless commercial steel chassis with 260W 80 PLUS Bronze PSU"
+  },
+  "repairability_score": {
+    "score": 9.0,
+    "max_score": 10.0,
+    "basis": "OEM_SERVICE_MANUAL",
+    "note": "Completely toolless side panel and tool-free hard drive caddies."
+  },
+  "typical_repair_cost_inr": {
+    "ssd": { "min": 2500, "max": 5500, "basis": "OEM_SERVICE_BENCHMARK", "note": "M.2 PCIe Gen 3/4 NVMe SSD replacement." },
+    "ram": { "min": 2000, "max": 4800, "basis": "OEM_SERVICE_BENCHMARK", "note": "DDR4 3200MHz UDIMM memory module." },
+    "thermals": { "min": 600, "max": 1800, "basis": "OEM_SERVICE_BENCHMARK", "note": "Chassis intake fan cleaning and CPU repasting." },
+    "motherboard": { "min": 5000, "max": 11000, "basis": "OEM_SERVICE_BENCHMARK", "note": "Dell Q570 chipset commercial motherboard." }
+  },
+  "expected_useful_life": {
+    "baseline_years": 7.0,
+    "extended_years_post_repair": 4.5,
+    "basis": "EMPIRICAL_TELEMETRY",
+    "note": "Enterprise build quality ensures extended decade-scale deployment."
+  }
+}
+

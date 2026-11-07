@@ -30,6 +30,11 @@ class ComponentStatus(str, Enum):
     DAMAGED = "DAMAGED"
     UNKNOWN = "UNKNOWN"
 
+    # Backward-compatible enum member aliases
+    SERVICE_REQUIRED = "WEAR"
+    REPLACE_REQUIRED = "REPLACE"
+    FAIR = "WEAR"
+
     @classmethod
     def _missing_(cls, value):
         if isinstance(value, str):
@@ -41,12 +46,6 @@ class ComponentStatus(str, Enum):
         return None
 
 
-# Backward-compatible attribute references
-ComponentStatus.SERVICE_REQUIRED = ComponentStatus.WEAR
-ComponentStatus.REPLACE_REQUIRED = ComponentStatus.REPLACE
-ComponentStatus.FAIR = ComponentStatus.WEAR
-
-
 class PathwayType(str, Enum):
     REPAIR = "REPAIR"
     UPGRADE = "UPGRADE"
@@ -54,6 +53,7 @@ class PathwayType(str, Enum):
     REUSE = "REUSE"
     COMPONENT_RECOVERY = "COMPONENT_RECOVERY"
     RECYCLE = "RECYCLE"
+    REUSE_REDEPLOY = "REUSE"
 
     @classmethod
     def _missing_(cls, value):
@@ -64,14 +64,15 @@ class PathwayType(str, Enum):
         return None
 
 
-PathwayType.REUSE_REDEPLOY = PathwayType.REUSE
-
-
 class Objective(str, Enum):
     LOWEST_COST = "LOWEST_COST"
     MAX_LIFE = "MAX_LIFE"
     ENVIRONMENTAL = "ENVIRONMENTAL"
     FASTEST_RECOVERY = "FASTEST_RECOVERY"
+
+    # Backward-compatible member aliases
+    MAXIMUM_LIFE = "MAX_LIFE"
+    ENVIRONMENTAL_BENEFIT = "ENVIRONMENTAL"
 
     @classmethod
     def _missing_(cls, value):
@@ -88,9 +89,6 @@ class Objective(str, Enum):
         return None
 
 
-Objective.MAXIMUM_LIFE = Objective.MAX_LIFE
-Objective.ENVIRONMENTAL_BENEFIT = Objective.ENVIRONMENTAL
-
 # Compatibility alias for code referencing ObjectiveType
 ObjectiveType = Objective
 
@@ -99,6 +97,8 @@ class DeviceCategory(str, Enum):
     LAPTOP = "LAPTOP"
     SMARTPHONE = "SMARTPHONE"
     TABLET = "TABLET"
+    DESKTOP = "DESKTOP"
+    SERVER = "SERVER"
     MONITOR = "MONITOR"
     OTHER = "OTHER"
 

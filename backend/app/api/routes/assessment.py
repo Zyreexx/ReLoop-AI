@@ -15,6 +15,7 @@ router = APIRouter(prefix="/assessment", tags=["Assessment"])
 
 class BuildAssessmentRequest(BaseModel):
     product_id: str
+    allow_multi_category: bool = False
 
 
 @router.post("/build", response_model=ConditionProfile)
@@ -26,7 +27,18 @@ def build_assessment(
     Synthesizes component-level condition profile from evidence provenance.
     Idempotent: Resubmitting the same assessment overwrites/updates the existing assessment.
     """
-    return assessment_service.build_profile(req.product_id, db=db)
+    return assessment_service.build_profile(req.product_id, db=db, allow_multi_category=req.allow_multi_category)
+
+
+@router.post("/multi-category/build", response_model=ConditionProfile)
+def build_multi_category_assessment(
+    req: BuildAssessmentRequest,
+    db: Session = Depends(get_db),
+):
+    """
+    Synthesizes component-level condition profile for any supported category (Laptop, Smartphone, Tablet, Desktop, Server).
+    """
+    return assessment_service.build_profile(req.product_id, db=db, allow_multi_category=True)
 
 
 @router.get("/{product_id}", response_model=ConditionProfile)

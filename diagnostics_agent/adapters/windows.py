@@ -73,7 +73,10 @@ class WindowsAdapter(BaseDiagnosticAdapter):
             temp_dir = os.environ.get("TEMP", os.environ.get("TMP", "."))
             xml_path = os.path.join(temp_dir, f"reloop_batt_{os.getpid()}.xml")
             gen_cmd = ["powercfg", "/batteryreport", "/xml", "/output", xml_path]
-            subprocess.run(gen_cmd, capture_output=True, timeout=10, check=False)
+            try:
+                subprocess.run(gen_cmd, capture_output=True, timeout=10, check=False)
+            except Exception:
+                pass
 
             if os.path.exists(xml_path):
                 with open(xml_path, "r", encoding="utf-8", errors="ignore") as f:

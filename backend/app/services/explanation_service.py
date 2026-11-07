@@ -205,6 +205,15 @@ def build_template_explanation(
 
 
 class ExplanationService:
+    def generate_template_explanation(
+        self,
+        product: Any,
+        recommendation: Recommendation,
+        profile: Optional[ConditionProfile] = None,
+    ) -> RecommendationExplanation:
+        """Generates a fast, deterministic template explanation without external AI calls."""
+        return build_template_explanation(product, recommendation, profile)
+
     def generate_guarded_explanation(
         self,
         product: Any,

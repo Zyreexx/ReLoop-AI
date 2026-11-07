@@ -41,6 +41,9 @@ brag-output
 # Archives & Temporary Extractions
 ReLoop AI/
 *.zip
+build/
+dist/
+
 
 # Vision Evaluation Dataset & Results
 data/vision_eval/*/

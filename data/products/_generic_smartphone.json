@@ -1,0 +1,48 @@
+{
+  "manufacturer": "Generic",
+  "model": "Standard Smartphone",
+  "slug": "generic-smartphone",
+  "aliases": ["generic-smartphone", "smartphone", "mobile phone", "generic phone"],
+  "model_year": 2022,
+  "category": "SMARTPHONE",
+  "is_generic": true,
+  "specs": {
+    "category": "SMARTPHONE",
+    "ram_modular": false,
+    "ssd_modular": false,
+    "battery_replaceable": true,
+    "display_size_inches": 6.1,
+    "weight_kg": 0.18,
+    "baseline_embodied_co2_kg": 72.0,
+    "estimated_original_msrp_usd": 699.0
+  },
+  "component_configuration": {
+    "cpu": "Octa-Core ARM Mobile SoC",
+    "ram_slots": 0,
+    "max_ram_gb": 8,
+    "ram_type": "LPDDR4X / LPDDR5 PoP Integrated",
+    "storage_interface": "UFS 3.1 Onboard Flash",
+    "battery_capacity_wh": 12.5,
+    "display_resolution": "2532x1170 OLED Display",
+    "chassis_material": "Glass front/back, Aluminum aerospace frame"
+  },
+  "repairability_score": {
+    "score": 6.0,
+    "max_score": 10.0,
+    "basis": "GENERIC_CATEGORY_ESTIMATE",
+    "note": "Standard modern smartphone with bonded adhesive front glass and replaceable battery."
+  },
+  "typical_repair_cost_inr": {
+    "battery": { "min": 1800, "max": 3500, "basis": "GENERIC_CATEGORY_ESTIMATE", "note": "Replacement Li-ion mobile battery pack and adhesive gasket." },
+    "display": { "min": 4500, "max": 9500, "basis": "GENERIC_CATEGORY_ESTIMATE", "note": "Replacement OLED/LCD digitizer screen assembly." },
+    "ports": { "min": 1200, "max": 2500, "basis": "GENERIC_CATEGORY_ESTIMATE", "note": "USB-C / Lightning flex charging port daughterboard." },
+    "chassis": { "min": 2000, "max": 4500, "basis": "GENERIC_CATEGORY_ESTIMATE", "note": "Rear glass and mid-frame replacement." }
+  },
+  "expected_useful_life": {
+    "baseline_years": 3.5,
+    "extended_years_post_repair": 2.0,
+    "basis": "GENERIC_CATEGORY_ESTIMATE",
+    "note": "Smartphone typical useful operating lifecycle with battery and screen service."
+  }
+}
+

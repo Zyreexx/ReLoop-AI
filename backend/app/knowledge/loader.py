@@ -6,7 +6,7 @@ Reads product definitions directly from data/products/*.json.
 import json
 import logging
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from app.errors import AppError, ErrorCode, UNSUPPORTED_MODEL
 from app.schemas.enums import ConfidenceLevel, DeviceCategory
@@ -118,14 +118,74 @@ def get_generic_laptop_profile(force_reload: bool = False) -> dict:
     return _GENERIC_CACHE
 
 
+_CATEGORY_GENERIC_CACHES: Dict[str, dict] = {}
+
+
+def get_generic_profile_for_category(category: Any, force_reload: bool = False) -> dict:
+    """
+    Loads generic category-level profile (e.g. smartphone, tablet, desktop, server, laptop).
+    """
+    cat_str = (category.value if hasattr(category, "value") else str(category)).lower()
+    global _CATEGORY_GENERIC_CACHES
+    if not force_reload and cat_str in _CATEGORY_GENERIC_CACHES:
+        return _CATEGORY_GENERIC_CACHES[cat_str]
+
+    products_dir = get_products_data_dir()
+    generic_file = products_dir / f"_generic_{cat_str}.json"
+    if generic_file.exists():
+        try:
+            with open(generic_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                _CATEGORY_GENERIC_CACHES[cat_str] = data
+                return data
+        except Exception as e:
+            logger.error(f"Error loading generic product file {generic_file}: {e}")
+
+    # Fallback to generic laptop
+    return get_generic_laptop_profile(force_reload=force_reload)
+
+
 def load_all_products(force_reload: bool = False) -> Dict[str, dict]:
     """
-    Loads all non-generic product JSON files into an in-memory dictionary keyed by slug.
-    Files starting with '_' (e.g. _generic_laptop.json) are excluded from the specific catalog.
+    Loads all non-generic laptop product JSON files into an in-memory dictionary keyed by slug.
+    Files starting with '_' (e.g. _generic_laptop.json) and non-laptop categories are excluded.
     """
     global _PRODUCTS_CACHE
     if _PRODUCTS_CACHE is not None and not force_reload:
         return _PRODUCTS_CACHE
+
+    products_dir = get_products_data_dir()
+    cache: Dict[str, dict] = {}
+
+    if products_dir.exists():
+        for json_file in products_dir.glob("*.json"):
+            if json_file.name.startswith("_"):
+                continue
+            try:
+                with open(json_file, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    if data.get("category", "LAPTOP") != "LAPTOP":
+                        continue
+                    slug = data.get("slug") or json_file.stem.replace("_", "-")
+                    data["slug"] = slug
+                    cache[slug] = data
+            except Exception as e:
+                logger.error(f"Error loading product file {json_file}: {e}")
+
+    _PRODUCTS_CACHE = cache
+    return _PRODUCTS_CACHE
+
+
+_ALL_CATEGORIES_CACHE: Optional[Dict[str, dict]] = None
+
+
+def load_multi_category_products(force_reload: bool = False) -> Dict[str, dict]:
+    """
+    Loads all non-generic product JSON files across all supported device categories.
+    """
+    global _ALL_CATEGORIES_CACHE
+    if _ALL_CATEGORIES_CACHE is not None and not force_reload:
+        return _ALL_CATEGORIES_CACHE
 
     products_dir = get_products_data_dir()
     cache: Dict[str, dict] = {}
@@ -143,8 +203,8 @@ def load_all_products(force_reload: bool = False) -> Dict[str, dict]:
             except Exception as e:
                 logger.error(f"Error loading product file {json_file}: {e}")
 
-    _PRODUCTS_CACHE = cache
-    return _PRODUCTS_CACHE
+    _ALL_CATEGORIES_CACHE = cache
+    return _ALL_CATEGORIES_CACHE
 
 
 def get_supported_models() -> List[dict]:
@@ -184,7 +244,11 @@ def _normalize_string(s: str) -> str:
     return "".join(c.lower() for c in s if c.isalnum())
 
 
-def match_catalog_model(manufacturer: Optional[str], model: Optional[str]) -> Optional[dict]:
+def match_catalog_model(
+    manufacturer: Optional[str],
+    model: Optional[str],
+    category: Optional[Any] = None,
+) -> Optional[dict]:
     """
     Matches an identified manufacturer + model string to a catalog entry.
     - Case-insensitive match on manufacturer.
@@ -200,7 +264,10 @@ def match_catalog_model(manufacturer: Optional[str], model: Optional[str]) -> Op
     if mfr_clean in ["unknown", "generic"] or model_clean in ["unknown", "generic", "general laptop"]:
         return None
 
-    products = load_all_products()
+    if category and str(category).upper() not in ("LAPTOP", "DEVICECATEGORY.LAPTOP"):
+        products = load_multi_category_products()
+    else:
+        products = load_all_products()
     model_norm = _normalize_string(model_clean)
     full_query_norm = _normalize_string(f"{mfr_clean} {model_clean}")
 
@@ -375,10 +442,11 @@ def get_model_spec_or_generic(
     model_or_slug: Optional[str] = None,
     manufacturer: Optional[str] = None,
     model: Optional[str] = None,
+    category: Optional[Any] = None,
 ) -> tuple[dict, bool]:
     """
     Attempts to match a specific catalog model. If matched, returns (spec_dict, False).
-    If not matched, falls back to the generic laptop profile and returns (generic_dict, True).
+    If not matched, falls back to the generic category profile and returns (generic_dict, True).
     """
     # 1. Try match by manufacturer + model
     if manufacturer and model:
@@ -394,7 +462,9 @@ def get_model_spec_or_generic(
         except Exception:
             pass
 
-    # 3. Fallback to generic
+    # 3. Fallback to generic for category
+    if category:
+        return get_generic_profile_for_category(category), True
     return get_generic_laptop_profile(), True
 
 
@@ -403,6 +473,7 @@ def get_repair_cost_with_fallback(
     component: str = "battery",
     manufacturer: Optional[str] = None,
     model: Optional[str] = None,
+    category: Optional[Any] = None,
 ) -> dict:
     """
     Retrieves repair cost for a component. If the device matches a catalog entry,
@@ -413,6 +484,7 @@ def get_repair_cost_with_fallback(
         model_or_slug=model_or_slug,
         manufacturer=manufacturer,
         model=model,
+        category=category,
     )
     costs = spec.get("typical_repair_cost_inr", {})
     comp_key = component.strip().lower()

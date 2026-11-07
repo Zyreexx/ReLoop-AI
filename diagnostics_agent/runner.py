@@ -9,9 +9,11 @@ import sys
 import time
 import urllib.request
 import urllib.error
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 from diagnostics_agent.os_detect import detect_os
 from diagnostics_agent.collector import StructuredCollector
+
+AGENT_VERSION = "1.2.0"
 
 CONSENT_TEXT = """
 ================================================================================
@@ -79,8 +81,60 @@ def submit_results(api_url: str, session_token: str, payload: Dict[str, Any]) ->
         return False
 
 
+def run_health_check(api_url: Optional[str] = None) -> Dict[str, Any]:
+    """Run an automated diagnostic environment and capability health check."""
+    os_info = detect_os()
+    checks: Dict[str, Any] = {
+        "os_supported": os_info.system in ["Windows", "Darwin", "Linux"],
+        "os_system": os_info.system,
+        "os_release": os_info.release,
+        "os_architecture": os_info.machine,
+        "is_admin": os_info.is_admin,
+        "available_tools": os_info.available_tools,
+    }
+
+    adapter_ok = False
+    try:
+        collector = StructuredCollector(os_info)
+        adapter_ok = collector.adapter is not None
+    except Exception as e:
+        checks["adapter_error"] = str(e)
+    checks["adapter_initialized"] = adapter_ok
+
+    backend_reachable = None
+    if api_url:
+        try:
+            req = urllib.request.Request(f"{api_url.rstrip('/')}/health", method="GET")
+            with urllib.request.urlopen(req, timeout=3) as resp:
+                backend_reachable = resp.status == 200
+        except Exception:
+            backend_reachable = False
+    checks["backend_reachable"] = backend_reachable
+
+    status = "HEALTHY" if (checks["os_supported"] and adapter_ok) else "DEGRADED"
+    return {
+        "status": status,
+        "version": AGENT_VERSION,
+        "timestamp": time.time(),
+        "checks": checks,
+    }
+
+
 def main():
-    parser = argparse.ArgumentParser(description="ReLoop AI Cross-Platform Smart Diagnostics Agent")
+    parser = argparse.ArgumentParser(
+        description="ReLoop AI Cross-Platform Smart Diagnostics Agent",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument(
+        "--version", "-v",
+        action="version",
+        version=f"ReLoop AI Diagnostics Agent v{AGENT_VERSION}",
+    )
+    parser.add_argument(
+        "--health", "--check-health",
+        action="store_true",
+        help="Run environment health check and verify hardware diagnostic capabilities",
+    )
     parser.add_argument("--token", type=str, help="Session token provided by the ReLoop web interface")
     parser.add_argument("--api-url", type=str, default="http://127.0.0.1:8000", help="ReLoop backend API base URL")
     parser.add_argument("--consent", action="store_true", help="Explicitly grant consent without interactive prompt")
@@ -88,6 +142,27 @@ def main():
     parser.add_argument("--json-output", type=str, help="Optional filepath to save diagnostic JSON output")
 
     args = parser.parse_args()
+
+    if args.health:
+        health_data = run_health_check(args.api_url)
+        if args.json_output:
+            with open(args.json_output, "w", encoding="utf-8") as f:
+                json.dump(health_data, f, indent=2)
+            print(f"[+] Health check report written to: {args.json_output}")
+        else:
+            print(f"\n================================================================================")
+            print(f"       ReLoop AI Diagnostics Agent v{health_data['version']} — Health Status: [{health_data['status']}]")
+            print(f"================================================================================")
+            checks = health_data["checks"]
+            print(f"  Operating System      : {checks['os_system']} {checks['os_release']} ({checks['os_architecture']})")
+            print(f"  Platform Supported    : {'[OK]' if checks['os_supported'] else '[FAIL]'}")
+            print(f"  Privileges            : {'[Elevated / Admin]' if checks['is_admin'] else '[Standard User]'}")
+            print(f"  Adapter Initialized   : {'[OK]' if checks['adapter_initialized'] else '[FAIL]'}")
+            if checks["backend_reachable"] is not None:
+                print(f"  Backend ({args.api_url}): {'[Reachable]' if checks['backend_reachable'] else '[Unreachable / Offline]'}")
+            print(f"  Available Utilities   : {', '.join(k for k, v in checks['available_tools'].items() if v) or 'None'}")
+            print("================================================================================\n")
+        sys.exit(0 if health_data["status"] == "HEALTHY" else 1)
 
     if not args.consent and not args.dry_run:
         if not prompt_consent():

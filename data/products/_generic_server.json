@@ -1,0 +1,48 @@
+{
+  "manufacturer": "Generic",
+  "model": "Standard Enterprise Rack Server",
+  "slug": "generic-server",
+  "aliases": ["generic-server", "rack server", "server", "enterprise server"],
+  "model_year": 2020,
+  "category": "SERVER",
+  "is_generic": true,
+  "specs": {
+    "category": "SERVER",
+    "ram_modular": true,
+    "ssd_modular": true,
+    "battery_replaceable": false,
+    "display_size_inches": 0.0,
+    "weight_kg": 18.0,
+    "baseline_embodied_co2_kg": 1150.0,
+    "estimated_original_msrp_usd": 3200.0
+  },
+  "component_configuration": {
+    "cpu": "Dual Socket Enterprise Xeon / EPYC",
+    "ram_slots": 16,
+    "max_ram_gb": 1024,
+    "ram_type": "DDR4 ECC Registered RDIMM",
+    "storage_interface": "Hot-Plug SAS/SATA/NVMe Drive Bays with Hardware RAID",
+    "battery_capacity_wh": 0.0,
+    "display_resolution": "Headless / Remote IPMI BMC KVM (VGA diagnostic port)",
+    "chassis_material": "Heavy-duty 1U/2U steel rackmount chassis with redundant hot-swap fans"
+  },
+  "repairability_score": {
+    "score": 9.5,
+    "max_score": 10.0,
+    "basis": "GENERIC_CATEGORY_ESTIMATE",
+    "note": "Enterprise field-replaceable units (FRUs), redundant power supplies, hot-plug drives and modular riser cards."
+  },
+  "typical_repair_cost_inr": {
+    "ssd": { "min": 6000, "max": 18000, "basis": "GENERIC_CATEGORY_ESTIMATE", "note": "Enterprise high-DWPD SAS/NVMe hot-plug drive." },
+    "ram": { "min": 3500, "max": 12000, "basis": "GENERIC_CATEGORY_ESTIMATE", "note": "32GB/64GB DDR4 ECC Registered RDIMM." },
+    "thermals": { "min": 1500, "max": 4500, "basis": "GENERIC_CATEGORY_ESTIMATE", "note": "Hot-swap redundant chassis cooling fan module." },
+    "motherboard": { "min": 18000, "max": 45000, "basis": "GENERIC_CATEGORY_ESTIMATE", "note": "Dual-socket enterprise server system board." }
+  },
+  "expected_useful_life": {
+    "baseline_years": 7.0,
+    "extended_years_post_repair": 5.0,
+    "basis": "GENERIC_CATEGORY_ESTIMATE",
+    "note": "Servers transitioned to second-life compute, lab clusters, or cold storage deliver immense circular value."
+  }
+}
+

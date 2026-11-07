@@ -1,0 +1,48 @@
+{
+  "manufacturer": "Apple",
+  "model": "iPad Air (4th Generation)",
+  "slug": "apple-ipad-air-4",
+  "aliases": ["ipad air 4", "ipad air 4th gen", "a2316", "apple ipad air 4"],
+  "model_year": 2020,
+  "category": "TABLET",
+  "is_generic": false,
+  "specs": {
+    "category": "TABLET",
+    "ram_modular": false,
+    "ssd_modular": false,
+    "battery_replaceable": true,
+    "display_size_inches": 10.9,
+    "weight_kg": 0.458,
+    "baseline_embodied_co2_kg": 98.0,
+    "estimated_original_msrp_usd": 599.0
+  },
+  "component_configuration": {
+    "cpu": "Apple A14 Bionic",
+    "ram_slots": 0,
+    "max_ram_gb": 4,
+    "ram_type": "LPDDR4X",
+    "storage_interface": "NVMe Onboard NAND",
+    "battery_capacity_wh": 28.6,
+    "display_resolution": "2360x1640 Liquid Retina IPS",
+    "chassis_material": "100% Recycled Aluminum Unibody"
+  },
+  "repairability_score": {
+    "score": 5.0,
+    "max_score": 10.0,
+    "basis": "FRENCH_REPAIRABILITY_INDEX",
+    "note": "Fully laminated display; USB-C port modular daughterboard."
+  },
+  "typical_repair_cost_inr": {
+    "battery": { "min": 3000, "max": 5500, "basis": "OEM_SERVICE_BENCHMARK", "note": "OEM 7606mAh replacement battery pack." },
+    "display": { "min": 7500, "max": 14000, "basis": "OEM_SERVICE_BENCHMARK", "note": "10.9 Liquid Retina True Tone laminated display." },
+    "ports": { "min": 2000, "max": 3800, "basis": "OEM_SERVICE_BENCHMARK", "note": "Modular USB-C connector board." },
+    "chassis": { "min": 3000, "max": 6500, "basis": "OEM_SERVICE_BENCHMARK", "note": "Recycled aluminum unibody housing." }
+  },
+  "expected_useful_life": {
+    "baseline_years": 5.0,
+    "extended_years_post_repair": 3.0,
+    "basis": "EMPIRICAL_TELEMETRY",
+    "note": "A14 Bionic provides strong multi-year iPadOS performance."
+  }
+}
+
