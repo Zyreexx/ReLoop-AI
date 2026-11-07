@@ -1,0 +1,48 @@
+{
+  "manufacturer": "Generic",
+  "model": "Standard Tablet",
+  "slug": "generic-tablet",
+  "aliases": ["generic-tablet", "tablet", "generic pad", "android tablet"],
+  "model_year": 2021,
+  "category": "TABLET",
+  "is_generic": true,
+  "specs": {
+    "category": "TABLET",
+    "ram_modular": false,
+    "ssd_modular": false,
+    "battery_replaceable": true,
+    "display_size_inches": 10.5,
+    "weight_kg": 0.48,
+    "baseline_embodied_co2_kg": 110.0,
+    "estimated_original_msrp_usd": 499.0
+  },
+  "component_configuration": {
+    "cpu": "Octa-Core Tablet Processor",
+    "ram_slots": 0,
+    "max_ram_gb": 6,
+    "ram_type": "LPDDR4X",
+    "storage_interface": "eMMC 5.1 / UFS Flash",
+    "battery_capacity_wh": 28.5,
+    "display_resolution": "2000x1200 IPS Touchscreen",
+    "chassis_material": "Anodized Aluminum Unibody"
+  },
+  "repairability_score": {
+    "score": 5.5,
+    "max_score": 10.0,
+    "basis": "GENERIC_CATEGORY_ESTIMATE",
+    "note": "Glued glass digitizer requires heat separation; modular battery tabs."
+  },
+  "typical_repair_cost_inr": {
+    "battery": { "min": 2200, "max": 4200, "basis": "GENERIC_CATEGORY_ESTIMATE", "note": "High-capacity tablet replacement battery." },
+    "display": { "min": 5000, "max": 10500, "basis": "GENERIC_CATEGORY_ESTIMATE", "note": "Touch digitizer and IPS LCD panel assembly." },
+    "ports": { "min": 1500, "max": 3000, "basis": "GENERIC_CATEGORY_ESTIMATE", "note": "USB-C charging dock connector." },
+    "chassis": { "min": 1800, "max": 4000, "basis": "GENERIC_CATEGORY_ESTIMATE", "note": "Aluminum housing straightening or frame swap." }
+  },
+  "expected_useful_life": {
+    "baseline_years": 4.0,
+    "extended_years_post_repair": 2.5,
+    "basis": "GENERIC_CATEGORY_ESTIMATE",
+    "note": "Typical tablet lifecycle when used for media consumption or smart displays."
+  }
+}
+

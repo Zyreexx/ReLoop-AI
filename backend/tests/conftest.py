@@ -6,9 +6,10 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-# Add backend directory to sys.path
+# Add backend and project root directory to sys.path
 backend_dir = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(backend_dir))
+sys.path.insert(0, str(backend_dir.parent))
 
 from app.main import app
 from app.db.store import store
@@ -72,7 +73,7 @@ def dell_latitude_5420():
         model="Latitude 5420",
         model_year=2021,
         category=DeviceCategory.LAPTOP,
-        age_years=4.5,
+        age=4.5,
         specs=ProductSpecs(
             category=DeviceCategory.LAPTOP,
             ram_modular=True,

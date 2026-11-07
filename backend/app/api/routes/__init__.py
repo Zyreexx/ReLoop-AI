@@ -11,6 +11,10 @@ from app.api.routes.assessment import router as assessment_router
 from app.api.routes.recommendations import router as recommendations_router
 from app.api.routes.reports import router as reports_router
 from app.api.routes.auth import router as auth_router
+from app.api.routes.parts import router as parts_router
+from app.api.routes.batch import router as batch_router
+from app.api.routes.dpp import router as dpp_router
+from app.api.routes.locator import router as locator_router
 
 
 api_router = APIRouter(prefix="/api")
@@ -23,5 +27,9 @@ api_router.include_router(symptoms_router)
 api_router.include_router(assessment_router)
 api_router.include_router(recommendations_router)
 api_router.include_router(reports_router)
+api_router.include_router(parts_router)
+api_router.include_router(batch_router)
+api_router.include_router(dpp_router)
+api_router.include_router(locator_router)
 
 __all__ = ["api_router"]

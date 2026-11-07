@@ -88,11 +88,18 @@ class RecommendationService:
 
         # Generate guarded narrative explanation (AI with template fallback)
         from app.services.explanation_service import explanation_service
-        rec.explanation = explanation_service.generate_guarded_explanation(
-            product=product,
-            recommendation=rec,
-            profile=profile,
-        )
+        if getattr(req, "skip_ai_explanation", False):
+            rec.explanation = explanation_service.generate_template_explanation(
+                product=product,
+                recommendation=rec,
+                profile=profile,
+            )
+        else:
+            rec.explanation = explanation_service.generate_guarded_explanation(
+                product=product,
+                recommendation=rec,
+                profile=profile,
+            )
 
         # Save to database and memory store
         if db:

@@ -38,79 +38,63 @@ from app.schemas.product import ProductRecord
 
 class AssessmentService:
 
-    def build_profile(self, product_id: str, db: Optional[Session] = None) -> ConditionProfile:
-
+    def build_profile(
+        self,
+        product_id: str,
+        db: Optional[Session] = None,
+        allow_multi_category: bool = True,
+    ) -> ConditionProfile:
         from app.db.repositories import product_repo, evidence_repo, assessment_repo
-
         product = store.get_product(product_id)
-
         if not product and db:
-
             product = product_repo.get_by_id(db, product_id)
 
-
-
         if not product:
-
             raise AppException(
-
                 code="PRODUCT_NOT_FOUND",
-
                 message=f"No product registered with ID '{product_id}'. Please identify product first.",
-
                 field="product_id",
-
                 status_code=404,
-
             )
-
-
 
         cat_val = (product.category.value if hasattr(product.category, "value") else str(product.category)).upper() if product.category else "LAPTOP"
 
-        if cat_val not in ("LAPTOP", "DEVICECATEGORY.LAPTOP"):
+        if not allow_multi_category:
+            if cat_val not in ("LAPTOP", "DEVICECATEGORY.LAPTOP"):
+                raise AppException(
+                    code="INVALID_DEVICE_CATEGORY",
+                    message=f"ReLoop AI circular assessment only supports laptops. Device '{product.manufacturer} {product.model}' ({product.category}) cannot be assessed.",
+                    field="product_id",
+                    status_code=400,
+                )
 
-            raise AppException(
-
-                code="INVALID_DEVICE_CATEGORY",
-
-                message=f"ReLoop AI circular assessment only supports laptops. Device '{product.manufacturer} {product.model}' ({product.category}) cannot be assessed.",
-
-                field="product_id",
-
-                status_code=400,
-
-            )
-
-
-
-        import re
-
-        from app.services.vision import NON_LAPTOP_DEVICE_PATTERNS
-
-        combined_dev = f"{product.manufacturer} {product.model}".lower()
-
-        laptop_exceptions = ["galaxy book", "pixelbook", "chromebook", "surface laptop", "surface book", "zenbook", "thinkpad", "elitebook", "macbook", "latitude"]
-
-        if not any(le in combined_dev for le in laptop_exceptions):
-
-            for dev_name, patterns in NON_LAPTOP_DEVICE_PATTERNS:
-
-                for p in patterns:
-
-                    if re.search(p, combined_dev):
-
-                        raise AppException(
-
-                            code="INVALID_DEVICE_CATEGORY",
-
-                            message=f"ReLoop AI circular assessment only supports laptops. Non-laptop device '{product.manufacturer} {product.model}' cannot be assessed.",
-
-                            field="product_id",
-
-                            status_code=400,
-
-                        )
+            import re
+            from app.services.vision import NON_LAPTOP_DEVICE_PATTERNS
+            combined_dev = f"{product.manufacturer} {product.model}".lower()
+            laptop_exceptions = ["galaxy book", "pixelbook", "chromebook", "surface laptop", "surface book", "zenbook", "thinkpad", "elitebook", "macbook", "latitude"]
+            if not any(le in combined_dev for le in laptop_exceptions):
+                for dev_name, patterns in NON_LAPTOP_DEVICE_PATTERNS:
+                    for p in patterns:
+                        if re.search(p, combined_dev):
+                            raise AppException(
+                                code="INVALID_DEVICE_CATEGORY",
+                                message=f"ReLoop AI circular assessment only supports laptops. Non-laptop device '{product.manufacturer} {product.model}' cannot be assessed.",
+                                field="product_id",
+                                status_code=400,
+                            )
+        else:
+            supported = {
+                "LAPTOP", "SMARTPHONE", "TABLET", "DESKTOP", "SERVER",
+                "DEVICECATEGORY.LAPTOP", "DEVICECATEGORY.SMARTPHONE",
+                "DEVICECATEGORY.TABLET", "DEVICECATEGORY.DESKTOP", "DEVICECATEGORY.SERVER",
+            }
+            if cat_val not in supported:
+                raise AppException(
+                    code="INVALID_DEVICE_CATEGORY",
+                    message=f"Device category '{product.category}' is unsupported. ReLoop AI supports Laptops, Smartphones, Tablets, Desktops, and Servers.",
+                    field="product_id",
+                    status_code=400,
+                )
 
 
 
@@ -263,6 +247,21 @@ class AssessmentService:
         evidence_ids = [e.id for e in evs]
 
         sources = [e.source for e in evs]
+
+        cat = getattr(prod, "category", None)
+        cat_val = (cat.value if hasattr(cat, "value") else str(cat)).upper()
+        if cat_val in ["DESKTOP", "SERVER"]:
+            return ComponentCondition(
+                component="battery",
+                status=ComponentStatus.GOOD,
+                label="N/A — AC Mains Powered",
+                observations=["AC mains powered architecture; secondary chemical battery not applicable."],
+                confidence=ConfidenceLevel.HIGH,
+                evidence_ids=evidence_ids,
+                evidence_sources=["DATABASE"],
+                repairable=False,
+                upgradeable=False,
+            )
 
 
 
@@ -700,6 +699,21 @@ class AssessmentService:
         sources = [e.source for e in evs]
         observations = []
 
+        cat = getattr(prod, "category", None)
+        cat_val = (cat.value if hasattr(cat, "value") else str(cat)).upper()
+        if cat_val in ["DESKTOP", "SERVER"]:
+            return ComponentCondition(
+                component="display",
+                status=ComponentStatus.GOOD,
+                label="N/A — External Display / Headless",
+                observations=["Modular video interface; integrated physical panel not applicable."],
+                confidence=ConfidenceLevel.HIGH,
+                evidence_ids=evidence_ids,
+                evidence_sources=["DATABASE"],
+                repairable=False,
+                upgradeable=False,
+            )
+
         # Process visual findings from photos
         has_vis_severe = False
         has_vis_moderate = False
@@ -792,6 +806,33 @@ class AssessmentService:
         sources = [e.source for e in evs]
 
         observations = []
+
+        cat = getattr(prod, "category", None)
+        cat_val = (cat.value if hasattr(cat, "value") else str(cat)).upper()
+        if cat_val in ["SMARTPHONE", "TABLET"]:
+            return ComponentCondition(
+                component="keyboard",
+                status=ComponentStatus.GOOD,
+                label="N/A — Virtual Touchscreen Input",
+                observations=["Capacitive touchscreen input; physical mechanical keyboard not applicable."],
+                confidence=ConfidenceLevel.HIGH,
+                evidence_ids=evidence_ids,
+                evidence_sources=["DATABASE"],
+                repairable=False,
+                upgradeable=False,
+            )
+        elif cat_val == "SERVER":
+            return ComponentCondition(
+                component="keyboard",
+                status=ComponentStatus.GOOD,
+                label="N/A — Headless Rackmount Server",
+                observations=["Headless server architecture; managed via remote IPMI/BMC."],
+                confidence=ConfidenceLevel.HIGH,
+                evidence_ids=evidence_ids,
+                evidence_sources=["DATABASE"],
+                repairable=False,
+                upgradeable=False,
+            )
 
 
 

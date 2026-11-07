@@ -103,6 +103,7 @@ class RecommendationsGenerateRequest(BaseModel):
     product_id: str
     objective: Objective = Objective.MAX_LIFE
     condition_profile_override: Optional[dict] = None
+    skip_ai_explanation: bool = False
 
 
 class RecommendationsGenerateResponse(Recommendation):

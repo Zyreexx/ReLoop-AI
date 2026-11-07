@@ -1,0 +1,48 @@
+{
+  "manufacturer": "Dell",
+  "model": "PowerEdge R640",
+  "slug": "dell-poweredge-r640",
+  "aliases": ["poweredge r640", "dell r640", "r640 server", "dell poweredge r640"],
+  "model_year": 2019,
+  "category": "SERVER",
+  "is_generic": false,
+  "specs": {
+    "category": "SERVER",
+    "ram_modular": true,
+    "ssd_modular": true,
+    "battery_replaceable": false,
+    "display_size_inches": 0.0,
+    "weight_kg": 17.6,
+    "baseline_embodied_co2_kg": 1280.0,
+    "estimated_original_msrp_usd": 3850.0
+  },
+  "component_configuration": {
+    "cpu": "Dual Intel Xeon Silver 4210R (20 Cores total)",
+    "ram_slots": 24,
+    "max_ram_gb": 1536,
+    "ram_type": "DDR4-2933 ECC Registered RDIMM",
+    "storage_interface": "10x 2.5 Hot-Plug SAS/SATA/NVMe with PERC H730P RAID",
+    "battery_capacity_wh": 0.0,
+    "display_resolution": "Integrated Matrox G200eW3 with iDRAC9 Enterprise",
+    "chassis_material": "1U Rack Chassis with Dual 750W Platinum Hot-Plug Redundant PSUs"
+  },
+  "repairability_score": {
+    "score": 9.6,
+    "max_score": 10.0,
+    "basis": "OEM_ENTERPRISE_SERVICE_MANUAL",
+    "note": "Maximum modularity: Toolless drives, hot-swap redundant PSUs and fans, PCIe riser cages."
+  },
+  "typical_repair_cost_inr": {
+    "ssd": { "min": 7500, "max": 20000, "basis": "OEM_SERVICE_BENCHMARK", "note": "Enterprise 960GB-1.92TB Read-Intensive SAS SSD." },
+    "ram": { "min": 4000, "max": 14000, "basis": "OEM_SERVICE_BENCHMARK", "note": "32GB DDR4-2933 ECC RDIMM module." },
+    "thermals": { "min": 2000, "max": 5000, "basis": "OEM_SERVICE_BENCHMARK", "note": "Dell high-performance dual-rotor fan module." },
+    "motherboard": { "min": 22000, "max": 50000, "basis": "OEM_SERVICE_BENCHMARK", "note": "PowerEdge R640 dual-socket planar board." }
+  },
+  "expected_useful_life": {
+    "baseline_years": 8.0,
+    "extended_years_post_repair": 5.0,
+    "basis": "EMPIRICAL_TELEMETRY",
+    "note": "Exceptional candidate for virtualization clusters, Homelabs, or cloud storage nodes."
+  }
+}
+

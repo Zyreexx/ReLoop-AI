@@ -99,6 +99,8 @@ class DeviceCategory(str, Enum):
     LAPTOP = "LAPTOP"
     SMARTPHONE = "SMARTPHONE"
     TABLET = "TABLET"
+    DESKTOP = "DESKTOP"
+    SERVER = "SERVER"
     MONITOR = "MONITOR"
     OTHER = "OTHER"
 

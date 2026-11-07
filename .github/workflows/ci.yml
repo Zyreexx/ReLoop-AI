@@ -1,0 +1,74 @@
+name: ReLoop AI - Production CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  backend-test:
+    name: Backend Test Suite & Quality Assurance
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install Backend Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+
+      - name: Run Pytest Test Suite
+        env:
+          ENVIRONMENT: test
+          DEMO_FALLBACK: "false"
+        run: |
+          pytest backend/tests diagnostics_agent/tests -v
+
+  frontend-check:
+    name: Frontend TypeScript & Production Build Verification
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Frontend Dependencies
+        working-directory: frontend
+        run: npm ci || npm install
+
+      - name: TypeScript Type Checking
+        working-directory: frontend
+        run: npx tsc --noEmit
+
+      - name: Next.js Production Build
+        working-directory: frontend
+        env:
+          NEXT_PUBLIC_BACKEND_URL: "https://api.reloop.ai"
+        run: npm run build
+
+  security-scan:
+    name: Security & Secret Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Verify No Committed Secrets
+        run: |
+          echo "Scanning for accidental committed secret patterns..."
+          ! grep -rn "AIzaSy" --exclude-dir={.git,.venv,node_modules} .
+

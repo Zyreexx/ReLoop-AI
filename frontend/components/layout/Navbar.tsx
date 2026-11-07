@@ -78,6 +78,22 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth }) => {
               {t("nav.howItWorks")}
             </Link>
             <Link
+              href="/batch"
+              className={`px-3 py-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 hover:text-[#1D1D1F] dark:hover:text-white transition-all whitespace-nowrap ${
+                pathname === "/batch" ? "text-[#0071E3] dark:text-[#0071E3] font-semibold bg-[#0071E3]/5" : ""
+              }`}
+            >
+              Batch Fleet
+            </Link>
+            <Link
+              href="/locator"
+              className={`px-3 py-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 hover:text-[#1D1D1F] dark:hover:text-white transition-all whitespace-nowrap ${
+                pathname === "/locator" ? "text-[#0071E3] dark:text-[#0071E3] font-semibold bg-[#0071E3]/5" : ""
+              }`}
+            >
+              Recyclers
+            </Link>
+            <Link
               href="/about"
               className={`px-3 py-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 hover:text-[#1D1D1F] dark:hover:text-white transition-all whitespace-nowrap ${
                 pathname === "/about" || pathname === "/engine" ? "text-[#0071E3] dark:text-[#0071E3] font-semibold bg-[#0071E3]/5" : ""
@@ -186,6 +202,20 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth }) => {
               className="text-[15px] font-medium text-[#1D1D1F] py-1.5"
             >
               {t("nav.howItWorks")}
+            </Link>
+            <Link
+              href="/batch"
+              onClick={() => setMobileMenuOpen(false)}
+              className="text-[15px] font-medium text-[#1D1D1F] py-1.5"
+            >
+              Batch Fleet
+            </Link>
+            <Link
+              href="/locator"
+              onClick={() => setMobileMenuOpen(false)}
+              className="text-[15px] font-medium text-[#1D1D1F] py-1.5"
+            >
+              Recycler Locator
             </Link>
             <Link
               href="/about"

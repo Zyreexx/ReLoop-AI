@@ -32,7 +32,7 @@ class Product(BaseModel):
     model_year: int
     category: DeviceCategory = DeviceCategory.LAPTOP
     serial_or_identifier: Optional[str] = None
-    age: float = Field(..., ge=0.0, description="Product age in years")
+    age: float = Field(default=0.0, ge=0.0, description="Product age in years")
     specs: ProductSpecs = Field(default_factory=ProductSpecs)
     is_generic: bool = False
     is_generic_assessment: bool = False
