@@ -259,7 +259,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenAuth }) => {
   const renderBackgroundLaptopCard = (laptop: MarqueeLaptop, keyPrefix: string, index: number) => (
     <div
       key={`${keyPrefix}-${laptop.id}-${index}`}
-      className="w-[270px] sm:w-[310px] bg-white/95 backdrop-blur-md rounded-2xl p-4 sm:p-5 border border-[#E5E5E7] shadow-md transition-all duration-300 shrink-0 mx-2.5 sm:mx-3 text-left floating-item"
+      className="w-[270px] sm:w-[310px] bg-white dark:bg-[#1C1C1E] rounded-2xl p-4 sm:p-5 border border-[#E5E5E7] dark:border-[#38383A] shadow-xs shrink-0 mx-2.5 sm:mx-3 text-left transform-gpu"
     >
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
@@ -331,7 +331,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenAuth }) => {
           <div className="transform -rotate-3 scale-[1.35] origin-center space-y-6 overflow-hidden w-full max-w-full">
             {/* Top Line: Moving LEFT — 4 identical copies for seamless infinite wrap */}
             <div className="w-full flex overflow-hidden">
-              <div className="animate-marquee-left">
+              <div className="animate-marquee-left transform-gpu">
                 {line1Laptops.map((laptop, idx) =>
                   renderBackgroundLaptopCard(laptop, "line1-a", idx)
                 )}
@@ -349,7 +349,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onOpenAuth }) => {
 
             {/* Bottom Line: Moving RIGHT — 4 identical copies for seamless infinite wrap */}
             <div className="w-full flex overflow-hidden">
-              <div className="animate-marquee-right">
+              <div className="animate-marquee-right transform-gpu">
                 {line2Laptops.map((laptop, idx) =>
                   renderBackgroundLaptopCard(laptop, "line2-a", idx)
                 )}

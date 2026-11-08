@@ -34,6 +34,11 @@ Thumbs.db
 *.sqlite3
 uploads/
 
+# Media & Scratch
+*.mp4
+*.m4v
+video_frames/
+
 #Skills
 .agents
 brag-output

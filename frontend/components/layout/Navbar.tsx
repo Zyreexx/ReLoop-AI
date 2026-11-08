@@ -17,16 +17,44 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth }) => {
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const menuContainerRef = React.useRef<HTMLDivElement>(null);
+
   const handleAssessDeviceClick = () => {
     router.push("/assess-device");
   };
+
   useEffect(() => {
     const handleScroll = () => {
       setScrolled(window.scrollY > 20);
     };
-    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        menuContainerRef.current &&
+        !menuContainerRef.current.contains(event.target as Node)
+      ) {
+        setMobileMenuOpen(false);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setMobileMenuOpen(false);
+      }
+    };
+
+    if (mobileMenuOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("keydown", handleKeyDown);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [mobileMenuOpen]);
   return (
     <>
       <header
@@ -169,129 +197,160 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth }) => {
               <LanguageSelector variant="navbar" className="ml-0.5" />
             </div>
           </div>
-          {/* Mobile/Tablet hamburger (Visible below xl: < 1280px) */}
-          <button
-            type="button"
-            className="xl:hidden p-2 rounded-lg text-[#1D1D1F] dark:text-white hover:bg-black/5 dark:hover:bg-white/10"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-label="Toggle menu"
-          >
-            {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
-          </button>
-        </div>
-        {/* Mobile/Tablet dropdown */}
-        {mobileMenuOpen && (
-          <div className="xl:hidden w-full max-w-full overflow-x-hidden bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-xl border-b border-[#E5E5E7] dark:border-[#38383A] px-6 py-4 flex flex-col gap-3 shadow-lg">
-            <Link
-              href="/"
-              onClick={() => setMobileMenuOpen(false)}
-              className="text-[15px] font-medium text-[#1D1D1F] py-1.5"
+          {/* Mobile/Tablet menu wrapper (Visible below xl: < 1280px) */}
+          <div className="relative xl:hidden" ref={menuContainerRef}>
+            <button
+              type="button"
+              className="p-2 rounded-xl text-[#1D1D1F] dark:text-white hover:bg-black/5 dark:hover:bg-white/10 transition-colors cursor-pointer"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label="Toggle menu"
+              aria-expanded={mobileMenuOpen}
             >
-              {t("nav.home")}
-            </Link>
-            <Link
-              href="/pathways"
-              onClick={() => setMobileMenuOpen(false)}
-              className="text-[15px] font-medium text-[#1D1D1F] py-1.5"
-            >
-              {t("nav.pathways")}
-            </Link>
-            <Link
-              href="/how-it-works"
-              onClick={() => setMobileMenuOpen(false)}
-              className="text-[15px] font-medium text-[#1D1D1F] py-1.5"
-            >
-              {t("nav.howItWorks")}
-            </Link>
-            <Link
-              href="/batch"
-              onClick={() => setMobileMenuOpen(false)}
-              className="text-[15px] font-medium text-[#1D1D1F] py-1.5"
-            >
-              Batch Fleet
-            </Link>
-            <Link
-              href="/locator"
-              onClick={() => setMobileMenuOpen(false)}
-              className="text-[15px] font-medium text-[#1D1D1F] py-1.5"
-            >
-              Recycler Locator
-            </Link>
-            <Link
-              href="/about"
-              onClick={() => setMobileMenuOpen(false)}
-              className="text-[15px] font-medium text-[#1D1D1F] py-1.5"
-            >
-              {t("nav.about", "About")}
-            </Link>
-            <Link
-              href="/dashboard"
-              onClick={() => setMobileMenuOpen(false)}
-              className="text-[15px] font-semibold text-[#0071E3] py-1.5 flex items-center gap-2"
-            >
-              <Laptop className="w-4 h-4" />
-              <span>{user ? t("nav.myDevices", "My Devices") : "History"}</span>
-            </Link>
-            {/* Mobile Theme Toggle & Language Selector */}
-            <div className="pt-2 border-t border-[#E5E5E7] flex flex-col gap-2.5">
-              <ThemeToggle variant="mobile" />
-              <LanguageSelector variant="mobile" />
-            </div>
-            <div className="pt-3 border-t border-[#E5E5E7] flex flex-col gap-2">
-              {user ? (
-                <div className="flex items-center justify-between py-2">
-                  <div className="flex items-center gap-2">
-                    {user.picture ? (
-                      <img
-                        src={user.picture}
-                        alt={user.name}
-                        className="w-7 h-7 rounded-full"
-                      />
-                    ) : (
-                      <div className="w-7 h-7 rounded-full bg-[#0071E3] text-white flex items-center justify-center text-xs font-bold">
-                        {user.name.charAt(0).toUpperCase()}
-                      </div>
-                    )}
-                    <span className="text-sm font-semibold text-[#1D1D1F]">
-                      {user.name}
-                    </span>
+              {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
+            </button>
+
+            {/* Dropdown positioned directly under the 3-dash icon on the right, covering limited space */}
+            {mobileMenuOpen && (
+              <div
+                className="absolute right-0 top-full mt-2 w-72 sm:w-80 max-w-[calc(100vw-2rem)] bg-white/95 dark:bg-[#1C1C1E]/95 backdrop-blur-2xl border border-[#E5E5E7] dark:border-[#38383A] rounded-2xl shadow-2xl p-3 sm:p-4 flex flex-col gap-1 z-50 animate-in fade-in zoom-in-95 duration-150 origin-top-right text-left"
+              >
+                <div className="flex flex-col gap-0.5">
+                  <Link
+                    href="/"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`px-3 py-2 rounded-xl text-[13.5px] font-medium transition-all ${
+                      pathname === "/"
+                        ? "bg-[#0071E3]/10 text-[#0071E3] font-semibold dark:bg-[#0071E3]/20"
+                        : "text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-black/5 dark:hover:bg-white/5"
+                    }`}
+                  >
+                    {t("nav.home")}
+                  </Link>
+                  <Link
+                    href="/pathways"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`px-3 py-2 rounded-xl text-[13.5px] font-medium transition-all ${
+                      pathname === "/pathways"
+                        ? "bg-[#0071E3]/10 text-[#0071E3] font-semibold dark:bg-[#0071E3]/20"
+                        : "text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-black/5 dark:hover:bg-white/5"
+                    }`}
+                  >
+                    {t("nav.pathways")}
+                  </Link>
+                  <Link
+                    href="/how-it-works"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`px-3 py-2 rounded-xl text-[13.5px] font-medium transition-all ${
+                      pathname === "/how-it-works"
+                        ? "bg-[#0071E3]/10 text-[#0071E3] font-semibold dark:bg-[#0071E3]/20"
+                        : "text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-black/5 dark:hover:bg-white/5"
+                    }`}
+                  >
+                    {t("nav.howItWorks")}
+                  </Link>
+                  <Link
+                    href="/batch"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`px-3 py-2 rounded-xl text-[13.5px] font-medium transition-all ${
+                      pathname === "/batch"
+                        ? "bg-[#0071E3]/10 text-[#0071E3] font-semibold dark:bg-[#0071E3]/20"
+                        : "text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-black/5 dark:hover:bg-white/5"
+                    }`}
+                  >
+                    Batch Fleet
+                  </Link>
+                  <Link
+                    href="/locator"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`px-3 py-2 rounded-xl text-[13.5px] font-medium transition-all ${
+                      pathname === "/locator"
+                        ? "bg-[#0071E3]/10 text-[#0071E3] font-semibold dark:bg-[#0071E3]/20"
+                        : "text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-black/5 dark:hover:bg-white/5"
+                    }`}
+                  >
+                    Recycler Locator
+                  </Link>
+                  <Link
+                    href="/about"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`px-3 py-2 rounded-xl text-[13.5px] font-medium transition-all ${
+                      pathname === "/about" || pathname === "/engine"
+                        ? "bg-[#0071E3]/10 text-[#0071E3] font-semibold dark:bg-[#0071E3]/20"
+                        : "text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-black/5 dark:hover:bg-white/5"
+                    }`}
+                  >
+                    {t("nav.about", "About")}
+                  </Link>
+                  <Link
+                    href="/dashboard"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-xl text-[13.5px] font-medium transition-all ${
+                      pathname === "/dashboard"
+                        ? "bg-[#0071E3]/10 text-[#0071E3] font-semibold dark:bg-[#0071E3]/20"
+                        : "text-[#0071E3] font-semibold hover:bg-[#0071E3]/5"
+                    }`}
+                  >
+                    <Laptop className="w-3.5 h-3.5" />
+                    <span>{user ? t("nav.myDevices", "My Devices") : "History"}</span>
+                  </Link>
+                </div>
+
+                {/* Appearance: Theme & Language */}
+                <div className="pt-2 mt-1 border-t border-[#E5E5E7] dark:border-[#38383A] flex items-center justify-between px-1">
+                  <span className="text-[11.5px] font-medium text-[#86868B] dark:text-[#8E8E93]">Appearance</span>
+                  <div className="flex items-center gap-1.5">
+                    <ThemeToggle variant="navbar" />
+                    <LanguageSelector variant="navbar" />
                   </div>
+                </div>
+
+                {/* Assess Button & Auth */}
+                <div className="pt-2 mt-1 border-t border-[#E5E5E7] dark:border-[#38383A] flex flex-col gap-2">
                   <button
                     type="button"
                     onClick={() => {
-                      logout();
                       setMobileMenuOpen(false);
+                      handleAssessDeviceClick();
                     }}
-                    className="text-xs text-[#FF3B30] font-medium"
+                    className="w-full inline-flex items-center justify-center gap-1.5 text-xs font-semibold text-white bg-[#0071E3] hover:bg-[#0077ED] py-2 px-3.5 rounded-xl transition-all shadow-xs cursor-pointer"
                   >
-                    {t("nav.signOut")}
+                    <span>{t("nav.assessDevice")}</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
                   </button>
+
+                  {user ? (
+                    <div className="flex items-center justify-between px-2 pt-0.5 text-xs">
+                      <span className="font-medium text-[#1D1D1F] dark:text-[#F5F5F7] truncate max-w-[130px]">
+                        {user.name}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          logout();
+                          setMobileMenuOpen(false);
+                        }}
+                        className="text-[#FF3B30] hover:underline font-medium cursor-pointer"
+                      >
+                        {t("nav.signOut")}
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        onOpenAuth("login");
+                      }}
+                      className="w-full text-center py-2 rounded-xl border border-[#D2D2D7] dark:border-[#38383A] font-semibold text-xs text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer"
+                    >
+                      {t("nav.signIn")}
+                    </button>
+                  )}
                 </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    onOpenAuth("login");
-                  }}
-                  className="w-full text-center py-2.5 rounded-xl border border-[#D2D2D7] font-semibold text-sm text-[#1D1D1F]"
-                >
-                  {t("nav.signIn")}
-                </button>
-              )}
-              <button
-                type="button"
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  handleAssessDeviceClick();
-                }}
-                className="w-full text-center py-2.5 rounded-xl bg-[#0071E3] font-semibold text-sm text-white"
-              >
-                {t("nav.assessDevice")}
-              </button>
-            </div>
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </header>
     </>
   );
