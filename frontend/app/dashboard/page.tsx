@@ -388,7 +388,7 @@ export default function DashboardPage() {
       return (
         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#34C759]/10 text-[#34C759] border border-[#34C759]/20">
           <CheckCircle2 size={13} />
-          <span>Good Condition</span>
+          <span>{t("dashboard.goodCondition", "Good Condition")}</span>
         </span>
       );
     }
@@ -396,14 +396,14 @@ export default function DashboardPage() {
       return (
         <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#FF9F0A]/10 text-[#FF9F0A] border border-[#FF9F0A]/20">
           <AlertTriangle size={13} />
-          <span>Needs Attention</span>
+          <span>{t("dashboard.needsAttention", "Needs Attention")}</span>
         </span>
       );
     }
     return (
       <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#FF3B30]/10 text-[#FF3B30] border border-[#FF3B30]/20">
         <Wrench size={13} />
-        <span>Service Required</span>
+        <span>{t("dashboard.serviceRequired", "Service Required")}</span>
       </span>
     );
   };
@@ -434,10 +434,10 @@ export default function DashboardPage() {
                 <Laptop className="w-7 h-7" />
               </div>
               <h2 className="text-2xl sm:text-3xl font-bold text-[#1D1D1F] dark:text-white tracking-tight mb-3">
-                Hardware Ledger & Inventory
+                {t("dashboard.guestWelcomeTitle", "Hardware Ledger & Inventory")}
               </h2>
               <p className="text-sm text-[#6E6E73] dark:text-[#A1A1A6] leading-relaxed mb-8">
-                Assess your laptop freely without an account to see component health and circular pathways, or sign in to load your saved account devices.
+                {t("dashboard.guestWelcomeDesc", "Assess your laptop freely without an account to see component health and circular pathways, or sign in to load your saved account devices.")}
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
                 <Link
@@ -445,14 +445,14 @@ export default function DashboardPage() {
                   className="inline-flex items-center justify-center gap-2 w-full sm:w-auto py-3 px-6 rounded-full bg-[#0071E3] hover:bg-[#0077ED] text-white font-semibold text-sm transition-all shadow-md cursor-pointer"
                 >
                   <Plus size={16} />
-                  <span>Assess a Device</span>
+                  <span>{t("dashboard.assessNew", "Assess a Device")}</span>
                 </Link>
                 <button
                   type="button"
                   onClick={() => handleOpenAuth("login")}
                   className="inline-flex items-center justify-center gap-2 w-full sm:w-auto py-3 px-6 rounded-full border border-[#D2D2D7] dark:border-[#3A3A3C] text-[#1D1D1F] dark:text-white font-semibold text-sm hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E] transition-all cursor-pointer"
                 >
-                  <span>Sign In / Create Account</span>
+                  <span>{t("dashboard.signInCreate", "Sign In / Create Account")}</span>
                 </button>
               </div>
             </div>
@@ -470,7 +470,7 @@ export default function DashboardPage() {
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="text-[10px] font-bold uppercase tracking-wider text-[#0071E3] bg-[#0071E3]/15 px-2 py-0.5 rounded-full">
-                        In-Progress Assessment
+                        {t("dashboard.activeDraft", "In-Progress Assessment")}
                       </span>
                       <span className="text-xs text-[#86868B]">Step {activeDraft.currentStep || 1} of 4</span>
                     </div>
@@ -479,7 +479,7 @@ export default function DashboardPage() {
                       {activeDraft.visualData?.identifiedProduct?.model || "Assessment in progress"}
                     </p>
                     <p className="text-xs text-[#6E6E73] dark:text-[#A1A1A6]">
-                      You navigated away while assessing this device. All scanned diagnostics and telemetry remain intact.
+                      {t("dashboard.draftDesc", "You navigated away while assessing this device. All scanned diagnostics and telemetry remain intact.")}
                     </p>
                   </div>
                 </div>
@@ -489,13 +489,13 @@ export default function DashboardPage() {
                     onClick={handleDiscardDraft}
                     className="px-3.5 py-2 rounded-full text-xs font-medium text-[#FF3B30] hover:bg-[#FF3B30]/10 border border-[#FF3B30]/25 transition-all cursor-pointer"
                   >
-                    Discard Draft
+                    {t("dashboard.discard", "Discard Draft")}
                   </button>
                   <Link
                     href="/assess-device"
                     className="inline-flex items-center gap-1.5 px-5 py-2 rounded-full bg-[#0071E3] hover:bg-[#0077ED] text-white text-xs font-semibold shadow-xs hover:shadow-sm transition-all cursor-pointer"
                   >
-                    <span>Resume Assessment</span>
+                    <span>{t("dashboard.resume", "Resume Assessment")}</span>
                     <ArrowRight size={14} />
                   </Link>
                 </div>
@@ -510,9 +510,9 @@ export default function DashboardPage() {
                     <Sparkles size={18} />
                   </div>
                   <div>
-                    <p className="text-sm font-semibold">Guest Assessment Ledger</p>
+                    <p className="text-sm font-semibold">{t("dashboard.guestLedger", "Guest Assessment Ledger")}</p>
                     <p className="text-xs text-[#6E6E73] dark:text-[#A1A1A6]">
-                      Showing hardware evaluated in this browser. Sign in or create an account to permanently sync and save your history.
+                      {t("dashboard.guestDesc", "Showing hardware evaluated in this browser. Sign in or create an account to permanently sync and save your history.")}
                     </p>
                   </div>
                 </div>
@@ -521,7 +521,7 @@ export default function DashboardPage() {
                   onClick={() => handleOpenAuth("login")}
                   className="px-5 py-2 rounded-full bg-[#0071E3] hover:bg-[#0077ED] text-white text-xs font-semibold shrink-0 shadow-xs cursor-pointer"
                 >
-                  Sign In to Save
+                  {t("dashboard.signInSave", "Sign In to Save")}
                 </button>
               </div>
             )}
@@ -531,18 +531,18 @@ export default function DashboardPage() {
               <div>
                 <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#0071E3]/10 text-[#0071E3] text-xs font-semibold tracking-wide uppercase mb-3">
                   <Laptop size={13} />
-                  <span>Assessment History & Hardware Ledger</span>
+                  <span>{t("dashboard.badge", "Assessment History & Hardware Ledger")}</span>
                 </div>
                 <h1 className="text-3xl sm:text-4xl font-bold text-[#1D1D1F] dark:text-white tracking-tight mb-2">
-                  Assessment History
+                  {t("dashboard.title", "Assessment History")}
                 </h1>
                 <p className="text-sm sm:text-base text-[#6E6E73] dark:text-[#A1A1A6] max-w-2xl leading-relaxed">
                   {user ? (
                     <>
-                      Assessed laptops for <span className="font-semibold text-[#1D1D1F] dark:text-white">{user.name}</span> ({user.email}). Inspect comprehensive component profiles, download engineering reports, or launch circular optimization.
+                      Assessed laptops for <span className="font-semibold text-[#1D1D1F] dark:text-white">{user.name}</span> ({user.email}). {t("dashboard.subtitleUser", "Inspect comprehensive component profiles, download engineering reports, or launch circular optimization.")}
                     </>
                   ) : (
-                    "Manage your evaluated hardware, inspect component condition profiles, download assessment reports, and review circular disposition pathways."
+                    t("dashboard.subtitle", "Manage your evaluated hardware, inspect component condition profiles, download assessment reports, and review circular disposition pathways.")
                   )}
                 </p>
               </div>
@@ -553,7 +553,7 @@ export default function DashboardPage() {
                   className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#0071E3] hover:bg-[#0077ED] text-white text-xs sm:text-sm font-semibold transition-all shadow-md cursor-pointer"
                 >
                   <Plus size={16} />
-                  <span>Assess New Device</span>
+                  <span>{t("dashboard.assessNewDevice", "Assess New Device")}</span>
                 </Link>
               </div>
             </div>
@@ -564,7 +564,7 @@ export default function DashboardPage() {
               <div className="apple-card p-6 bg-white dark:bg-[#1C1C1E] border border-[#E5E5E7] dark:border-[#2C2C2E] rounded-3xl shadow-sm">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-xs font-semibold text-[#6E6E73] dark:text-[#A1A1A6] uppercase tracking-wider">
-                    Total Devices
+                    {t("dashboard.kpiTotal", "Total Devices")}
                   </span>
                   <div className="w-8 h-8 rounded-full bg-[#0071E3]/10 text-[#0071E3] flex items-center justify-center">
                     <Laptop size={16} />
@@ -574,7 +574,7 @@ export default function DashboardPage() {
                   {stats.total}
                 </div>
                 <div className="text-xs text-[#6E6E73] dark:text-[#A1A1A6] mt-1">
-                  Active in condition ledger
+                  {t("dashboard.kpiActive", "Active in condition ledger")}
                 </div>
               </div>
 
@@ -582,7 +582,7 @@ export default function DashboardPage() {
               <div className="apple-card p-6 bg-white dark:bg-[#1C1C1E] border border-[#E5E5E7] dark:border-[#2C2C2E] rounded-3xl shadow-sm">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-xs font-semibold text-[#6E6E73] dark:text-[#A1A1A6] uppercase tracking-wider">
-                    Avoided CO₂e
+                    {t("dashboard.kpiCo2", "Avoided CO₂e")}
                   </span>
                   <div className="w-8 h-8 rounded-full bg-[#34C759]/10 text-[#34C759] flex items-center justify-center">
                     <Leaf size={16} />
@@ -592,7 +592,7 @@ export default function DashboardPage() {
                   ~{stats.totalAvoidedCo2} <span className="text-sm font-normal text-[#6E6E73] dark:text-[#A1A1A6]">kg</span>
                 </div>
                 <div className="text-xs text-[#34C759] mt-1 font-medium">
-                  Embodied carbon abated
+                  {t("dashboard.kpiAbated", "Embodied carbon abated")}
                 </div>
               </div>
 
@@ -600,7 +600,7 @@ export default function DashboardPage() {
               <div className="apple-card p-6 bg-white dark:bg-[#1C1C1E] border border-[#E5E5E7] dark:border-[#2C2C2E] rounded-3xl shadow-sm">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-xs font-semibold text-[#6E6E73] dark:text-[#A1A1A6] uppercase tracking-wider">
-                    Condition Ratio
+                    {t("dashboard.kpiCondition", "Condition Ratio")}
                   </span>
                   <div className="w-8 h-8 rounded-full bg-[#FF9F0A]/10 text-[#FF9F0A] flex items-center justify-center">
                     <Activity size={16} />
@@ -610,7 +610,7 @@ export default function DashboardPage() {
                   {stats.avgHealthPct}%
                 </div>
                 <div className="text-xs text-[#6E6E73] dark:text-[#A1A1A6] mt-1">
-                  Good operating condition
+                  {t("dashboard.kpiOperating", "Good operating condition")}
                 </div>
               </div>
 
@@ -618,7 +618,7 @@ export default function DashboardPage() {
               <div className="apple-card p-6 bg-white dark:bg-[#1C1C1E] border border-[#E5E5E7] dark:border-[#2C2C2E] rounded-3xl shadow-sm">
                 <div className="flex items-center justify-between mb-3">
                   <span className="text-xs font-semibold text-[#6E6E73] dark:text-[#A1A1A6] uppercase tracking-wider">
-                    Primary Pathway
+                    {t("dashboard.kpiPrimary", "Primary Pathway")}
                   </span>
                   <div className="w-8 h-8 rounded-full bg-[#AF52DE]/10 text-[#AF52DE] flex items-center justify-center">
                     <Sparkles size={16} />
@@ -628,7 +628,7 @@ export default function DashboardPage() {
                   {stats.topPw}
                 </div>
                 <div className="text-xs text-[#6E6E73] dark:text-[#A1A1A6] mt-1">
-                  Highest economic yield
+                  {t("dashboard.kpiYield", "Highest economic yield")}
                 </div>
               </div>
             </div>
@@ -645,7 +645,7 @@ export default function DashboardPage() {
                 }`}
               >
                 <FileText size={15} />
-                <span>Assessed Laptops History ({assessments.length})</span>
+                <span>{t("dashboard.tabHistory", "Assessed Laptops History")} ({assessments.length})</span>
               </button>
               <button
                 type="button"
@@ -668,7 +668,7 @@ export default function DashboardPage() {
                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#86868B]" />
                 <input
                   type="text"
-                  placeholder="Filter by manufacturer or model (e.g. Dell, ThinkPad)..."
+                  placeholder={t("dashboard.searchPlaceholder", "Filter by manufacturer, model, or ID...")}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 text-xs sm:text-sm rounded-xl bg-[#F5F5F7] dark:bg-[#2C2C2E] border border-transparent focus:border-[#0071E3] focus:outline-hidden transition-all text-[#1D1D1F] dark:text-white"
@@ -686,7 +686,7 @@ export default function DashboardPage() {
                       : "text-[#6E6E73] dark:text-[#A1A1A6] hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E]"
                   }`}
                 >
-                  All ({assessments.length})
+                  {t("dashboard.allConditions", "All Conditions")} ({assessments.length})
                 </button>
                 <button
                   type="button"
@@ -697,7 +697,7 @@ export default function DashboardPage() {
                       : "text-[#6E6E73] dark:text-[#A1A1A6] hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E]"
                   }`}
                 >
-                  Good
+                  {t("dashboard.goodCondition", "Good Condition")}
                 </button>
                 <button
                   type="button"
@@ -708,7 +708,7 @@ export default function DashboardPage() {
                       : "text-[#6E6E73] dark:text-[#A1A1A6] hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E]"
                   }`}
                 >
-                  Attention
+                  {t("dashboard.needsAttention", "Needs Attention")}
                 </button>
                 <button
                   type="button"
@@ -719,7 +719,7 @@ export default function DashboardPage() {
                       : "text-[#6E6E73] dark:text-[#A1A1A6] hover:bg-[#F5F5F7] dark:hover:bg-[#2C2C2E]"
                   }`}
                 >
-                  Degraded
+                  {t("dashboard.serviceRequired", "Service Required")}
                 </button>
               </div>
 
@@ -730,9 +730,9 @@ export default function DashboardPage() {
                   onChange={(e: any) => setSortBy(e.target.value)}
                   className="px-3 py-2 text-xs rounded-xl bg-[#F5F5F7] dark:bg-[#2C2C2E] border border-transparent text-[#1D1D1F] dark:text-white font-medium focus:outline-hidden cursor-pointer"
                 >
-                  <option value="newest">Newest First</option>
-                  <option value="oldest">Oldest First</option>
-                  <option value="health">Health Score</option>
+                  <option value="newest">{t("dashboard.newestFirst", "Newest First")}</option>
+                  <option value="oldest">{t("dashboard.oldestFirst", "Oldest First")}</option>
+                  <option value="health">{t("dashboard.healthRank", "Health Rank")}</option>
                 </select>
               </div>
             </div>
@@ -752,12 +752,10 @@ export default function DashboardPage() {
                   <Laptop className="w-8 h-8" />
                 </div>
                 <h3 className="text-2xl font-bold text-[#1D1D1F] dark:text-white tracking-tight mb-2">
-                  No devices found
+                  {t("dashboard.noDevices", "No Saved Assessments Found")}
                 </h3>
                 <p className="text-sm text-[#6E6E73] dark:text-[#A1A1A6] leading-relaxed mb-8">
-                  {searchQuery || statusFilter !== "all"
-                    ? "No assessed devices match your active search and filter criteria."
-                    : "You haven't assessed any hardware yet. Run our 5-step intake to analyze physical components, synthesize a condition profile, and receive deterministic circular recommendations."}
+                  {t("dashboard.noDevicesDesc", "Assess a device to calculate its optimal circular next life, or adjust your search filters.")}
                 </p>
 
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -765,7 +763,7 @@ export default function DashboardPage() {
                     href="/assess-device"
                     className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-[#0071E3] hover:bg-[#0077ED] text-white text-sm font-semibold transition-all shadow-md w-full sm:w-auto cursor-pointer"
                   >
-                    <span>Assess Your First Device</span>
+                    <span>{t("dashboard.assessNew", "Assess a Device")}</span>
                     <ArrowRight size={16} />
                   </Link>
 

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { AuthModal } from "@/components/auth/AuthModal";
+import { useLanguage } from "@/context/LanguageContext";
 import {
   UploadCloud,
   FileSpreadsheet,
@@ -35,6 +36,7 @@ Dell,PowerEdge R640,2019,SERVER,SRV88290,100.0,92.0
 Apple,iPad Air 4,2020,TABLET,DMPD890123,83.0,97.0`;
 
 export default function BatchInventoryPage() {
+  const { t } = useLanguage();
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<"login" | "register">("login");
   const [file, setFile] = useState<File | null>(null);
@@ -146,13 +148,13 @@ export default function BatchInventoryPage() {
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#0071E3]/10 text-[#0071E3] dark:text-[#2997FF] text-xs font-semibold uppercase tracking-wider mb-2">
               <Layers className="w-3.5 h-3.5" />
-              Enterprise Edition
+              {t("batch.badge", "ENTERPRISE INVENTORY MODULE")}
             </div>
             <h1 className="text-3xl sm:text-4xl font-bold tracking-tight text-[#1D1D1F] dark:text-white">
-              Fleet Inventory Assessment
+              {t("batch.title", "Enterprise Fleet Assessment")}
             </h1>
             <p className="mt-2 text-base text-[#86868B] max-w-2xl">
-              Upload CSV or JSON inventory to batch-evaluate hundreds of enterprise devices, compute deterministic circular pathways, and aggregate CO2 and cost savings.
+              {t("batch.subtitle", "Upload bulk asset inventories (CSV/Excel) to automatically classify optimal circular disposition (Repair, Reuse, Upgrade, Recycle) across enterprise fleets.")}
             </p>
           </div>
 
@@ -161,7 +163,7 @@ export default function BatchInventoryPage() {
               onClick={handleLoadSample}
               className="px-4 py-2 text-xs font-medium rounded-xl border border-[#D2D2D7] dark:border-[#3A3A3C] hover:bg-black/5 dark:hover:bg-white/5 transition-colors cursor-pointer"
             >
-              Load Sample Fleet (8 items)
+              {t("batch.loadSample", "Load Sample Fleet (8 items)")}
             </button>
           </div>
         </div>
@@ -179,18 +181,18 @@ export default function BatchInventoryPage() {
           <div className="lg:col-span-1 bg-white dark:bg-[#1C1C1E] p-6 rounded-3xl border border-[#D2D2D7]/60 dark:border-[#2C2C2E] shadow-xs flex flex-col justify-between">
             <div>
               <h2 className="text-lg font-semibold text-[#1D1D1F] dark:text-white mb-2">
-                1. Upload Inventory File
+                {t("batch.step1Title", "1. Upload Inventory File")}
               </h2>
               <p className="text-xs text-[#86868B] mb-4">
-                Supported columns: manufacturer, model, model_year, category, serial_number, battery_health_pct.
+                {t("batch.step1Desc", "Supported columns: manufacturer, model, model_year, category, serial_number, battery_health_pct.")}
               </p>
 
               <label className="border-2 border-dashed border-[#D2D2D7] dark:border-[#3A3A3C] rounded-2xl p-6 flex flex-col items-center justify-center gap-2 hover:border-[#0071E3] transition-colors cursor-pointer">
                 <UploadCloud className="w-8 h-8 text-[#0071E3]" />
                 <span className="text-sm font-medium text-[#1D1D1F] dark:text-white">
-                  {file ? file.name : "Choose CSV or drop file here"}
+                  {file ? file.name : t("batch.chooseFile", "Choose CSV or drop file here")}
                 </span>
-                <span className="text-xs text-[#86868B]">CSV up to 50MB</span>
+                <span className="text-xs text-[#86868B]">{t("batch.maxSize", "CSV up to 50MB")}</span>
                 <input
                   type="file"
                   accept=".csv,.json"
@@ -202,7 +204,7 @@ export default function BatchInventoryPage() {
 
             <div className="mt-6 pt-4 border-t border-[#E5E5EA] dark:border-[#2C2C2E] flex items-center justify-between">
               <span className="text-xs text-[#86868B]">
-                {file ? `${(file.size / 1024).toFixed(1)} KB` : "No file loaded"}
+                {file ? `${(file.size / 1024).toFixed(1)} KB` : t("batch.noFile", "No file loaded")}
               </span>
               <button
                 disabled={loading || (!file && !csvPreview)}
@@ -216,12 +218,12 @@ export default function BatchInventoryPage() {
                 {loading ? (
                   <>
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    Processing...
+                    {t("batch.processing", "Processing...")}
                   </>
                 ) : (
                   <>
                     <Play className="w-3.5 h-3.5 fill-current" />
-                    Start Assessment
+                    {t("batch.startBtn", "Start Assessment")}
                   </>
                 )}
               </button>
@@ -233,7 +235,7 @@ export default function BatchInventoryPage() {
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg font-semibold text-[#1D1D1F] dark:text-white">
-                  2. Assessment Pipeline Execution
+                  {t("batch.step2Title", "2. Assessment Pipeline Execution")}
                 </h2>
                 {jobStatus && (
                   <span
@@ -254,9 +256,9 @@ export default function BatchInventoryPage() {
                 <div className="space-y-4">
                   <div>
                     <div className="flex justify-between text-xs font-medium text-[#86868B] mb-1.5">
-                      <span>Overall Progress</span>
+                      <span>{t("batch.overallProgress", "Overall Progress")}</span>
                       <span>
-                        {jobStatus.processed_devices} / {jobStatus.total_devices} devices (
+                        {jobStatus.processed_devices} / {jobStatus.total_devices} {t("batch.devicesCount", "devices")} (
                         {jobStatus.progress_percentage?.toFixed(0) || 0}%)
                       </span>
                     </div>
@@ -270,19 +272,19 @@ export default function BatchInventoryPage() {
 
                   <div className="grid grid-cols-3 gap-3 pt-2">
                     <div className="p-3 rounded-2xl bg-[#F5F5F7] dark:bg-[#2C2C2E]/50">
-                      <div className="text-xs text-[#86868B]">Valid Items</div>
+                      <div className="text-xs text-[#86868B]">{t("batch.validItems", "Valid Items")}</div>
                       <div className="text-xl font-bold text-[#1D1D1F] dark:text-white">
                         {jobStatus.total_devices}
                       </div>
                     </div>
                     <div className="p-3 rounded-2xl bg-[#F5F5F7] dark:bg-[#2C2C2E]/50">
-                      <div className="text-xs text-[#86868B]">Duplicates Ignored</div>
+                      <div className="text-xs text-[#86868B]">{t("batch.duplicatesIgnored", "Duplicates Ignored")}</div>
                       <div className="text-xl font-bold text-[#FF9500]">
                         {jobStatus.duplicate_devices}
                       </div>
                     </div>
                     <div className="p-3 rounded-2xl bg-[#F5F5F7] dark:bg-[#2C2C2E]/50">
-                      <div className="text-xs text-[#86868B]">Completed</div>
+                      <div className="text-xs text-[#86868B]">{t("batch.completedCount", "Completed")}</div>
                       <div className="text-xl font-bold text-[#34C759]">
                         {jobStatus.processed_devices}
                       </div>
@@ -292,7 +294,7 @@ export default function BatchInventoryPage() {
               ) : (
                 <div className="py-12 flex flex-col items-center justify-center text-center text-[#86868B]">
                   <RotateCcw className="w-8 h-8 mb-2 opacity-40" />
-                  <p className="text-sm">No batch job active. Click "Start Assessment" or load the sample fleet.</p>
+                  <p className="text-sm">{t("batch.noJobActive", "No batch job active. Click \"Start Assessment\" or load the sample fleet.")}</p>
                 </div>
               )}
             </div>
@@ -301,7 +303,7 @@ export default function BatchInventoryPage() {
               <div className="mt-6 pt-4 border-t border-[#E5E5EA] dark:border-[#2C2C2E] flex flex-wrap items-center justify-between gap-3">
                 <span className="text-xs text-[#34C759] font-medium flex items-center gap-1.5">
                   <CheckCircle2 className="w-4 h-4" />
-                  Fleet Assessment Ready
+                  {t("batch.fleetReady", "Fleet Assessment Ready")}
                 </span>
                 <div className="flex items-center gap-2">
                   <a
@@ -309,14 +311,14 @@ export default function BatchInventoryPage() {
                     className="px-3.5 py-1.5 rounded-full border border-[#D2D2D7] dark:border-[#3A3A3C] text-xs font-semibold text-[#1D1D1F] dark:text-white hover:bg-black/5 dark:hover:bg-white/5 flex items-center gap-1.5 transition-colors"
                   >
                     <Download className="w-3.5 h-3.5" />
-                    Export CSV
+                    {t("batch.exportCsv", "Export CSV")}
                   </a>
                   <a
                     href={`/api/batch/${jobId}/export/excel`}
                     className="px-3.5 py-1.5 rounded-full bg-[#34C759] hover:bg-[#2eb34f] text-white text-xs font-semibold flex items-center gap-1.5 transition-colors"
                   >
                     <FileSpreadsheet className="w-3.5 h-3.5" />
-                    Export Excel (.xlsx)
+                    {t("batch.exportExcel", "Export Excel (.xlsx)")}
                   </a>
                 </div>
               </div>
@@ -328,58 +330,58 @@ export default function BatchInventoryPage() {
         {summary && (
           <div className="mb-10">
             <h2 className="text-xl font-bold text-[#1D1D1F] dark:text-white mb-4">
-              Fleet Aggregates & Circular Pathways
+              {t("batch.fleetAggregates", "Fleet Aggregates & Circular Pathways")}
             </h2>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
               <div className="bg-white dark:bg-[#1C1C1E] p-5 rounded-3xl border border-[#D2D2D7]/60 dark:border-[#2C2C2E]">
                 <div className="flex items-center justify-between text-xs text-[#86868B] mb-1">
-                  <span>Total Assessed</span>
+                  <span>{t("batch.totalAssessed", "Total Assessed")}</span>
                   <Laptop className="w-4 h-4 text-[#0071E3]" />
                 </div>
                 <div className="text-2xl font-bold text-[#1D1D1F] dark:text-white">
                   {summary.total_devices}
                 </div>
-                <div className="text-xs text-[#86868B] mt-1">Multi-category fleet</div>
+                <div className="text-xs text-[#86868B] mt-1">{t("batch.multiCategory", "Multi-category fleet")}</div>
               </div>
 
               <div className="bg-white dark:bg-[#1C1C1E] p-5 rounded-3xl border border-[#D2D2D7]/60 dark:border-[#2C2C2E]">
                 <div className="flex items-center justify-between text-xs text-[#86868B] mb-1">
-                  <span>Avoided CO2</span>
+                  <span>{t("batch.avoidedCo2", "Avoided CO2")}</span>
                   <Leaf className="w-4 h-4 text-[#34C759]" />
                 </div>
                 <div className="text-2xl font-bold text-[#34C759]">
                   {summary.total_co2_avoided_kg.toFixed(0)} <span className="text-sm font-normal text-[#86868B]">kg</span>
                 </div>
-                <div className="text-xs text-[#86868B] mt-1">Embodied carbon conserved</div>
+                <div className="text-xs text-[#86868B] mt-1">{t("batch.embodiedCarbon", "Embodied carbon conserved")}</div>
               </div>
 
               <div className="bg-white dark:bg-[#1C1C1E] p-5 rounded-3xl border border-[#D2D2D7]/60 dark:border-[#2C2C2E]">
                 <div className="flex items-center justify-between text-xs text-[#86868B] mb-1">
-                  <span>E-Waste Diverted</span>
+                  <span>{t("batch.ewasteDiverted", "E-Waste Diverted")}</span>
                   <Layers className="w-4 h-4 text-[#FF9500]" />
                 </div>
                 <div className="text-2xl font-bold text-[#FF9500]">
                   {summary.total_ewaste_diverted_kg.toFixed(1)} <span className="text-sm font-normal text-[#86868B]">kg</span>
                 </div>
-                <div className="text-xs text-[#86868B] mt-1">Kept out of landfills</div>
+                <div className="text-xs text-[#86868B] mt-1">{t("batch.landfills", "Kept out of landfills")}</div>
               </div>
 
               <div className="bg-white dark:bg-[#1C1C1E] p-5 rounded-3xl border border-[#D2D2D7]/60 dark:border-[#2C2C2E]">
                 <div className="flex items-center justify-between text-xs text-[#86868B] mb-1">
-                  <span>Estimated Cost</span>
+                  <span>{t("batch.estimatedCost", "Estimated Cost")}</span>
                   <DollarSign className="w-4 h-4 text-[#0071E3]" />
                 </div>
                 <div className="text-2xl font-bold text-[#1D1D1F] dark:text-white">
                   ₹{summary.total_estimated_cost_inr.toLocaleString()}
                 </div>
-                <div className="text-xs text-[#86868B] mt-1">Total circular intervention</div>
+                <div className="text-xs text-[#86868B] mt-1">{t("batch.totalIntervention", "Total circular intervention")}</div>
               </div>
             </div>
 
             {/* Pathways Distribution */}
             <div className="bg-white dark:bg-[#1C1C1E] p-6 rounded-3xl border border-[#D2D2D7]/60 dark:border-[#2C2C2E]">
               <h3 className="text-sm font-semibold text-[#1D1D1F] dark:text-white mb-3">
-                Deterministic Recommendation Distribution
+                {t("batch.distributionTitle", "Deterministic Recommendation Distribution")}
               </h3>
               <div className="grid grid-cols-2 sm:grid-cols-6 gap-3">
                 {Object.entries(summary.pathway_counts || {}).map(([pathway, count]: any) => (
@@ -398,21 +400,21 @@ export default function BatchInventoryPage() {
           <div className="bg-white dark:bg-[#1C1C1E] rounded-3xl border border-[#D2D2D7]/60 dark:border-[#2C2C2E] overflow-hidden">
             <div className="p-5 border-b border-[#E5E5EA] dark:border-[#2C2C2E] flex justify-between items-center">
               <h3 className="text-base font-bold text-[#1D1D1F] dark:text-white">
-                Individual Device Evaluations ({summary.devices.length})
+                {t("batch.individualEvaluations", "Individual Device Evaluations")} ({summary.devices.length})
               </h3>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead className="bg-[#F5F5F7] dark:bg-[#2C2C2E]/50 text-[#86868B] uppercase font-semibold">
                   <tr>
-                    <th className="py-3 px-4">Serial / ID</th>
-                    <th className="py-3 px-4">Category</th>
-                    <th className="py-3 px-4">Model</th>
-                    <th className="py-3 px-4">Health</th>
-                    <th className="py-3 px-4">Recommended Pathway</th>
-                    <th className="py-3 px-4">Est. Cost</th>
-                    <th className="py-3 px-4">CO2 Avoided</th>
-                    <th className="py-3 px-4">Status</th>
+                    <th className="py-3 px-4">{t("batch.thSerial", "Serial / ID")}</th>
+                    <th className="py-3 px-4">{t("batch.thCategory", "Category")}</th>
+                    <th className="py-3 px-4">{t("batch.thModel", "Model")}</th>
+                    <th className="py-3 px-4">{t("batch.thHealth", "Health")}</th>
+                    <th className="py-3 px-4">{t("batch.thPathway", "Recommended Pathway")}</th>
+                    <th className="py-3 px-4">{t("batch.thCost", "Est. Cost")}</th>
+                    <th className="py-3 px-4">{t("batch.thCo2", "CO2 Avoided")}</th>
+                    <th className="py-3 px-4">{t("batch.thStatus", "Status")}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#E5E5EA] dark:divide-[#2C2C2E]">

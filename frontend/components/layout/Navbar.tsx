@@ -127,7 +127,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth }) => {
               }`}
             >
               <Boxes className="w-3.5 h-3.5 shrink-0" />
-              <span>Batch Fleet</span>
+              <span>{t("nav.batch", "Batch Fleet")}</span>
             </Link>
             <Link
               href="/locator"
@@ -136,7 +136,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth }) => {
               }`}
             >
               <MapPin className="w-3.5 h-3.5 shrink-0" />
-              <span>Recyclers</span>
+              <span>{t("nav.locator", "Recyclers")}</span>
             </Link>
             <Link
               href="/about"
@@ -156,7 +156,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth }) => {
               }`}
             >
               <Laptop className="w-3.5 h-3.5 shrink-0" />
-              <span>{user ? t("nav.myDevices", "My Devices") : "History"}</span>
+              <span>{user ? t("nav.myDevices", "My Devices") : t("nav.history", "History")}</span>
             </Link>
           </nav>
           {/* Actions (Visible on xl: 1280px+) */}
@@ -279,7 +279,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth }) => {
                     }`}
                   >
                     <Boxes className="w-4 h-4 text-[#86868B] dark:text-[#8E8E93] shrink-0" />
-                    <span>Batch Fleet</span>
+                    <span>{t("nav.batch", "Batch Fleet")}</span>
                   </Link>
                   <Link
                     href="/locator"
@@ -291,7 +291,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth }) => {
                     }`}
                   >
                     <MapPin className="w-4 h-4 text-[#86868B] dark:text-[#8E8E93] shrink-0" />
-                    <span>Recycler Locator</span>
+                    <span>{t("nav.recyclerLocator", "Recycler Locator")}</span>
                   </Link>
                   <Link
                     href="/about"
@@ -315,13 +315,13 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth }) => {
                     }`}
                   >
                     <Laptop className="w-4 h-4 shrink-0" />
-                    <span>{user ? t("nav.myDevices", "My Devices") : "History"}</span>
+                    <span>{user ? t("nav.myDevices", "My Devices") : t("nav.history", "History")}</span>
                   </Link>
                 </div>
 
                 {/* Appearance: Theme & Language */}
                 <div className="pt-2 mt-1 border-t border-[#E5E5E7] dark:border-[#38383A] flex items-center justify-between px-1">
-                  <span className="text-[11.5px] font-medium text-[#86868B] dark:text-[#8E8E93]">Appearance</span>
+                  <span className="text-[11.5px] font-medium text-[#86868B] dark:text-[#8E8E93]">{t("nav.appearance", "Appearance")}</span>
                   <div className="flex items-center gap-1.5">
                     <ThemeToggle variant="navbar" />
                     <LanguageSelector variant="navbar" />
