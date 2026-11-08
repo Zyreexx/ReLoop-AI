@@ -2,7 +2,19 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
-import { RefreshCw, ArrowRight, Menu, X, Laptop } from "lucide-react";
+import {
+  RefreshCw,
+  ArrowRight,
+  Menu,
+  X,
+  Laptop,
+  Home,
+  Repeat,
+  Workflow,
+  Boxes,
+  MapPin,
+  Info,
+} from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { LanguageSelector } from "@/components/ui/LanguageSelector";
@@ -80,54 +92,60 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth }) => {
             </div>
           </Link>
           {/* Desktop Navigation Links (Visible on xl: 1280px+) */}
-          <nav className="hidden xl:flex items-center justify-center gap-1 xl:gap-2 2xl:gap-4 text-[12.5px] xl:text-[13px] font-medium text-[#6E6E73] dark:text-[#A1A1A6] flex-1 max-w-2xl mx-2">
+          <nav className="hidden xl:flex items-center justify-center gap-1 xl:gap-2 2xl:gap-3.5 text-[12.5px] xl:text-[13px] font-medium text-[#6E6E73] dark:text-[#A1A1A6] flex-1 max-w-2xl mx-2">
             <Link
               href="/"
-              className={`px-2.5 py-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 hover:text-[#1D1D1F] dark:hover:text-white transition-all whitespace-nowrap ${
+              className={`px-2.5 py-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 hover:text-[#1D1D1F] dark:hover:text-white transition-all whitespace-nowrap flex items-center gap-1.5 ${
                 pathname === "/" ? "text-[#0071E3] dark:text-[#0071E3] font-semibold bg-[#0071E3]/5" : ""
               }`}
             >
-              {t("nav.home")}
+              <Home className="w-3.5 h-3.5 shrink-0" />
+              <span>{t("nav.home")}</span>
             </Link>
             <Link
               href="/pathways"
-              className={`px-2.5 py-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 hover:text-[#1D1D1F] dark:hover:text-white transition-all whitespace-nowrap ${
+              className={`px-2.5 py-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 hover:text-[#1D1D1F] dark:hover:text-white transition-all whitespace-nowrap flex items-center gap-1.5 ${
                 pathname === "/pathways" ? "text-[#0071E3] dark:text-[#0071E3] font-semibold bg-[#0071E3]/5" : ""
               }`}
             >
-              {t("nav.pathways")}
+              <Repeat className="w-3.5 h-3.5 shrink-0" />
+              <span>{t("nav.pathways")}</span>
             </Link>
             <Link
               href="/how-it-works"
-              className={`px-2.5 py-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 hover:text-[#1D1D1F] dark:hover:text-white transition-all whitespace-nowrap ${
+              className={`px-2.5 py-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 hover:text-[#1D1D1F] dark:hover:text-white transition-all whitespace-nowrap flex items-center gap-1.5 ${
                 pathname === "/how-it-works" ? "text-[#0071E3] dark:text-[#0071E3] font-semibold bg-[#0071E3]/5" : ""
               }`}
             >
-              {t("nav.howItWorks")}
+              <Workflow className="w-3.5 h-3.5 shrink-0" />
+              <span>{t("nav.howItWorks")}</span>
             </Link>
             <Link
               href="/batch"
-              className={`px-2.5 py-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 hover:text-[#1D1D1F] dark:hover:text-white transition-all whitespace-nowrap ${
+              className={`px-2.5 py-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 hover:text-[#1D1D1F] dark:hover:text-white transition-all whitespace-nowrap flex items-center gap-1.5 ${
                 pathname === "/batch" ? "text-[#0071E3] dark:text-[#0071E3] font-semibold bg-[#0071E3]/5" : ""
               }`}
             >
-              Batch Fleet
+              <Boxes className="w-3.5 h-3.5 shrink-0" />
+              <span>Batch Fleet</span>
             </Link>
             <Link
               href="/locator"
-              className={`px-2.5 py-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 hover:text-[#1D1D1F] dark:hover:text-white transition-all whitespace-nowrap ${
+              className={`px-2.5 py-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 hover:text-[#1D1D1F] dark:hover:text-white transition-all whitespace-nowrap flex items-center gap-1.5 ${
                 pathname === "/locator" ? "text-[#0071E3] dark:text-[#0071E3] font-semibold bg-[#0071E3]/5" : ""
               }`}
             >
-              Recyclers
+              <MapPin className="w-3.5 h-3.5 shrink-0" />
+              <span>Recyclers</span>
             </Link>
             <Link
               href="/about"
-              className={`px-2.5 py-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 hover:text-[#1D1D1F] dark:hover:text-white transition-all whitespace-nowrap ${
+              className={`px-2.5 py-1.5 rounded-full hover:bg-black/5 dark:hover:bg-white/5 hover:text-[#1D1D1F] dark:hover:text-white transition-all whitespace-nowrap flex items-center gap-1.5 ${
                 pathname === "/about" || pathname === "/engine" ? "text-[#0071E3] dark:text-[#0071E3] font-semibold bg-[#0071E3]/5" : ""
               }`}
             >
-              {t("nav.about", "About")}
+              <Info className="w-3.5 h-3.5 shrink-0" />
+              <span>{t("nav.about", "About")}</span>
             </Link>
             <Link
               href="/dashboard"
@@ -137,7 +155,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth }) => {
                   : "text-[#6E6E73] dark:text-[#A1A1A6]"
               }`}
             >
-              <Laptop className="w-3.5 h-3.5" />
+              <Laptop className="w-3.5 h-3.5 shrink-0" />
               <span>{user ? t("nav.myDevices", "My Devices") : "History"}</span>
             </Link>
           </nav>
@@ -218,79 +236,85 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenAuth }) => {
                   <Link
                     href="/"
                     onClick={() => setMobileMenuOpen(false)}
-                    className={`px-3 py-2 rounded-xl text-[13.5px] font-medium transition-all ${
+                    className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13.5px] font-medium transition-all ${
                       pathname === "/"
                         ? "bg-[#0071E3]/10 text-[#0071E3] font-semibold dark:bg-[#0071E3]/20"
                         : "text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-black/5 dark:hover:bg-white/5"
                     }`}
                   >
-                    {t("nav.home")}
+                    <Home className="w-4 h-4 text-[#86868B] dark:text-[#8E8E93] shrink-0" />
+                    <span>{t("nav.home")}</span>
                   </Link>
                   <Link
                     href="/pathways"
                     onClick={() => setMobileMenuOpen(false)}
-                    className={`px-3 py-2 rounded-xl text-[13.5px] font-medium transition-all ${
+                    className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13.5px] font-medium transition-all ${
                       pathname === "/pathways"
                         ? "bg-[#0071E3]/10 text-[#0071E3] font-semibold dark:bg-[#0071E3]/20"
                         : "text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-black/5 dark:hover:bg-white/5"
                     }`}
                   >
-                    {t("nav.pathways")}
+                    <Repeat className="w-4 h-4 text-[#86868B] dark:text-[#8E8E93] shrink-0" />
+                    <span>{t("nav.pathways")}</span>
                   </Link>
                   <Link
                     href="/how-it-works"
                     onClick={() => setMobileMenuOpen(false)}
-                    className={`px-3 py-2 rounded-xl text-[13.5px] font-medium transition-all ${
+                    className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13.5px] font-medium transition-all ${
                       pathname === "/how-it-works"
                         ? "bg-[#0071E3]/10 text-[#0071E3] font-semibold dark:bg-[#0071E3]/20"
                         : "text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-black/5 dark:hover:bg-white/5"
                     }`}
                   >
-                    {t("nav.howItWorks")}
+                    <Workflow className="w-4 h-4 text-[#86868B] dark:text-[#8E8E93] shrink-0" />
+                    <span>{t("nav.howItWorks")}</span>
                   </Link>
                   <Link
                     href="/batch"
                     onClick={() => setMobileMenuOpen(false)}
-                    className={`px-3 py-2 rounded-xl text-[13.5px] font-medium transition-all ${
+                    className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13.5px] font-medium transition-all ${
                       pathname === "/batch"
                         ? "bg-[#0071E3]/10 text-[#0071E3] font-semibold dark:bg-[#0071E3]/20"
                         : "text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-black/5 dark:hover:bg-white/5"
                     }`}
                   >
-                    Batch Fleet
+                    <Boxes className="w-4 h-4 text-[#86868B] dark:text-[#8E8E93] shrink-0" />
+                    <span>Batch Fleet</span>
                   </Link>
                   <Link
                     href="/locator"
                     onClick={() => setMobileMenuOpen(false)}
-                    className={`px-3 py-2 rounded-xl text-[13.5px] font-medium transition-all ${
+                    className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13.5px] font-medium transition-all ${
                       pathname === "/locator"
                         ? "bg-[#0071E3]/10 text-[#0071E3] font-semibold dark:bg-[#0071E3]/20"
                         : "text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-black/5 dark:hover:bg-white/5"
                     }`}
                   >
-                    Recycler Locator
+                    <MapPin className="w-4 h-4 text-[#86868B] dark:text-[#8E8E93] shrink-0" />
+                    <span>Recycler Locator</span>
                   </Link>
                   <Link
                     href="/about"
                     onClick={() => setMobileMenuOpen(false)}
-                    className={`px-3 py-2 rounded-xl text-[13.5px] font-medium transition-all ${
+                    className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13.5px] font-medium transition-all ${
                       pathname === "/about" || pathname === "/engine"
                         ? "bg-[#0071E3]/10 text-[#0071E3] font-semibold dark:bg-[#0071E3]/20"
                         : "text-[#1D1D1F] dark:text-[#F5F5F7] hover:bg-black/5 dark:hover:bg-white/5"
                     }`}
                   >
-                    {t("nav.about", "About")}
+                    <Info className="w-4 h-4 text-[#86868B] dark:text-[#8E8E93] shrink-0" />
+                    <span>{t("nav.about", "About")}</span>
                   </Link>
                   <Link
                     href="/dashboard"
                     onClick={() => setMobileMenuOpen(false)}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-xl text-[13.5px] font-medium transition-all ${
+                    className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-[13.5px] font-medium transition-all ${
                       pathname === "/dashboard"
                         ? "bg-[#0071E3]/10 text-[#0071E3] font-semibold dark:bg-[#0071E3]/20"
                         : "text-[#0071E3] font-semibold hover:bg-[#0071E3]/5"
                     }`}
                   >
-                    <Laptop className="w-3.5 h-3.5" />
+                    <Laptop className="w-4 h-4 shrink-0" />
                     <span>{user ? t("nav.myDevices", "My Devices") : "History"}</span>
                   </Link>
                 </div>
