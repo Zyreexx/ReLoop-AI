@@ -55,6 +55,9 @@ class Settings:
     GROQ_API_KEY: str = os.getenv("GROQ_API_KEY", "")
     GROQ_MODEL: str = os.getenv("GROQ_MODEL", "llama-3.2-11b-vision-preview")
 
+    # Google Maps / Places API (for global Repair & Recycler Locator)
+    GOOGLE_MAPS_API_KEY: str = os.getenv("GOOGLE_MAPS_API_KEY") or os.getenv("GOOGLE_PLACES_API_KEY", "")
+
     # Fallback mode for demo deployment / Gemini failure (permanently disabled)
     DEMO_FALLBACK: bool = False
 

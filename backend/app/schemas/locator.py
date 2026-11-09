@@ -19,8 +19,14 @@ class LocatorItem(BaseModel):
     distance_km: float
     is_certified: bool = False
     certification_badge: Optional[str] = None  # "R2v3 Certified", "e-Stewards Certified", None
+    certifications: List[str] = Field(default_factory=list)
     accepted_items: List[str] = Field(default_factory=lambda: ["Laptops", "Desktops", "Batteries", "Monitors"])
     directions_url: str
+    google_maps_url: Optional[str] = None
+    rating: Optional[float] = None
+    user_ratings_total: Optional[int] = None
+    open_now: Optional[bool] = None
+    source: str = "openstreetmap"
 
 
 class LocatorSearchResult(BaseModel):
@@ -29,8 +35,11 @@ class LocatorSearchResult(BaseModel):
     longitude: float
     radius_km: float
     total_results: int
+    total_found: Optional[int] = None
     repair_shops_count: int
     recyclers_count: int
+    data_source: str = "openstreetmap"
+    google_places_configured: bool = False
     results: List[LocatorItem] = Field(default_factory=list)
 
 
