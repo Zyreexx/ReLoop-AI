@@ -65,7 +65,7 @@ class LocatorService:
         headers = {"User-Agent": "ReLoop-AI-CircularLocator/1.0"}
         params = {"q": query, "format": "json", "limit": "1"}
         try:
-            async with httpx.AsyncClient(timeout=8.0) as client:
+            async with httpx.AsyncClient(timeout=4.0) as client:
                 resp = await client.get(self.nominatim_url, params=params, headers=headers)
                 if resp.status_code == 200:
                     data = resp.json()
@@ -194,12 +194,10 @@ class LocatorService:
             return []
 
         norm_cat = (category or "ALL").upper()
-        if norm_cat in ["REPAIR", "REPAIR_SHOP"]:
-            categories_param = "service.repair.computer,service.repair.electronics,service.repair"
-        elif norm_cat in ["RECYCLE", "RECYCLER", "RECYCLING"]:
-            categories_param = "waste_and_recycling"
+        if norm_cat in ["RECYCLE", "RECYCLER", "RECYCLING"]:
+            categories_param = "service.recycling"
         else:
-            categories_param = "service.repair.computer,service.repair.electronics,service.repair,commercial.eletronics,waste_and_recycling"
+            categories_param = "service,service.recycling"
 
         radius_meters = int(radius_km * 1000)
         url = "https://api.geoapify.com/v2/places"
@@ -315,7 +313,7 @@ class LocatorService:
         items: List[LocatorItem] = []
         for mirror_url in OVERPASS_MIRRORS:
             try:
-                async with httpx.AsyncClient(timeout=8.0) as client:
+                async with httpx.AsyncClient(timeout=3.5) as client:
                     resp = await client.post(
                         mirror_url,
                         data={"data": overpass_ql},

@@ -59,7 +59,12 @@ class Settings:
     GOOGLE_MAPS_API_KEY: str = os.getenv("GOOGLE_MAPS_API_KEY") or os.getenv("GOOGLE_PLACES_API_KEY", "")
 
     # Geoapify Places API (100% Free - 3,000 calls/day, NO credit card required)
-    GEOAPIFY_API_KEY: str = os.getenv("GEOAPIFY_API_KEY", "")
+    _raw_geoapify = os.getenv("GEOAPIFY_API_KEY", "").strip()
+    GEOAPIFY_API_KEY: str = (
+        _raw_geoapify.split("apiKey=")[-1].split("&")[0].strip()
+        if "apiKey=" in _raw_geoapify
+        else _raw_geoapify
+    )
 
     # Fallback mode for demo deployment / Gemini failure (permanently disabled)
     DEMO_FALLBACK: bool = False
