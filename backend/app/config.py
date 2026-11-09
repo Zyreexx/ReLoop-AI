@@ -58,6 +58,9 @@ class Settings:
     # Google Maps / Places API (for global Repair & Recycler Locator)
     GOOGLE_MAPS_API_KEY: str = os.getenv("GOOGLE_MAPS_API_KEY") or os.getenv("GOOGLE_PLACES_API_KEY", "")
 
+    # Geoapify Places API (100% Free - 3,000 calls/day, NO credit card required)
+    GEOAPIFY_API_KEY: str = os.getenv("GEOAPIFY_API_KEY", "")
+
     # Fallback mode for demo deployment / Gemini failure (permanently disabled)
     DEMO_FALLBACK: bool = False
 

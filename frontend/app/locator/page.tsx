@@ -200,7 +200,7 @@ export default function LocatorPage() {
             </span>
             <span className="px-2 py-0.5 rounded-full bg-black/5 dark:bg-white/10 text-[10px] font-medium text-[#86868B] flex items-center gap-1">
               <Sparkles className="w-2.5 h-2.5 text-[#34C759]" />
-              {dataSource === "google_places" ? "Google Places API" : "OpenStreetMap Live"}
+              {dataSource === "google_places" ? "Google Places API" : dataSource === "geoapify" ? "Geoapify Live" : "OpenStreetMap Live"}
             </span>
           </div>
           {loading && <Loader2 className="w-4 h-4 animate-spin text-[#0071E3]" />}
@@ -353,16 +353,19 @@ export default function LocatorPage() {
               {t("locator.tryExpanding", "Try expanding the search radius or broadening your query.")}
             </p>
 
-            {!googlePlacesConfigured && (
+            {dataSource === "openstreetmap" && (
               <div className="p-4 rounded-2xl bg-[#F5F5F7] dark:bg-[#2C2C2E]/60 text-left border border-[#D2D2D7]/40 dark:border-[#3A3A3C]">
                 <div className="flex items-start gap-3">
                   <Info className="w-4 h-4 text-[#0071E3] shrink-0 mt-0.5" />
                   <div className="text-xs text-[#86868B] space-y-1">
                     <span className="font-semibold text-[#1D1D1F] dark:text-white block">
-                      {t("locator.enableGooglePlaces", "Want exhaustive global Google Maps coverage?")}
+                      {t("locator.enableFreePlaces", "Want instant live coverage for any pincode?")}
                     </span>
                     <p>
-                      {t("locator.googlePlacesHelp", "Add your Google Places API Key to .env as GOOGLE_MAPS_API_KEY to unlock verified repair shops and recyclers in every city and postal code.")}
+                      {t(
+                        "locator.freePlacesHelp",
+                        "Get a 100% free API key from Geoapify (3,000 free requests/day, no credit card required) at myprojects.geoapify.com and add GEOAPIFY_API_KEY to your .env file, or add GOOGLE_MAPS_API_KEY."
+                      )}
                     </p>
                   </div>
                 </div>

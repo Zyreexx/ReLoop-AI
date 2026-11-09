@@ -40,6 +40,7 @@ class LocatorSearchResult(BaseModel):
     recyclers_count: int
     data_source: str = "openstreetmap"
     google_places_configured: bool = False
+    geoapify_configured: bool = False
     results: List[LocatorItem] = Field(default_factory=list)
 
 

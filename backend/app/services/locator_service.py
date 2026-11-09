@@ -182,6 +182,112 @@ class LocatorService:
 
         return items
 
+    async def _search_geoapify(
+        self,
+        latitude: float,
+        longitude: float,
+        radius_km: float,
+        category: str,
+    ) -> List[LocatorItem]:
+        """Queries Geoapify Places API (100% Free tier, 3,000 requests/day, no credit card required)."""
+        if not settings.GEOAPIFY_API_KEY:
+            return []
+
+        norm_cat = (category or "ALL").upper()
+        if norm_cat in ["REPAIR", "REPAIR_SHOP"]:
+            categories_param = "service.repair.computer,service.repair.electronics,service.repair"
+        elif norm_cat in ["RECYCLE", "RECYCLER", "RECYCLING"]:
+            categories_param = "waste_and_recycling"
+        else:
+            categories_param = "service.repair.computer,service.repair.electronics,service.repair,commercial.eletronics,waste_and_recycling"
+
+        radius_meters = int(radius_km * 1000)
+        url = "https://api.geoapify.com/v2/places"
+        params = {
+            "categories": categories_param,
+            "filter": f"circle:{longitude},{latitude},{radius_meters}",
+            "bias": f"proximity:{longitude},{latitude}",
+            "limit": 30,
+            "apiKey": settings.GEOAPIFY_API_KEY,
+        }
+
+        items: List[LocatorItem] = []
+        try:
+            async with httpx.AsyncClient(timeout=8.0) as client:
+                resp = await client.get(url, params=params)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    features = data.get("features", [])
+                    for feat in features:
+                        props = feat.get("properties", {})
+                        name = props.get("name") or props.get("address_line1")
+                        if not name:
+                            continue
+
+                        p_lat = float(props.get("lat", latitude))
+                        p_lon = float(props.get("lon", longitude))
+                        dist = haversine_distance_km(latitude, longitude, p_lat, p_lon)
+
+                        cats = props.get("categories", [])
+                        name_lower = name.lower()
+                        is_recycling = (
+                            "waste_and_recycling" in cats
+                            or "recycl" in name_lower
+                            or "scrap" in name_lower
+                            or "waste" in name_lower
+                        )
+
+                        cert_data = verify_facility_certification(name)
+                        if is_recycling:
+                            item_cat = "CERTIFIED_RECYCLER" if cert_data else "E_WASTE_COLLECTOR"
+                        else:
+                            item_cat = "REPAIR_SHOP"
+
+                        if norm_cat in ["REPAIR", "REPAIR_SHOP"] and item_cat != "REPAIR_SHOP":
+                            continue
+                        if norm_cat in ["RECYCLE", "RECYCLER", "RECYCLING"] and item_cat not in [
+                            "CERTIFIED_RECYCLER",
+                            "E_WASTE_COLLECTOR",
+                        ]:
+                            continue
+
+                        badge = cert_data["standard"] if cert_data else None
+                        cert_list = [badge] if badge else []
+                        address = (
+                            props.get("formatted")
+                            or f"{props.get('address_line1', '')}, {props.get('city', '')}".strip(", ")
+                            or f"{dist} km from search origin"
+                        )
+
+                        contact = props.get("contact", {})
+                        phone = contact.get("phone")
+                        website = props.get("website") or contact.get("website")
+
+                        items.append(
+                            LocatorItem(
+                                id=f"geo_{props.get('place_id') or abs(hash(name)) % 1000000}",
+                                name=name,
+                                category=item_cat,
+                                address=address,
+                                city=props.get("city"),
+                                phone=phone,
+                                website=website,
+                                latitude=p_lat,
+                                longitude=p_lon,
+                                distance_km=dist,
+                                is_certified=bool(cert_data),
+                                certification_badge=badge,
+                                certifications=cert_list,
+                                directions_url=f"https://www.google.com/maps/dir/?api=1&destination={p_lat},{p_lon}",
+                                google_maps_url=f"https://www.google.com/maps/dir/?api=1&destination={p_lat},{p_lon}",
+                                source="geoapify",
+                            )
+                        )
+        except Exception as e:
+            logger.warning(f"Geoapify Places API query failed: {e}")
+
+        return items
+
     async def _search_overpass(
         self,
         latitude: float,
@@ -322,6 +428,7 @@ class LocatorService:
         items: List[LocatorItem] = []
         data_source = "openstreetmap"
         google_places_configured = bool(settings.GOOGLE_MAPS_API_KEY)
+        geoapify_configured = bool(settings.GEOAPIFY_API_KEY)
 
         # 1. Try Google Places if configured
         if google_places_configured:
@@ -329,7 +436,13 @@ class LocatorService:
             if items:
                 data_source = "google_places"
 
-        # 2. Fall back to OpenStreetMap Overpass (with mirror rotation) if no Google Places results
+        # 2. Try Geoapify Places (100% Free, no credit card) if configured and no items yet
+        if not items and geoapify_configured:
+            items = await self._search_geoapify(latitude, longitude, radius_km, category)
+            if items:
+                data_source = "geoapify"
+
+        # 3. Fall back to OpenStreetMap Overpass (with mirror rotation) if no external items
         if not items:
             items = await self._search_overpass(latitude, longitude, radius_km, category)
             data_source = "openstreetmap"
@@ -356,6 +469,7 @@ class LocatorService:
             recyclers_count=rec_count,
             data_source=data_source,
             google_places_configured=google_places_configured,
+            geoapify_configured=geoapify_configured,
             results=items,
         )
 
