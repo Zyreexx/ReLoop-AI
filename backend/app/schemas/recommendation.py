@@ -39,6 +39,8 @@ class SecondLifeSuggestion(BaseModel):
 class ComponentRecoveryManifest(BaseModel):
     recoverable_parts: List[str] = Field(default_factory=list)
     salvage_value_estimate_usd: float = 0.0
+    salvage_value_estimate_inr: float = 0.0
+    salvage_value_display: Optional[str] = None
     material_recovery_action: str = "Harvest modular RAM, SSD, and display panel for spare inventory."
 
 

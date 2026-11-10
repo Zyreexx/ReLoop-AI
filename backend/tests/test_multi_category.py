@@ -83,7 +83,10 @@ def test_smartphone_assessment_and_virtual_keyboard():
     rec = recommendation_service.generate_recommendation(req)
     assert rec.selected_pathway in [PathwayType.REPAIR, PathwayType.REFURBISH, PathwayType.REUSE]
     repair_pw: Any = None
-    for p in rec.alternative_pathways:
+    all_pws = [rec.primary_recommendation] + list(rec.alternative_pathways or [])
+    for p in all_pws:
+        if not p:
+            continue
         pw = p.pathway if isinstance(p, ScoredPathway) else p
         if getattr(pw, "type", None) == PathwayType.REPAIR:
             repair_pw = pw

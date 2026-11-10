@@ -88,9 +88,10 @@ def score_pathways(
         avg_co2 = (p.environmental_estimate.co2_avoided_kg_min + p.environmental_estimate.co2_avoided_kg_max) / 2.0
         norm_env = min(1.0, max(0.0, avg_co2 / 300.0))
 
-        # Cost penalty (0 to $300)
+        # Cost penalty (normalized against benchmark cost scale: ₹25,000 INR or $300 USD)
         avg_cost = (p.estimated_cost.min_val + p.estimated_cost.max_val) / 2.0
-        norm_cost = min(1.0, max(0.0, avg_cost / 300.0))
+        cost_scale = 25000.0 if getattr(p.estimated_cost, "unit", "INR").upper() == "INR" else 300.0
+        norm_cost = min(1.0, max(0.0, avg_cost / cost_scale))
 
         # Logistics penalty (turnaround 0 to 10 days)
         avg_days = (p.logistics.turnaround_days_min + p.logistics.turnaround_days_max) / 2.0
@@ -168,23 +169,31 @@ def score_pathways(
     recovery_manifest = None
     if primary.pathway.type == PathwayType.COMPONENT_RECOVERY or not primary.pathway.eligibility.is_eligible:
         salvageable_parts = []
-        val_est = 0.0
+        val_est_inr = 0.0
         ssd = profile.get_component("ssd")
         if ssd and ssd.status in [ComponentStatus.GOOD, ComponentStatus.FAIR] and product.specs.ssd_modular:
             salvageable_parts.append(f"M.2 NVMe SSD ({ssd.label})")
-            val_est += 35.0
+            val_est_inr += 2500.0
         ram = profile.get_component("ram")
         if ram and ram.status == ComponentStatus.GOOD and product.specs.ram_modular:
             salvageable_parts.append(f"SO-DIMM RAM Module ({ram.label})")
-            val_est += 25.0
+            val_est_inr += 1800.0
         disp = profile.get_component("display")
         if disp and disp.status == ComponentStatus.GOOD:
             salvageable_parts.append("Display Panel Assembly")
-            val_est += 50.0
+            val_est_inr += 3200.0
+
+        if not salvageable_parts:
+            salvageable_parts.append("Printed Circuit Board E-Waste Metal Scrap")
+            val_est_inr = 600.0
+
+        val_est_usd = round(val_est_inr / 83.0, 1)
 
         recovery_manifest = ComponentRecoveryManifest(
             recoverable_parts=salvageable_parts,
-            salvage_value_estimate_usd=val_est,
+            salvage_value_estimate_usd=val_est_usd,
+            salvage_value_estimate_inr=val_est_inr,
+            salvage_value_display=f"₹{int(val_est_inr):,}",
             material_recovery_action="Harvest intact subcomponents into spare parts inventory; route residual inert shell to certified WEEE smelter.",
         )
 

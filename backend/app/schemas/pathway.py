@@ -45,10 +45,12 @@ class Pathway(BaseModel):
     logistics: LogisticsEstimate | Estimate | Any
     assumptions: List[str] = Field(default_factory=list)
 
-    # Optional UI enrichment fields
+    # Optional UI and economic enrichment fields
     title: Optional[str] = None
     summary: Optional[str] = None
     actions_required: List[str] = Field(default_factory=list)
+    resale_value_inr: Optional[Estimate] = None
+    net_profit_inr: Optional[Estimate] = None
 
     @model_validator(mode="before")
     @classmethod

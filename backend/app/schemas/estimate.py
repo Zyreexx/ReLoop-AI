@@ -36,6 +36,8 @@ class Estimate(BaseModel):
         if not self.display_range:
             if self.unit.upper() == "USD":
                 self.display_range = f"${int(self.value_min)}–${int(self.value_max)}"
+            elif self.unit.upper() == "INR":
+                self.display_range = f"₹{int(self.value_min):,}–₹{int(self.value_max):,}"
             elif self.unit == "years":
                 self.display_range = f"+{self.value_min}–{self.value_max} years"
             else:

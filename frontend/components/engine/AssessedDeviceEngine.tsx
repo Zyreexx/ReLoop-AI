@@ -466,7 +466,9 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
 
       // Format cost cleanly without NaN
       let costStr = "₹0";
-      if (
+      if (p.estimated_cost?.display_range && p.estimated_cost.display_range.startsWith("₹")) {
+        costStr = p.estimated_cost.display_range;
+      } else if (
         costMin !== undefined &&
         costMax !== undefined &&
         !isNaN(costMin) &&
@@ -480,6 +482,9 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
           costStr = `₹${Math.round(costMin).toLocaleString()} – ₹${Math.round(costMax).toLocaleString()}`;
         }
       }
+
+      const resaleValue = p.resale_value_inr?.display_range || null;
+      const netProfit = p.net_profit_inr?.display_range || null;
 
       // Format life extension cleanly without undefined or N/A
       let lifeStr = "N/A";
@@ -539,6 +544,8 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
         score: Math.round(sp.score || 0),
         lifeExt: lifeStr,
         cost: costStr,
+        resaleValue,
+        netProfit,
         co2: co2Str,
         turnaround: turnaroundStr,
         targetComponents,
@@ -1636,7 +1643,7 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
                     )}
                   </div>
 
-                  <div className="flex items-center gap-4 text-xs shrink-0">
+                  <div className="flex items-center gap-4 text-xs shrink-0 flex-wrap sm:flex-nowrap">
                     <div>
                       <span className="text-[#86868B] block text-[10px] uppercase">{t("engine.lifeAdded")}</span>
                       <span className="font-bold text-[#1D1D1F] dark:text-white">{path.lifeExt}</span>
@@ -1645,6 +1652,12 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
                       <span className="text-[#86868B] block text-[10px] uppercase">{t("engine.cost")}</span>
                       <span className="font-bold text-[#1D1D1F] dark:text-white">{path.cost}</span>
                     </div>
+                    {path.resaleValue && (
+                      <div className="hidden sm:block">
+                        <span className="text-[#86868B] block text-[10px] uppercase">{language === "gu" ? "પુનર્વેચાણ મૂલ્ય" : language === "hi" ? "पुनर्विक्रय मूल्य" : "Resale Value"}</span>
+                        <span className="font-bold text-emerald-600 dark:text-emerald-400">{path.resaleValue}</span>
+                      </div>
+                    )}
                     <div>
                       <span className="text-[#86868B] block text-[10px] uppercase">{t("engine.score")}</span>
                       <span
@@ -1797,7 +1810,12 @@ export const AssessedDeviceEngine: React.FC<AssessedDeviceEngineProps> = ({
                 </div>
               </div>
               <span className="text-xs font-bold text-amber-800 bg-amber-100/90 px-3 py-1 rounded-full border border-amber-300">
-                {t("engine.estSalvage")}: ${backendRecommendation.component_recovery.salvage_value_estimate_usd}
+                {t("engine.estSalvage")}: {
+                  backendRecommendation.component_recovery.salvage_value_display ||
+                  (backendRecommendation.component_recovery.salvage_value_estimate_inr
+                    ? `₹${Math.round(backendRecommendation.component_recovery.salvage_value_estimate_inr).toLocaleString()}`
+                    : `₹${Math.round((backendRecommendation.component_recovery.salvage_value_estimate_usd || 0) * 83).toLocaleString()}`)
+                }
               </span>
             </div>
 
