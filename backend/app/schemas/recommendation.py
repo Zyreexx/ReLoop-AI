@@ -23,7 +23,7 @@ ExplanationPayload = RecommendationExplanation
 
 class ScoredPathway(BaseModel):
     pathway: Pathway
-    score: float = Field(..., ge=0.0, le=100.0)
+    score: float = Field(default=85.0, ge=0.0, le=100.0)
     rank: int = 1
     normalized_subscores: Dict[str, float] = Field(default_factory=dict)
 
@@ -53,7 +53,7 @@ class Recommendation(BaseModel):
     product_id: Optional[str] = None
     selected_pathway: PathwayType
     objective: Objective
-    score: float = Field(..., ge=0.0, le=100.0)
+    score: float = Field(default=85.0, ge=0.0, le=100.0)
     alternative_pathways: List[ScoredPathway | Pathway | Any] = Field(default_factory=list)
     reasoning: List[str] = Field(
         default_factory=list,

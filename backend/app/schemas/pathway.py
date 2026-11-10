@@ -38,9 +38,12 @@ class Pathway(BaseModel):
     type: PathwayType
     eligibility: PathwayEligibility | bool | Any
     estimated_cost: Estimate
-    expected_life_extension: Estimate
-    value_retained: float = Field(..., ge=0.0, le=100.0, description="Percentage of original value retained")
-    material_retained: float = Field(..., ge=0.0, le=100.0, description="Percentage of material retained in loop")
+    expected_life_extension: Optional[Estimate] = None
+    expected_life_extension_years: Optional[Estimate] = None
+    value_retained: float = Field(default=0.0, ge=0.0, le=100.0, description="Percentage of original value retained")
+    value_retained_percentage: Optional[float] = Field(default=None, ge=0.0, le=100.0, description="Percentage of original value retained alias")
+    material_retained: float = Field(default=0.0, ge=0.0, le=100.0, description="Percentage of material retained in loop")
+    material_retained_percentage: Optional[float] = Field(default=None, ge=0.0, le=100.0, description="Percentage of material retained in loop alias")
     environmental_estimate: EnvironmentalEstimate | Estimate | Any
     logistics: LogisticsEstimate | Estimate | Any
     assumptions: List[str] = Field(default_factory=list)
@@ -80,21 +83,21 @@ class Pathway(BaseModel):
                 values["title"] = str(t_val).replace("_", " ").title()
         return values
 
-    @property
-    def expected_life_extension_years(self) -> Estimate:
-        return self.expected_life_extension
+    @model_validator(mode="after")
+    def sync_after(self):
+        if self.expected_life_extension is None and self.expected_life_extension_years is not None:
+            self.expected_life_extension = self.expected_life_extension_years
+        elif self.expected_life_extension_years is None and self.expected_life_extension is not None:
+            self.expected_life_extension_years = self.expected_life_extension
 
-    @property
-    def value_retained_percentage(self) -> float:
-        return self.value_retained
-
-    @property
-    def material_retained_percentage(self) -> float:
-        return self.material_retained
+        if self.value_retained_percentage is None:
+            self.value_retained_percentage = self.value_retained
+        if self.material_retained_percentage is None:
+            self.material_retained_percentage = self.material_retained
+        return self
 
 
 # Backwards compatibility alias
 PathwayOption = Pathway
 
 Pathway.model_rebuild()
-

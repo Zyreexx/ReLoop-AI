@@ -197,14 +197,16 @@ def generate_all_pathways(
         up_cost_min, up_cost_max = 0.0, 0.0
         actions_upgrade.append("Hardware architecture is fully soldered; upgrade unavailable")
 
-    has_unaddressed_faults = any(
-        profile.get_component(c) and profile.get_component(c).status in [
+    has_unaddressed_faults = False
+    for c in ["battery", "thermals", "display"]:
+        comp = profile.get_component(c)
+        if comp is not None and comp.status in [
             ComponentStatus.SERVICE_REQUIRED,
             ComponentStatus.REPLACE_REQUIRED,
             ComponentStatus.DAMAGED,
-        ]
-        for c in ["battery", "thermals", "display"]
-    )
+        ]:
+            has_unaddressed_faults = True
+            break
     if has_unaddressed_faults:
         up_life_min, up_life_max = 1.0, 2.0
         up_life_display = "+1–2 years (constrained by unserviced components)"
