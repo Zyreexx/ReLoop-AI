@@ -75,25 +75,42 @@ def score_pathways(
 
     for p in pathways:
         # Life extension (0 to 5 years normalized)
-        avg_life = (p.expected_life_extension_years.min_val + p.expected_life_extension_years.max_val) / 2.0
+        life_est = p.expected_life_extension_years or p.expected_life_extension
+        if life_est:
+            min_l = life_est.min_val if life_est.min_val is not None else life_est.value_min
+            max_l = life_est.max_val if life_est.max_val is not None else life_est.value_max
+            avg_life = ((min_l or 0.0) + (max_l or 0.0)) / 2.0
+        else:
+            avg_life = 0.0
         norm_life = min(1.0, max(0.0, avg_life / 5.0))
 
         # Value retained (0 to 100%)
-        norm_value = min(1.0, max(0.0, p.value_retained_percentage / 100.0))
+        val_ret = p.value_retained_percentage if p.value_retained_percentage is not None else p.value_retained
+        norm_value = min(1.0, max(0.0, float(val_ret or 0.0) / 100.0))
 
         # Material retained (0 to 100%)
-        norm_material = min(1.0, max(0.0, p.material_retained_percentage / 100.0))
+        mat_ret = p.material_retained_percentage if p.material_retained_percentage is not None else p.material_retained
+        norm_material = min(1.0, max(0.0, float(mat_ret or 0.0) / 100.0))
 
         # Environmental benefit (CO2 avoided 0 to 300kg)
-        avg_co2 = (p.environmental_estimate.co2_avoided_kg_min + p.environmental_estimate.co2_avoided_kg_max) / 2.0
+        env = p.environmental_estimate
+        co2_min = getattr(env, "co2_avoided_kg_min", 0.0) or getattr(env, "value_min", 0.0) or 0.0
+        co2_max = getattr(env, "co2_avoided_kg_max", 0.0) or getattr(env, "value_max", 0.0) or 0.0
+        avg_co2 = (float(co2_min) + float(co2_max)) / 2.0
         norm_env = min(1.0, max(0.0, avg_co2 / 300.0))
 
-        # Cost penalty (0 to $300)
-        avg_cost = (p.estimated_cost.min_val + p.estimated_cost.max_val) / 2.0
-        norm_cost = min(1.0, max(0.0, avg_cost / 300.0))
+        # Cost penalty (normalized against benchmark cost scale: ₹25,000 INR or $300 USD)
+        cost_min = p.estimated_cost.min_val if p.estimated_cost.min_val is not None else p.estimated_cost.value_min
+        cost_max = p.estimated_cost.max_val if p.estimated_cost.max_val is not None else p.estimated_cost.value_max
+        avg_cost = ((cost_min or 0.0) + (cost_max or 0.0)) / 2.0
+        cost_scale = 25000.0 if getattr(p.estimated_cost, "unit", "INR").upper() == "INR" else 300.0
+        norm_cost = min(1.0, max(0.0, avg_cost / cost_scale))
 
         # Logistics penalty (turnaround 0 to 10 days)
-        avg_days = (p.logistics.turnaround_days_min + p.logistics.turnaround_days_max) / 2.0
+        log = p.logistics
+        days_min = getattr(log, "turnaround_days_min", 1) or getattr(log, "value_min", 1.0) or 1.0
+        days_max = getattr(log, "turnaround_days_max", 5) or getattr(log, "value_max", 5.0) or 5.0
+        avg_days = (float(days_min) + float(days_max)) / 2.0
         norm_logistics = min(1.0, max(0.0, avg_days / 10.0))
 
         subscores = {
@@ -118,7 +135,8 @@ def score_pathways(
         final_score = round(raw_score * 100.0, 1)
 
         # Ineligible pathways receive heavy penalty to ensure they rank below eligible ones
-        if not p.eligibility.is_eligible:
+        is_p_eligible = bool(getattr(p.eligibility, "is_eligible", p.eligibility))
+        if not is_p_eligible:
             final_score = round(final_score * 0.15, 1)
 
         scored.append(
@@ -133,7 +151,7 @@ def score_pathways(
     # Sort descending by score, prioritizing eligible over ineligible, breaking ties deterministically by circular hierarchy
     scored.sort(
         key=lambda item: (
-            item.pathway.eligibility.is_eligible,
+            bool(getattr(item.pathway.eligibility, "is_eligible", item.pathway.eligibility)),
             item.score,
             PATHWAY_CIRCULAR_PRIORITY.get(item.pathway.type, 0),
         ),
@@ -166,25 +184,34 @@ def score_pathways(
 
     # Component recovery manifest if selected or as salvage option
     recovery_manifest = None
-    if primary.pathway.type == PathwayType.COMPONENT_RECOVERY or not primary.pathway.eligibility.is_eligible:
+    is_primary_eligible = bool(getattr(primary.pathway.eligibility, "is_eligible", primary.pathway.eligibility))
+    if primary.pathway.type == PathwayType.COMPONENT_RECOVERY or not is_primary_eligible:
         salvageable_parts = []
-        val_est = 0.0
+        val_est_inr = 0.0
         ssd = profile.get_component("ssd")
         if ssd and ssd.status in [ComponentStatus.GOOD, ComponentStatus.FAIR] and product.specs.ssd_modular:
             salvageable_parts.append(f"M.2 NVMe SSD ({ssd.label})")
-            val_est += 35.0
+            val_est_inr += 2500.0
         ram = profile.get_component("ram")
         if ram and ram.status == ComponentStatus.GOOD and product.specs.ram_modular:
             salvageable_parts.append(f"SO-DIMM RAM Module ({ram.label})")
-            val_est += 25.0
+            val_est_inr += 1800.0
         disp = profile.get_component("display")
         if disp and disp.status == ComponentStatus.GOOD:
             salvageable_parts.append("Display Panel Assembly")
-            val_est += 50.0
+            val_est_inr += 3200.0
+
+        if not salvageable_parts:
+            salvageable_parts.append("Printed Circuit Board E-Waste Metal Scrap")
+            val_est_inr = 600.0
+
+        val_est_usd = round(val_est_inr / 83.0, 1)
 
         recovery_manifest = ComponentRecoveryManifest(
             recoverable_parts=salvageable_parts,
-            salvage_value_estimate_usd=val_est,
+            salvage_value_estimate_usd=val_est_usd,
+            salvage_value_estimate_inr=val_est_inr,
+            salvage_value_display=f"₹{int(val_est_inr):,}",
             material_recovery_action="Harvest intact subcomponents into spare parts inventory; route residual inert shell to certified WEEE smelter.",
         )
 
@@ -192,6 +219,7 @@ def score_pathways(
         product_id=product.id,
         objective=objective,
         selected_pathway=primary.pathway.type,
+        score=primary.score,
         primary_recommendation=primary,
         alternative_pathways=alternatives,
         reasoning=reasoning,

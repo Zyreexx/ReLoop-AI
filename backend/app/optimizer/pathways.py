@@ -1,8 +1,12 @@
 """
 Pathway metrics calculation and generation.
 Pure deterministic logic without external AI calls.
+Grounded in:
+- Live component replacement costs from regional catalog in INR.
+- Deterministic hardware physics and degradation telemetry.
+- Electronics secondary market depreciation curves.
 """
-from typing import List, Dict
+from typing import List
 from app.schemas.enums import PathwayType, ComponentStatus
 from app.schemas.condition import ConditionProfile
 from app.schemas.product import ProductRecord, ProductSpecs
@@ -20,13 +24,23 @@ from app.optimizer.rules import (
     evaluate_component_recovery_eligibility,
     evaluate_recycle_eligibility,
 )
+from app.optimizer.economics import (
+    calculate_device_depreciation,
+    get_catalog_component_costs,
+    calculate_salvage_parts_value,
+)
 
 
 def generate_all_pathways(
     product: ProductRecord, profile: ConditionProfile
 ) -> List[PathwayOption]:
-    specs = product.specs
+    specs: ProductSpecs = product.specs
     pathways: List[PathwayOption] = []
+
+    # 0. Grounded Economics & Depreciation Curves
+    econ = calculate_device_depreciation(product, profile)
+    cat_costs = get_catalog_component_costs(product)
+    salvage_min, salvage_max, salvage_parts = calculate_salvage_parts_value(product, profile)
 
     # 1. REPAIR
     repair_eligibility = evaluate_repair_eligibility(profile, specs)
@@ -34,32 +48,61 @@ def generate_all_pathways(
     cost_min, cost_max = 0.0, 0.0
 
     battery_cond = profile.get_component("battery")
-    if battery_cond and battery_cond.status in [ComponentStatus.SERVICE_REQUIRED, ComponentStatus.REPLACE_REQUIRED, ComponentStatus.FAIR]:
+    if battery_cond and battery_cond.status in [
+        ComponentStatus.SERVICE_REQUIRED,
+        ComponentStatus.REPLACE_REQUIRED,
+        ComponentStatus.FAIR,
+        ComponentStatus.WEAR,
+    ]:
+        bat_cost = cat_costs.get("battery") or {"min": 2800.0, "max": 4800.0}
         actions_repair.append("Install certified replacement battery pack")
-        cost_min += 45.0
-        cost_max += 75.0
+        cost_min += float(bat_cost.get("min", 2800.0))
+        cost_max += float(bat_cost.get("max", 4800.0))
 
     keyboard_cond = profile.get_component("keyboard")
-    if keyboard_cond and keyboard_cond.status in [ComponentStatus.SERVICE_REQUIRED, ComponentStatus.REPLACE_REQUIRED]:
+    if keyboard_cond and keyboard_cond.status in [
+        ComponentStatus.SERVICE_REQUIRED,
+        ComponentStatus.REPLACE_REQUIRED,
+        ComponentStatus.DAMAGED,
+    ]:
+        kb_cost = cat_costs.get("keyboard") or {"min": 1800.0, "max": 3200.0}
         actions_repair.append("Replace damaged keyboard module")
-        cost_min += 30.0
-        cost_max += 55.0
+        cost_min += float(kb_cost.get("min", 1800.0))
+        cost_max += float(kb_cost.get("max", 3200.0))
 
     thermals_cond = profile.get_component("thermals")
-    if thermals_cond and thermals_cond.status in [ComponentStatus.SERVICE_REQUIRED, ComponentStatus.FAIR]:
+    if thermals_cond and thermals_cond.status in [
+        ComponentStatus.SERVICE_REQUIRED,
+        ComponentStatus.FAIR,
+        ComponentStatus.WEAR,
+    ]:
+        th_cost = cat_costs.get("thermals") or {"min": 800.0, "max": 1800.0}
         actions_repair.append("Thermal service: heatsink dust clearing & high-performance thermal paste application")
-        cost_min += 15.0
-        cost_max += 30.0
+        cost_min += float(th_cost.get("min", 800.0))
+        cost_max += float(th_cost.get("max", 1800.0))
 
     display_cond = profile.get_component("display")
-    if display_cond and display_cond.status in [ComponentStatus.SERVICE_REQUIRED, ComponentStatus.REPLACE_REQUIRED]:
+    if display_cond and display_cond.status in [
+        ComponentStatus.SERVICE_REQUIRED,
+        ComponentStatus.REPLACE_REQUIRED,
+        ComponentStatus.DAMAGED,
+    ]:
+        disp_cost = cat_costs.get("display") or {"min": 4200.0, "max": 7500.0}
         actions_repair.append("Replace damaged display panel")
-        cost_min += 85.0
-        cost_max += 140.0
+        cost_min += float(disp_cost.get("min", 4200.0))
+        cost_max += float(disp_cost.get("max", 7500.0))
 
+    # Fallback preventative service if no individual component requires heavy replacement
     if cost_min == 0.0:
-        cost_min, cost_max = 25.0, 50.0
-        actions_repair.append("Preventative hardware tune-up")
+        th_cost = cat_costs.get("thermals") or {"min": 800.0, "max": 1800.0}
+        cost_min = float(th_cost.get("min", 800.0))
+        cost_max = float(th_cost.get("max", 1800.0)) + 600.0
+        actions_repair.append("Preventative hardware tune-up & contact cleaning")
+
+    repair_resale_min = float(econ["resale_repair_inr_min"])
+    repair_resale_max = float(econ["resale_repair_inr_max"])
+    repair_profit_min = max(0.0, repair_resale_min - cost_max)
+    repair_profit_max = max(0.0, repair_resale_max - cost_min)
 
     repair_pathway = PathwayOption(
         type=PathwayType.REPAIR,
@@ -71,12 +114,13 @@ def generate_all_pathways(
             min_val=cost_min,
             max_val=cost_max,
             unit="INR",
-            display_range=f"${int(cost_min)}–${int(cost_max)}",
+            display_range=f"₹{int(cost_min):,}–₹{int(cost_max):,}",
             basis="DATABASE_ESTIMATE",
             assumptions=[
-                "Standard OEM-compatible replacement parts readily available",
+                "Standard OEM-compatible replacement parts readily available in regional market",
                 "Work performed by independent repair technician or self-repair toolkit",
                 "Internal logic board has no latent critical defects",
+                f"Market benchmark based on {product.model or 'enterprise laptop'} component index",
             ],
         ),
         expected_life_extension_years=RangeEstimate(
@@ -98,12 +142,12 @@ def generate_all_pathways(
             ewaste_diverted_kg=round(specs.weight_kg * 0.96, 2),
             basis="LIFECYCLE_EMISSION_BENCHMARK",
             assumptions=[
-                f"Defers full replacement of {specs.category.value.lower()} ({specs.baseline_embodied_co2_kg} kg baseline CO2e)",
+                f"Defers full replacement of {specs.category.value.lower() if hasattr(specs.category, 'value') else 'device'} ({specs.baseline_embodied_co2_kg} kg baseline CO2e)",
                 "Displaced emissions account for new battery manufacturing footprint (~12 kg CO2e)",
             ],
         ),
         logistics=LogisticsEstimate(
-            complexity="LOW" if cost_max < 90 else "MODERATE",
+            complexity="LOW" if cost_max < 6000 else "MODERATE",
             turnaround_days_min=1,
             turnaround_days_max=4,
             basis="SERVICE_BENCHMARK",
@@ -111,7 +155,25 @@ def generate_all_pathways(
         ),
         assumptions=[
             "Direct targeted repairs preserve 100% of user data and existing software configuration",
+            f"Depreciation analysis: Original MSRP ₹{int(econ['original_msrp_inr']):,} | Depreciated base: ₹{int(econ['depreciated_base_inr']):,}",
+            f"Post-repair secondary market value: ₹{int(repair_resale_min):,}–₹{int(repair_resale_max):,} (Net circular value: ₹{int(repair_profit_min):,}–₹{int(repair_profit_max):,})",
         ],
+        resale_value_inr=RangeEstimate(
+            min_val=repair_resale_min,
+            max_val=repair_resale_max,
+            unit="INR",
+            display_range=f"₹{int(repair_resale_min):,}–₹{int(repair_resale_max):,}",
+            basis="DEPRECIATION_MODEL",
+            assumptions=["Restored Grade A/B operational condition with clean diagnostic pass"],
+        ),
+        net_profit_inr=RangeEstimate(
+            min_val=repair_profit_min,
+            max_val=repair_profit_max,
+            unit="INR",
+            display_range=f"₹{int(repair_profit_min):,}–₹{int(repair_profit_max):,}",
+            basis="NET_CIRCULAR_YIELD",
+            assumptions=["Residual market resale price less direct repair expenditure"],
+        ),
     )
     pathways.append(repair_pathway)
 
@@ -121,22 +183,30 @@ def generate_all_pathways(
     up_cost_min, up_cost_max = 0.0, 0.0
 
     if specs.ram_modular:
+        ram_c = cat_costs.get("ram") or {"min": 1600.0, "max": 3800.0}
         actions_upgrade.append("Expand RAM to 16GB/32GB DDR4/DDR5 SO-DIMM")
-        up_cost_min += 35.0
-        up_cost_max += 60.0
+        up_cost_min += float(ram_c.get("min", 1600.0))
+        up_cost_max += float(ram_c.get("max", 3800.0))
     if specs.ssd_modular:
+        ssd_c = cat_costs.get("ssd") or {"min": 2400.0, "max": 5800.0}
         actions_upgrade.append("Upgrade NVMe SSD to fast 1TB Gen3/Gen4 drive")
-        up_cost_min += 60.0
-        up_cost_max += 95.0
+        up_cost_min += float(ssd_c.get("min", 2400.0))
+        up_cost_max += float(ssd_c.get("max", 5800.0))
 
     if not actions_upgrade:
         up_cost_min, up_cost_max = 0.0, 0.0
         actions_upgrade.append("Hardware architecture is fully soldered; upgrade unavailable")
 
-    has_unaddressed_faults = any(
-        profile.get_component(c) and profile.get_component(c).status in [ComponentStatus.SERVICE_REQUIRED, ComponentStatus.REPLACE_REQUIRED]
-        for c in ["battery", "thermals", "display"]
-    )
+    has_unaddressed_faults = False
+    for c in ["battery", "thermals", "display"]:
+        comp = profile.get_component(c)
+        if comp is not None and comp.status in [
+            ComponentStatus.SERVICE_REQUIRED,
+            ComponentStatus.REPLACE_REQUIRED,
+            ComponentStatus.DAMAGED,
+        ]:
+            has_unaddressed_faults = True
+            break
     if has_unaddressed_faults:
         up_life_min, up_life_max = 1.0, 2.0
         up_life_display = "+1–2 years (constrained by unserviced components)"
@@ -156,10 +226,10 @@ def generate_all_pathways(
             min_val=up_cost_min,
             max_val=up_cost_max,
             unit="INR",
-            display_range=f"${int(up_cost_min)}–${int(up_cost_max)}" if up_cost_max > 0 else "N/A",
+            display_range=f"₹{int(up_cost_min):,}–₹{int(up_cost_max):,}" if up_cost_max > 0 else "N/A",
             basis="DATABASE_ESTIMATE",
             assumptions=[
-                "Current market prices for standard consumer SO-DIMM and PCIe NVMe storage",
+                "Current market prices for standard consumer SO-DIMM and PCIe NVMe storage in India",
             ],
         ),
         expected_life_extension_years=RangeEstimate(
@@ -196,8 +266,17 @@ def generate_all_pathways(
 
     # 3. REFURBISH
     refurbish_eligibility = evaluate_refurbish_eligibility(profile, specs)
-    refurb_cost_min = cost_min + 30.0
-    refurb_cost_max = cost_max + 55.0
+    refurb_base_labor_min = 1800.0
+    refurb_base_labor_max = 3200.0
+    refurb_cost_min = cost_min + refurb_base_labor_min
+    refurb_cost_max = cost_max + refurb_base_labor_max
+
+    refurb_resale_min = float(econ["resale_refurb_inr_min"])
+    refurb_resale_max = float(econ["resale_refurb_inr_max"])
+    as_is_val = float(econ["as_is_value_inr"])
+    refurb_profit_min = max(0.0, refurb_resale_min - refurb_cost_max - as_is_val)
+    refurb_profit_max = max(0.0, refurb_resale_max - refurb_cost_min - as_is_val)
+
     refurbish_pathway = PathwayOption(
         type=PathwayType.REFURBISH,
         title="Comprehensive Factory Refurbishment",
@@ -213,11 +292,11 @@ def generate_all_pathways(
             min_val=refurb_cost_min,
             max_val=refurb_cost_max,
             unit="INR",
-            display_range=f"${int(refurb_cost_min)}–${int(refurb_cost_max)}",
+            display_range=f"₹{int(refurb_cost_min):,}–₹{int(refurb_cost_max):,}",
             basis="DATABASE_ESTIMATE",
             assumptions=[
                 "Refurbishment conducted by certified circular repair partner",
-                "Includes 90-day warranty coverage",
+                "Includes 90-day warranty coverage and hardware diagnostic recertification",
             ],
         ),
         expected_life_extension_years=RangeEstimate(
@@ -250,12 +329,33 @@ def generate_all_pathways(
         ),
         assumptions=[
             "Data backed up externally prior to disk re-imaging",
+            f"Depreciation analysis: Original MSRP ₹{int(econ['original_msrp_inr']):,} | As-is baseline: ₹{int(as_is_val):,}",
+            f"Secondary market refurbished resale: ₹{int(refurb_resale_min):,}–₹{int(refurb_resale_max):,} (Net resale margin: ₹{int(refurb_profit_min):,}–₹{int(refurb_profit_max):,})",
         ],
+        resale_value_inr=RangeEstimate(
+            min_val=refurb_resale_min,
+            max_val=refurb_resale_max,
+            unit="INR",
+            display_range=f"₹{int(refurb_resale_min):,}–₹{int(refurb_resale_max):,}",
+            basis="DEPRECIATION_MODEL",
+            assumptions=["Certified Grade A/B refurbished listing price"],
+        ),
+        net_profit_inr=RangeEstimate(
+            min_val=refurb_profit_min,
+            max_val=refurb_profit_max,
+            unit="INR",
+            display_range=f"₹{int(refurb_profit_min):,}–₹{int(refurb_profit_max):,}",
+            basis="NET_RESALE_MARGIN",
+            assumptions=["Net profit after subtracting refurbishment labor, parts, and device acquisition cost"],
+        ),
     )
     pathways.append(refurbish_pathway)
 
     # 4. REUSE / REDEPLOY
     reuse_eligibility = evaluate_reuse_redeploy_eligibility(profile, specs)
+    reuse_cost_min = 0.0
+    reuse_cost_max = 800.0  # Optional USB drive / software flash setup labor
+
     reuse_pathway = PathwayOption(
         type=PathwayType.REUSE_REDEPLOY,
         title="Direct Second-Life Reuse / Redeployment",
@@ -267,13 +367,13 @@ def generate_all_pathways(
             "Deploy to secondary user / educational program",
         ],
         estimated_cost=RangeEstimate(
-            min_val=0.0,
-            max_val=20.0,
+            min_val=reuse_cost_min,
+            max_val=reuse_cost_max,
             unit="INR",
-            display_range="₹0–₹20",
+            display_range="₹0–₹800",
             basis="DATABASE_ESTIMATE",
             assumptions=[
-                "Minimal physical intervention; software repurposing only",
+                "Minimal physical intervention; software repurposing only (self-install is ₹0, managed lab flashing ~₹800)",
             ],
         ),
         expected_life_extension_years=RangeEstimate(
@@ -306,12 +406,24 @@ def generate_all_pathways(
         ),
         assumptions=[
             "User accepts cosmetic signs of normal usage",
+            f"Avoided procurement replacement cost: ₹{int(econ['depreciated_base_inr']):,} saved",
         ],
+        resale_value_inr=RangeEstimate(
+            min_val=float(econ["as_is_value_inr"]),
+            max_val=float(econ["depreciated_base_inr"]),
+            unit="INR",
+            display_range=f"₹{int(econ['as_is_value_inr']):,}–₹{int(econ['depreciated_base_inr']):,}",
+            basis="AVOIDED_COST",
+            assumptions=["Utility value preserved without purchasing new hardware"],
+        ),
     )
     pathways.append(reuse_pathway)
 
     # 5. COMPONENT RECOVERY
     recovery_eligibility = evaluate_component_recovery_eligibility(profile, specs)
+    harvest_labor_min = 800.0
+    harvest_labor_max = 1800.0
+
     recovery_pathway = PathwayOption(
         type=PathwayType.COMPONENT_RECOVERY,
         title="Modular Component Recovery & Harvest",
@@ -323,13 +435,13 @@ def generate_all_pathways(
             "Cataloging into repair inventory; residue chassis routed to certified recycling",
         ],
         estimated_cost=RangeEstimate(
-            min_val=15.0,
-            max_val=35.0,
+            min_val=harvest_labor_min,
+            max_val=harvest_labor_max,
             unit="INR",
-            display_range="₹15–₹35 (Disassembly & Testing)",
+            display_range=f"₹{int(harvest_labor_min):,}–₹{int(harvest_labor_max):,} (Reclaims ₹{int(salvage_min):,}–₹{int(salvage_max):,} in parts)",
             basis="DATABASE_ESTIMATE",
             assumptions=[
-                "Harvest labor offset by spare part inventory value (₹60–₹140 reclaimed value)",
+                f"Harvest labor offset by spare part inventory value (reclaims ₹{int(salvage_min):,}–₹{int(salvage_max):,} in validated parts)",
             ],
         ),
         expected_life_extension_years=RangeEstimate(
@@ -362,7 +474,24 @@ def generate_all_pathways(
         ),
         assumptions=[
             "Whole device computing is retired, but high-value subassemblies continue operating",
+            f"Recoverable subassemblies: {', '.join(salvage_parts)}",
         ],
+        resale_value_inr=RangeEstimate(
+            min_val=salvage_min,
+            max_val=salvage_max,
+            unit="INR",
+            display_range=f"₹{int(salvage_min):,}–₹{int(salvage_max):,}",
+            basis="SPARE_PARTS_INVENTORY_VALUE",
+            assumptions=["Fair market inventory value for tested modular assemblies"],
+        ),
+        net_profit_inr=RangeEstimate(
+            min_val=max(0.0, salvage_min - harvest_labor_max),
+            max_val=max(0.0, salvage_max - harvest_labor_min),
+            unit="INR",
+            display_range=f"₹{int(max(0.0, salvage_min - harvest_labor_max)):,}–₹{int(max(0.0, salvage_max - harvest_labor_min)):,}",
+            basis="NET_SALVAGE_YIELD",
+            assumptions=["Reclaimed component value net of disassembly and testing labor"],
+        ),
     )
     pathways.append(recovery_pathway)
 
@@ -387,12 +516,12 @@ def generate_all_pathways(
         ],
         estimated_cost=RangeEstimate(
             min_val=0.0,
-            max_val=15.0,
+            max_val=500.0,
             unit="INR",
-            display_range="₹0–₹15",
+            display_range="₹0–₹500 (Free certified drop-off)",
             basis="DATABASE_ESTIMATE",
             assumptions=[
-                "Drop-off at certified e-waste partner facility",
+                "Drop-off at certified e-waste partner facility or municipal collection depot",
             ],
         ),
         expected_life_extension_years=RangeEstimate(
@@ -427,6 +556,14 @@ def generate_all_pathways(
         assumptions=[
             "Recycling is strictly the final resort when higher circular loops are technically exhausted",
         ],
+        resale_value_inr=RangeEstimate(
+            min_val=200.0,
+            max_val=600.0,
+            unit="INR",
+            display_range="₹200–₹600",
+            basis="COMMODITY_SCRAP_VALUE",
+            assumptions=["Scrap copper, aluminum, and precious metal smelter commodity value"],
+        ),
     )
     pathways.append(recycle_pathway)
 

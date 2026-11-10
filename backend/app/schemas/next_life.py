@@ -20,7 +20,7 @@ class DeviceSummary(BaseModel):
     detected_model: str = Field(
         ...,
         description="Identified laptop model or 'Generic Laptop'",
-        example="Dell Latitude 5420",
+        examples=["Dell Latitude 5420"],
     )
     cosmetic_grade: CosmeticGrade = Field(
         ...,
@@ -31,14 +31,14 @@ class DeviceSummary(BaseModel):
         ge=0,
         le=100,
         description="Diagnostic hardware health score (0-100%)",
-        example=85,
+        examples=[85],
     )
     reloop_circular_score: int = Field(
         ...,
         ge=0,
         le=100,
         description="Overall circular viability score (0-100%)",
-        example=82,
+        examples=[82],
     )
 
 
@@ -50,7 +50,7 @@ class NextLifeRecommendation(BaseModel):
     headline: str = Field(
         ...,
         description="Punchy 1-line recommendation title",
-        example="Enterprise Certified Refurbishment for Secondary Market Resale",
+        examples=["Enterprise Certified Refurbishment for Secondary Market Resale"],
     )
     justification: str = Field(
         ...,
@@ -59,10 +59,12 @@ class NextLifeRecommendation(BaseModel):
     actionable_steps: List[str] = Field(
         ...,
         description="Actionable sequential steps to execute this path",
-        example=[
-            "Sanitize storage using NIST 800-88 cryptographic erase",
-            "Clean chassis casing and re-apply thermal paste",
-            "Recalibrate battery and prepare secondary market listing",
+        examples=[
+            [
+                "Sanitize storage using NIST 800-88 cryptographic erase",
+                "Clean chassis casing and re-apply thermal paste",
+                "Recalibrate battery and prepare secondary market listing",
+            ]
         ],
     )
 
@@ -72,13 +74,13 @@ class EnvironmentalImpact(BaseModel):
         ...,
         ge=0.0,
         description="Estimated kilograms of e-waste diverted from landfill",
-        example=1.4,
+        examples=[1.4],
     )
     estimated_co2_offset_kg: float = Field(
         ...,
         ge=0.0,
         description="Estimated embodied CO2 kilograms avoided by extending life",
-        example=245.0,
+        examples=[245.0],
     )
 
 

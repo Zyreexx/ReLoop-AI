@@ -60,7 +60,8 @@ class AssessmentBuildResponse(BaseModel):
     def get_component(self, name: str) -> Optional[ComponentCondition]:
         low = name.lower()
         for k, v in self.components.items():
-            if k.lower() == low or (hasattr(v.component, "value") and v.component.value.lower() == low) or str(v.component).lower() == low:
+            comp_val = v.component.value if isinstance(v.component, ComponentName) else str(v.component)
+            if k.lower() == low or comp_val.lower() == low:
                 return v
         return None
 

@@ -458,6 +458,8 @@ export interface RecommendationResponse {
   component_recovery: {
     recoverable_parts: string[];
     salvage_value_estimate_usd: number;
+    salvage_value_estimate_inr?: number;
+    salvage_value_display?: string;
     material_recovery_action: string;
   } | null;
   created_at: string;

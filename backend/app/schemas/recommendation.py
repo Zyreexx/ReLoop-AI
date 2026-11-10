@@ -23,7 +23,7 @@ ExplanationPayload = RecommendationExplanation
 
 class ScoredPathway(BaseModel):
     pathway: Pathway
-    score: float = Field(..., ge=0.0, le=100.0)
+    score: float = Field(default=85.0, ge=0.0, le=100.0)
     rank: int = 1
     normalized_subscores: Dict[str, float] = Field(default_factory=dict)
 
@@ -39,6 +39,8 @@ class SecondLifeSuggestion(BaseModel):
 class ComponentRecoveryManifest(BaseModel):
     recoverable_parts: List[str] = Field(default_factory=list)
     salvage_value_estimate_usd: float = 0.0
+    salvage_value_estimate_inr: float = 0.0
+    salvage_value_display: Optional[str] = None
     material_recovery_action: str = "Harvest modular RAM, SSD, and display panel for spare inventory."
 
 
@@ -51,7 +53,7 @@ class Recommendation(BaseModel):
     product_id: Optional[str] = None
     selected_pathway: PathwayType
     objective: Objective
-    score: float = Field(..., ge=0.0, le=100.0)
+    score: float = Field(default=85.0, ge=0.0, le=100.0)
     alternative_pathways: List[ScoredPathway | Pathway | Any] = Field(default_factory=list)
     reasoning: List[str] = Field(
         default_factory=list,

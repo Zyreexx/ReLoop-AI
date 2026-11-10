@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
 
   // 2. Get all assessments for a user
   if (userId) {
-    let list = getUserAssessments(userId);
+    const list = getUserAssessments(userId);
 
 
     return NextResponse.json({

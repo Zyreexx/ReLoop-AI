@@ -91,10 +91,12 @@ def evaluate_refurbish_eligibility(
     display_cond = profile.get_component("display")
     chassis_cond = profile.get_component("chassis")
 
+    th_cond = profile.get_component("thermals")
+    bat_cond = profile.get_component("battery")
     cosmetic_or_thermal = (
-        (profile.get_component("thermals") and profile.get_component("thermals").status != ComponentStatus.GOOD)
+        (th_cond is not None and th_cond.status != ComponentStatus.GOOD)
         or (chassis_cond and chassis_cond.status in [ComponentStatus.FAIR, ComponentStatus.SERVICE_REQUIRED])
-        or (profile.get_component("battery") and profile.get_component("battery").status != ComponentStatus.GOOD)
+        or (bat_cond is not None and bat_cond.status != ComponentStatus.GOOD)
     )
 
     if cosmetic_or_thermal:
