@@ -6,7 +6,7 @@ Grounded in:
 - Deterministic hardware physics and degradation telemetry.
 - Electronics secondary market depreciation curves.
 """
-from typing import List, Dict
+from typing import List
 from app.schemas.enums import PathwayType, ComponentStatus
 from app.schemas.condition import ConditionProfile
 from app.schemas.product import ProductRecord, ProductSpecs

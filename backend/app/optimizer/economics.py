@@ -6,7 +6,7 @@ Models:
 2. Electronics market depreciation curves (Modified exponential decay by age, tier, and cosmetic grade).
 3. Live component replacement and salvage costs grounded in the regional catalog in INR.
 """
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 from app.schemas.enums import ComponentStatus, DeviceCategory
 from app.schemas.condition import ConditionProfile
 from app.schemas.product import ProductRecord, ProductSpecs
