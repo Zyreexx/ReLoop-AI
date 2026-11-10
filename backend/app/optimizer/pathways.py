@@ -54,7 +54,7 @@ def generate_all_pathways(
         ComponentStatus.FAIR,
         ComponentStatus.WEAR,
     ]:
-        bat_cost = cat_costs.get("battery", {"min": 2800.0, "max": 4800.0})
+        bat_cost = cat_costs.get("battery") or {"min": 2800.0, "max": 4800.0}
         actions_repair.append("Install certified replacement battery pack")
         cost_min += float(bat_cost.get("min", 2800.0))
         cost_max += float(bat_cost.get("max", 4800.0))
@@ -65,7 +65,7 @@ def generate_all_pathways(
         ComponentStatus.REPLACE_REQUIRED,
         ComponentStatus.DAMAGED,
     ]:
-        kb_cost = cat_costs.get("keyboard", {"min": 1800.0, "max": 3200.0})
+        kb_cost = cat_costs.get("keyboard") or {"min": 1800.0, "max": 3200.0}
         actions_repair.append("Replace damaged keyboard module")
         cost_min += float(kb_cost.get("min", 1800.0))
         cost_max += float(kb_cost.get("max", 3200.0))
@@ -76,7 +76,7 @@ def generate_all_pathways(
         ComponentStatus.FAIR,
         ComponentStatus.WEAR,
     ]:
-        th_cost = cat_costs.get("thermals", {"min": 800.0, "max": 1800.0})
+        th_cost = cat_costs.get("thermals") or {"min": 800.0, "max": 1800.0}
         actions_repair.append("Thermal service: heatsink dust clearing & high-performance thermal paste application")
         cost_min += float(th_cost.get("min", 800.0))
         cost_max += float(th_cost.get("max", 1800.0))
@@ -87,14 +87,14 @@ def generate_all_pathways(
         ComponentStatus.REPLACE_REQUIRED,
         ComponentStatus.DAMAGED,
     ]:
-        disp_cost = cat_costs.get("display", {"min": 4200.0, "max": 7500.0})
+        disp_cost = cat_costs.get("display") or {"min": 4200.0, "max": 7500.0}
         actions_repair.append("Replace damaged display panel")
         cost_min += float(disp_cost.get("min", 4200.0))
         cost_max += float(disp_cost.get("max", 7500.0))
 
     # Fallback preventative service if no individual component requires heavy replacement
     if cost_min == 0.0:
-        th_cost = cat_costs.get("thermals", {"min": 800.0, "max": 1800.0})
+        th_cost = cat_costs.get("thermals") or {"min": 800.0, "max": 1800.0}
         cost_min = float(th_cost.get("min", 800.0))
         cost_max = float(th_cost.get("max", 1800.0)) + 600.0
         actions_repair.append("Preventative hardware tune-up & contact cleaning")
@@ -183,12 +183,12 @@ def generate_all_pathways(
     up_cost_min, up_cost_max = 0.0, 0.0
 
     if specs.ram_modular:
-        ram_c = cat_costs.get("ram", {"min": 1600.0, "max": 3800.0})
+        ram_c = cat_costs.get("ram") or {"min": 1600.0, "max": 3800.0}
         actions_upgrade.append("Expand RAM to 16GB/32GB DDR4/DDR5 SO-DIMM")
         up_cost_min += float(ram_c.get("min", 1600.0))
         up_cost_max += float(ram_c.get("max", 3800.0))
     if specs.ssd_modular:
-        ssd_c = cat_costs.get("ssd", {"min": 2400.0, "max": 5800.0})
+        ssd_c = cat_costs.get("ssd") or {"min": 2400.0, "max": 5800.0}
         actions_upgrade.append("Upgrade NVMe SSD to fast 1TB Gen3/Gen4 drive")
         up_cost_min += float(ssd_c.get("min", 2400.0))
         up_cost_max += float(ssd_c.get("max", 5800.0))
