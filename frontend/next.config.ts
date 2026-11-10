@@ -21,6 +21,18 @@ const nextConfig: NextConfig = {
         source: "/backend-api/:path*",
         destination: `${backendUrl}/api/:path*`,
       },
+      {
+        source: "/api/locator/:path*",
+        destination: `${backendUrl}/api/locator/:path*`,
+      },
+      {
+        source: "/api/batch/:path*",
+        destination: `${backendUrl}/api/batch/:path*`,
+      },
+      {
+        source: "/api/dpp/:path*",
+        destination: `${backendUrl}/api/dpp/:path*`,
+      },
     ];
   },
 };

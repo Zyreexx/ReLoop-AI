@@ -21,6 +21,8 @@ import {
   Info,
   ChevronRight,
   Loader2,
+  Star,
+  Sparkles,
 } from "lucide-react";
 
 export default function LocatorPage() {
@@ -34,6 +36,9 @@ export default function LocatorPage() {
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<any[]>([]);
   const [totalFound, setTotalFound] = useState(0);
+  const [dataSource, setDataSource] = useState<string>("openstreetmap");
+  const [googlePlacesConfigured, setGooglePlacesConfigured] = useState<boolean>(false);
+  const [resolvedLocation, setResolvedLocation] = useState<string>("");
   const [certificationsModalOpen, setCertificationsModalOpen] = useState(false);
 
   const handleOpenAuth = (mode: "login" | "register") => {
@@ -50,11 +55,14 @@ export default function LocatorPage() {
       params.append("radius_km", rad.toString());
       if (cert) params.append("certified_only", "true");
 
-      const res = await fetch(`/api/locator/search?${params.toString()}`);
+      const res = await fetch(`/backend-api/locator/search?${params.toString()}`);
       if (res.ok) {
         const data = await res.json();
         setResults(data.results || []);
-        setTotalFound(data.total_found || 0);
+        setTotalFound(data.total_results ?? data.total_found ?? (data.results?.length || 0));
+        setDataSource(data.data_source || "openstreetmap");
+        setGooglePlacesConfigured(Boolean(data.google_places_configured));
+        setResolvedLocation(data.query_location || "");
       }
     } catch (e) {
       console.error("Locator search error:", e);
@@ -177,113 +185,194 @@ export default function LocatorPage() {
           </div>
         </div>
 
-        {/* Results Count */}
-        <div className="flex items-center justify-between text-xs text-[#86868B] mb-4 px-1">
-          <span>{t("locator.foundPrefix", "Found")} {totalFound} {t("locator.foundSuffix", "circular facilities")}</span>
+        {/* Results Count & Data Source Badge */}
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[#86868B] mb-4 px-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span>
+              {t("locator.foundPrefix", "Found")}{" "}
+              <strong className="text-[#1D1D1F] dark:text-white">{totalFound}</strong>{" "}
+              {t("locator.foundSuffix", "circular facilities")}
+              {resolvedLocation && (
+                <span className="text-[#86868B] ml-1">
+                  near <span className="text-[#1D1D1F] dark:text-white font-medium">{resolvedLocation.split(",").slice(0, 3).join(",")}</span>
+                </span>
+              )}
+            </span>
+            <span className="px-2 py-0.5 rounded-full bg-black/5 dark:bg-white/10 text-[10px] font-medium text-[#86868B] flex items-center gap-1">
+              <Sparkles className="w-2.5 h-2.5 text-[#34C759]" />
+              {dataSource === "google_places" ? "Google Places API" : dataSource === "geoapify" ? "Geoapify Live" : "OpenStreetMap Live"}
+            </span>
+          </div>
           {loading && <Loader2 className="w-4 h-4 animate-spin text-[#0071E3]" />}
         </div>
 
         {/* Directory Listing Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {results.map((facility: any, idx: number) => (
-            <div
-              key={idx}
-              className="bg-white dark:bg-[#1C1C1E] p-6 rounded-3xl border border-[#D2D2D7]/60 dark:border-[#2C2C2E] shadow-xs flex flex-col justify-between hover:border-[#0071E3]/50 transition-all"
-            >
-              <div>
-                <div className="flex items-start justify-between gap-3 mb-3">
-                  <div className="flex items-center gap-2">
-                    <div
-                      className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
-                        facility.category === "repair"
-                          ? "bg-[#0071E3]/10 text-[#0071E3]"
-                          : "bg-[#34C759]/10 text-[#34C759]"
-                      }`}
-                    >
-                      {facility.category === "repair" ? (
-                        <Wrench className="w-4 h-4" />
-                      ) : (
-                        <Recycle className="w-4 h-4" />
-                      )}
+          {results.map((facility: any, idx: number) => {
+            const isRepair = (facility.category || "").toLowerCase().includes("repair");
+            return (
+              <div
+                key={facility.id || idx}
+                className="bg-white dark:bg-[#1C1C1E] p-6 rounded-3xl border border-[#D2D2D7]/60 dark:border-[#2C2C2E] shadow-xs flex flex-col justify-between hover:border-[#0071E3]/50 transition-all"
+              >
+                <div>
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                          isRepair
+                            ? "bg-[#0071E3]/10 text-[#0071E3]"
+                            : "bg-[#34C759]/10 text-[#34C759]"
+                        }`}
+                      >
+                        {isRepair ? (
+                          <Wrench className="w-4 h-4" />
+                        ) : (
+                          <Recycle className="w-4 h-4" />
+                        )}
+                      </div>
+                      <div>
+                        <span className="text-[11px] font-bold uppercase tracking-wider text-[#86868B]">
+                          {isRepair ? t("locator.repairCenter", "Repair Center") : t("locator.eWasteRecycler", "E-Waste Recycler")}
+                        </span>
+                      </div>
                     </div>
-                    <div>
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-[#86868B]">
-                        {facility.category === "repair" ? t("locator.repairCenter", "Repair Center") : t("locator.eWasteRecycler", "E-Waste Recycler")}
-                      </span>
+
+                    <div className="flex items-center gap-1.5">
+                      {facility.distance_km !== null && facility.distance_km !== undefined && (
+                        <span className="px-2 py-1 rounded-full bg-[#F5F5F7] dark:bg-[#2C2C2E]/60 text-[11px] font-semibold text-[#86868B]">
+                          {facility.distance_km.toFixed(1)} km
+                        </span>
+                      )}
                     </div>
                   </div>
 
-                  {facility.distance_km !== null && facility.distance_km !== undefined && (
-                    <span className="px-2 py-1 rounded-full bg-[#F5F5F7] dark:bg-[#2C2C2E]/60 text-[11px] font-semibold text-[#86868B]">
-                      {facility.distance_km.toFixed(1)} km
-                    </span>
-                  )}
+                  <h3 className="text-base font-bold text-[#1D1D1F] dark:text-white mb-1.5 leading-snug">
+                    {facility.name}
+                  </h3>
+                  <p className="text-xs text-[#86868B] mb-3 line-clamp-2">
+                    {facility.address || `${facility.latitude}, ${facility.longitude}`}
+                  </p>
+
+                  {/* Rating & Opening Status if available */}
+                  {(facility.rating !== null && facility.rating !== undefined) || (facility.open_now !== null && facility.open_now !== undefined) ? (
+                    <div className="flex items-center gap-3 mb-3 text-xs">
+                      {facility.rating !== null && facility.rating !== undefined && (
+                        <div className="flex items-center gap-1 text-[#FF9500] font-semibold text-[11px]">
+                          <Star className="w-3.5 h-3.5 fill-current" />
+                          <span>{facility.rating.toFixed(1)}</span>
+                          {facility.user_ratings_total && (
+                            <span className="text-[#86868B] text-[10px] font-normal">
+                              ({facility.user_ratings_total})
+                            </span>
+                          )}
+                        </div>
+                      )}
+                      {facility.open_now !== null && facility.open_now !== undefined && (
+                        <span className={`inline-flex items-center gap-1 text-[11px] font-medium ${facility.open_now ? "text-[#34C759]" : "text-[#86868B]"}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${facility.open_now ? "bg-[#34C759]" : "bg-[#86868B]"}`} />
+                          {facility.open_now ? "Open Now" : "Closed"}
+                        </span>
+                      )}
+                    </div>
+                  ) : null}
+
+                  {/* Badges */}
+                  <div className="flex flex-wrap gap-1.5 mb-4">
+                    {facility.is_certified && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#34C759]/15 text-[#34C759] text-[11px] font-bold">
+                        <ShieldCheck className="w-3 h-3" />
+                        {facility.certification_badge || facility.certifications?.join(" / ") || t("locator.certifiedFacility", "Certified Facility")}
+                      </span>
+                    )}
+                    {(facility.category === "CERTIFIED_RECYCLER" || facility.category === "E_WASTE_COLLECTOR") && !facility.is_certified && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#0071E3]/10 text-[#0071E3] text-[11px] font-semibold">
+                        <Recycle className="w-3 h-3" />
+                        {t("locator.eWasteRecycler", "E-Waste Recycler")}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
-                <h3 className="text-base font-bold text-[#1D1D1F] dark:text-white mb-1.5 leading-snug">
-                  {facility.name}
-                </h3>
-                <p className="text-xs text-[#86868B] mb-4 line-clamp-2">
-                  {facility.address || `${facility.latitude}, ${facility.longitude}`}
-                </p>
+                {/* Action Buttons */}
+                <div className="pt-4 border-t border-[#E5E5EA] dark:border-[#2C2C2E] flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-3">
+                    {facility.phone && (
+                      <a
+                        href={`tel:${facility.phone}`}
+                        title={facility.phone}
+                        className="p-2 rounded-xl text-[#86868B] hover:text-[#0071E3] hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+                      >
+                        <Phone className="w-4 h-4" />
+                      </a>
+                    )}
+                    {facility.website && (
+                      <a
+                        href={facility.website}
+                        target="_blank"
+                        rel="noreferrer"
+                        title="Visit Website"
+                        className="p-2 rounded-xl text-[#86868B] hover:text-[#0071E3] hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+                      >
+                        <Globe className="w-4 h-4" />
+                      </a>
+                    )}
+                  </div>
 
-                {/* Badges */}
-                <div className="flex flex-wrap gap-1.5 mb-4">
-                  {facility.is_certified && (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-[#34C759]/15 text-[#34C759] text-[11px] font-bold">
-                      <ShieldCheck className="w-3 h-3" />
-                      {facility.certifications?.join(" / ") || t("locator.certifiedFacility", "Certified Facility")}
-                    </span>
-                  )}
-                  {facility.accepts_batteries && (
-                    <span className="px-2 py-0.5 rounded-full bg-black/5 dark:bg-white/10 text-[11px] font-medium text-[#86868B]">
-                      {t("locator.batteryDropoff", "Battery Drop-off")}
-                    </span>
-                  )}
+                  <a
+                    href={
+                      facility.google_maps_url ||
+                      facility.directions_url ||
+                      `https://www.google.com/maps/dir/?api=1&destination=${facility.latitude},${facility.longitude}`
+                    }
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#0071E3] hover:bg-[#0077ED] text-white text-xs font-semibold transition-colors"
+                  >
+                    <Navigation className="w-3.5 h-3.5" />
+                    {t("locator.directions", "Directions")}
+                  </a>
                 </div>
               </div>
-
-              {/* Action Buttons */}
-              <div className="pt-4 border-t border-[#E5E5EA] dark:border-[#2C2C2E] flex items-center justify-between gap-2">
-                <div className="flex items-center gap-3">
-                  {facility.phone && (
-                    <a
-                      href={`tel:${facility.phone}`}
-                      title={facility.phone}
-                      className="p-2 rounded-xl text-[#86868B] hover:text-[#0071E3] hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
-                    >
-                      <Phone className="w-4 h-4" />
-                    </a>
-                  )}
-                  {facility.website && (
-                    <a
-                      href={facility.website}
-                      target="_blank"
-                      rel="noreferrer"
-                      title="Visit Website"
-                      className="p-2 rounded-xl text-[#86868B] hover:text-[#0071E3] hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
-                    >
-                      <Globe className="w-4 h-4" />
-                    </a>
-                  )}
-                </div>
-
-                <a
-                  href={
-                    facility.google_maps_url ||
-                    `https://www.google.com/maps/dir/?api=1&destination=${facility.latitude},${facility.longitude}`
-                  }
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#0071E3] hover:bg-[#0077ED] text-white text-xs font-semibold transition-colors"
-                >
-                  <Navigation className="w-3.5 h-3.5" />
-                  {t("locator.directions", "Directions")}
-                </a>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
+
+        {/* Empty state when 0 results found */}
+        {results.length === 0 && !loading && (
+          <div className="bg-white dark:bg-[#1C1C1E] p-8 sm:p-12 rounded-3xl border border-[#D2D2D7]/60 dark:border-[#2C2C2E] text-center max-w-xl mx-auto my-8 shadow-xs">
+            <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-[#0071E3]/10 text-[#0071E3] flex items-center justify-center">
+              <MapPin className="w-7 h-7" />
+            </div>
+            <h3 className="text-lg font-bold text-[#1D1D1F] dark:text-white mb-2">
+              {t("locator.noFacilitiesTitle", "No facilities found within selected radius")}
+            </h3>
+            <p className="text-xs sm:text-sm text-[#86868B] leading-relaxed mb-6">
+              {t("locator.noFacilitiesDesc", "We searched for repair & recycling facilities near")}{" "}
+              <strong className="text-[#1D1D1F] dark:text-white">{resolvedLocation || searchQuery || "this location"}</strong>.{" "}
+              {t("locator.tryExpanding", "Try expanding the search radius or broadening your query.")}
+            </p>
+
+            {dataSource === "openstreetmap" && (
+              <div className="p-4 rounded-2xl bg-[#F5F5F7] dark:bg-[#2C2C2E]/60 text-left border border-[#D2D2D7]/40 dark:border-[#3A3A3C]">
+                <div className="flex items-start gap-3">
+                  <Info className="w-4 h-4 text-[#0071E3] shrink-0 mt-0.5" />
+                  <div className="text-xs text-[#86868B] space-y-1">
+                    <span className="font-semibold text-[#1D1D1F] dark:text-white block">
+                      {t("locator.enableFreePlaces", "Want instant live coverage for any pincode?")}
+                    </span>
+                    <p>
+                      {t(
+                        "locator.freePlacesHelp",
+                        "Get a 100% free API key from Geoapify (3,000 free requests/day, no credit card required) at myprojects.geoapify.com and add GEOAPIFY_API_KEY to your .env file, or add GOOGLE_MAPS_API_KEY."
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </main>
 
       {/* Certifications Modal */}

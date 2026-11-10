@@ -49,6 +49,11 @@ ReLoop AI/
 build/
 dist/
 
+# Local Presentation Documents
+*.pdf
+generate_script_pdf.py
+PRESENTATION_SCRIPT.md
+
 
 # Vision Evaluation Dataset & Results
 data/vision_eval/*/

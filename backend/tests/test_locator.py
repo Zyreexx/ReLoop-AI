@@ -3,13 +3,58 @@ Tests for Location-Based Repair Shop & Certified E-Waste Recycler Locator.
 Validates geospatial search, Haversine formula, R2v3 / e-Stewards certification checks,
 and category filtering.
 """
+from unittest.mock import AsyncMock, patch
 import pytest
 from fastapi.testclient import TestClient
+
 from app.main import app
 from app.services.locator_service import haversine_distance_km, locator_service
 from app.knowledge.recycler_certifications import verify_facility_certification
+from app.schemas.locator import LocatorItem
 
 client = TestClient(app)
+
+
+SAMPLE_TEST_ITEMS = [
+    LocatorItem(
+        id="osm_101",
+        name="QuickFix Electronics Repair Lab",
+        category="REPAIR_SHOP",
+        address="FC Road, Pune, Maharashtra",
+        latitude=18.5204,
+        longitude=73.8567,
+        distance_km=1.2,
+        is_certified=False,
+        directions_url="https://www.google.com/maps/dir/?api=1&destination=18.5204,73.8567",
+    ),
+    LocatorItem(
+        id="osm_102",
+        name="Sims Lifecycle Services Pune E-Waste Center",
+        category="CERTIFIED_RECYCLER",
+        address="MIDC Industrial Area, Pune",
+        latitude=18.5304,
+        longitude=73.8467,
+        distance_km=2.4,
+        is_certified=True,
+        certification_badge="R2v3 Certified & e-Stewards",
+        directions_url="https://www.google.com/maps/dir/?api=1&destination=18.5304,73.8467",
+    ),
+]
+
+
+@pytest.fixture(autouse=True)
+def mock_external_network():
+    """Mock external network calls to Overpass & Nominatim to ensure deterministic offline test runs."""
+    with patch.object(
+        locator_service,
+        "geocode_query",
+        new=AsyncMock(return_value=(18.5204, 73.8567, "Pune, Maharashtra, India")),
+    ), patch.object(
+        locator_service,
+        "_search_overpass",
+        new=AsyncMock(return_value=list(SAMPLE_TEST_ITEMS)),
+    ):
+        yield
 
 
 def test_haversine_distance():
@@ -50,6 +95,7 @@ def test_locator_search_category_filter():
     resp_rep = client.get("/api/locator/search", params={"category": "REPAIR", "query": "Pune"})
     assert resp_rep.status_code == 200
     rep_results = resp_rep.json()["results"]
+    assert len(rep_results) >= 1
     for r in rep_results:
         assert r["category"] == "REPAIR_SHOP"
 
@@ -57,6 +103,7 @@ def test_locator_search_category_filter():
     resp_rec = client.get("/api/locator/search", params={"category": "RECYCLE", "query": "Pune"})
     assert resp_rec.status_code == 200
     rec_results = resp_rec.json()["results"]
+    assert len(rec_results) >= 1
     for r in rec_results:
         assert r["category"] in ["CERTIFIED_RECYCLER", "E_WASTE_COLLECTOR"]
 
@@ -69,4 +116,3 @@ def test_locator_certifications_info_endpoint():
     names = [s["standard_name"] for s in standards]
     assert any("R2v3" in n for n in names)
     assert any("e-Stewards" in n for n in names)
-
